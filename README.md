@@ -21,9 +21,9 @@ Over time, the LMS and APC play counts will diverge more and more, so the longer
 - *Create* (scheduled) **backups** of your APC data and *restore* values from backup files.
 - **Reset play count** or **skip count** for **individual** tracks by clicking on the corresponding context menu item.
 - Use APC data with plugins like [**Dynamic Playlists 3**](https://github.com/AF-1/lms-dynamicplaylists) or [**Visual Statistics**](https://github.com/AF-1/lms-visualstatistics).
-[^1]: i.e. percentage of the total song duration
 <br><br><br>
 
+[^1]: i.e. percentage of the total song duration
 
 ## Installation
 
