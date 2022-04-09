@@ -1,0 +1,17 @@
+[% pagetitle = 'PLUGIN_ALTERNATIVEPLACOUNT_WEB_RESETVALUE' | string; pagetitle = pagetitle _ " " _ name %]
+[% pwd_list = [ pagetitle ] %]
+[% PROCESS pageheader.html %]
+<style>
+@charset "UTF-8";
+.wrapper {padding: 5px;}
+a {text-decoration: none;}
+.rltitlebold{font-weight:bold;
+.filler {height: 3px;}
+</style>
+<br>
+	<div class="wrapper">
+		<a href="[% webroot %]plugins/AlternativePlayCount/resetvalue?urlmd5=[% urlmd5 %]&amp;infoitem=[% infoitem %]&amp;player=[% playerURI %]" [% IF browserTarget %]target="[% browserTarget %]"[% END %]">
+			[% "PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE" | string %] <span class="rltitlebold">[% name %]</span> [% "PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE_TRACK" | string %]
+		</a>
+	</div>
+[% PROCESS pagefooter.html %]

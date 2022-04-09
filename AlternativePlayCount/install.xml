@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<extension>
+	<id>af18a10e-3810-ee03-55f4-87cca698a191</id>
+	<name>PLUGIN_ALTERNATIVEPLAYCOUNT</name>
+	<module>Plugins::AlternativePlayCount::Plugin</module>
+	<version>0.1.0</version>
+	<description>PLUGIN_ALTERNATIVEPLAYCOUNT_DESC</description>
+	<creator>AF</creator>
+	<importmodule>Plugins::AlternativePlayCount::Importer</importmodule>
+	<optionsURL>plugins/AlternativePlayCount/settings/basic.html</optionsURL>
+	<homepageURL>https://github.com/AF-1/lms-alternativeplaycount</homepageURL>
+	<defaultState>enabled</defaultState>
+	<targetApplication>
+		<id>Logitech Media Server</id>
+		<minVersion>7.9</minVersion>
+		<maxVersion>*</maxVersion>
+	</targetApplication>
+</extension>

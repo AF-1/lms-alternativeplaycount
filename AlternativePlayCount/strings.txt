@@ -1,0 +1,269 @@
+PLUGIN_ALTERNATIVEPLAYCOUNT
+	EN	Alternative Play Count
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_DESC
+	EN	Provides alternative play counts and skip counts that reflect your true listening history. You set a time after which a song counts as played. Create (scheduled) backups, restore from backups.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LOG_DESC
+	EN	Log of plugin Alternative Play Count
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SUBPAGE
+	EN	Settings Section
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SUBPAGE_DESC
+	EN	Select a settings section
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS
+	EN	Various Settings
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP
+	EN	Backup / Restore
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT
+	EN	Played threshold
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT_DESC
+	EN	Select the <b>percentage</b> of a song that <b>must be played before it is marked as <i>played</i></b>.<br>If you <b>skip</b> the song <b>before</b> this percentage of the song has played, the song will be marked as <b>skipped</b> instead.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH
+	EN	Location of the<br>Alternative Play Count folder
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH_DESC
+	EN	Choose a location (<b>parent</b> folder) for the <i>Alternative Play Count</i> folder where this plugin stores (scheduled) backups.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS
+	EN	Always display APC values
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC
+	EN	<b>Always</b> display APC values <b><i>or</i></b> display <b>only</b> APC values that are <b>different from the LMS default database values</b> and that are <b>not zero</b>.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE
+	EN	Reset Alternative Play Count database<br>to LMS values
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_DESC
+	EN	This will delete your <i>Alternative Play Count</i> database and create a new one using current LMS values for <i>play count</i> and <i>last played</i>. It basically resets the APC database to current LMS values.<br><b>Careful: Unless you have created a backup of your APC database, you will lose all APC data.</b>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_BUTTON
+	EN	Reset APC database now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_INPROGRESS
+	EN	resetting APC database...
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_MINPLAYCOUNT
+	EN	Minimum play count of included songs
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_MINPLAYCOUNT_DESC
+	EN	Unlike <i>Alternative Play Count</i>, LMS will also increment the play count of <b>skipped</b> tracks.<br>When APC populates its <i>empty</i> database with current play count values from the LMS persistent database, you can limit the copied play counts to higher values and skip lower play count values that may have been caused by skipping tracks.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE
+	EN	Clear Alternative Play Count database
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_DESC
+	EN	This will clear all play counts, skip counts and <i>last played</i> dates from your <i>Alternative Play Count</i> database. Useful if you want to start from scratch without any previous play count and skip count values.<br><b>Careful: Unless you have created a backup of your APC database, you will lose all APC data.</b>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_BUTTON
+	EN	Clear APC database now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_INPROGRESS
+	EN	clearing APC database...
+
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP
+	EN	Backup
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP
+	EN	Manual Backup
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_DESC
+	EN	Backup all values from the <i>Alternative Play Count</i> database table to a single backup file.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_BUTTON
+	EN	Backup now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_INPROGRESS
+	EN	creating backup...
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_PRESCANBACKUP
+	EN	Backup before each library rescan
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_PRESCANBACKUP_DESC
+	EN	Have APC automatically create a backup of your database values right <b>before</b> the scan process starts.<br>This setting affects only <b>pre-scan</b> backups. It's unrelated to the <i>scheduled</i> backup function.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS
+	EN	Scheduled Backups
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS_DESC
+	EN	Enable scheduled daily backups
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS_BACKUPTIME
+	EN	Backup Time
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS_BACKUPTIME_DESC
+	EN	Set the time for your daily backup. If you leave this empty, no scheduled backups will occur.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_AUTODELETEBACKUPS
+	EN	Auto-delete old backups
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_AUTODELETEBACKUPS_DESC
+	EN	Have APC delete old backups automatically (esp. recommended if you have enabled <i>scheduled daily backups</i>).
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_AUTODELETEBACKUPS_WARNING
+	EN	recommended if scheduled backups are enabled
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPDAYSTOKEEP
+	EN	Delete backups older than
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPDAYSTOKEEP_DESC
+	EN	Set the number of days after which old backups will be deleted.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPDAYS
+	EN	day(s)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP
+	EN	Minimum number of backups to keep
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP_DESC
+	EN	Keep at least this number of backup files, regardless of their creation date.<br>If you don't create scheduled or regular manual backups, this will prevent APC from accidentally deleting <b>all</b> of your old backup files.
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE
+	EN	Restore
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE
+	EN	Select a backup file to restore from
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE_DESC
+	EN	Select a backup file (created with <i>Alternative Play Count</i>) to restore your APC database values from.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW
+	EN	Restore from backup file now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW_DESC
+	EN	Restore APC database values from the backup file you chose above.<br><br><b>All APC database values will be reset to the values of the backup file.</b>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_BUTTON
+	EN	Restore now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE
+	EN	You have to select a file first!
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE
+	EN	Please select a valid XML file created with <i>Alternative Play Count</i> !
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGESS
+	EN	restoring...
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE
+	EN	Clear all APC database values<br>before restoring
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE_DESC
+	EN	This will clear all values in the APC database before starting the restore process. All current values in your APC database will be reset to the values from the backup. In other words, values not contained in the backup will be lost.
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE
+	EN	Reset
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE_TRACK
+	EN	for this track
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_CB
+	EN	Reset successful.
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_NAME
+	EN	Recently played albums (APC)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_DESC
+	EN	Skip songs from albums that have been<br>recently played (according to the APC database)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_PARAM_NAME
+	EN	Skip if played in the last
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_NAME
+	EN	Recently played artists (APC)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_DESC
+	EN	Skip songs by artists that have been<br>recently played (according to the APC database)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_PARAM_NAME
+	EN	Skip if played in the last
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYPLAYED_NAME
+	EN	Recently played songs (APC)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYPLAYED_DESC
+	EN	Skip songs that have been<br>recently played (according to the APC database)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYPLAYED_PARAM_NAME
+	EN	Skip if played in the last
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_NAME
+	EN	Recently skipped songs (APC)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_DESC
+	EN	Skip songs that have been<br>recently skipped (according to the APC database)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_PARAM_NAME
+	EN	Skip if skipped in the last
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_NAME
+	EN	High APC skip count
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_DESC
+	EN	Skip songs with high APC skip counts
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_PARAM_NAME
+	EN	Skip if APC skip count is greater than
+
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCPLAYCOUNT
+	EN	APC Play Count
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTPLAYED
+	EN	APC Last Played
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCSKIPCOUNT
+	EN	APC Skip Count
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTSKIPPED
+	EN	APC Last Skipped
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_SONG
+	EN	song
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_SONGS
+	EN	songs
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_WEEK
+	EN	week
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_DAYS
+	EN	days
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_HOUR
+	EN	hour
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_HOURS
+	EN	hours
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_MINS
+	EN	minutes
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_NEVER
+	EN	never
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT
+	EN	Remove dead tracks from<br>LMS tracks_persistent table
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_DESC
+	EN	This will remove all (dead) tracks from the LMS <b>tracks_persistent</b> table whose file URL has no match in the current LMS <b>tracks</b> table.<br><br><b>Only use this if you're know what you're doing and if you have a backup of the LMS <i>persist.db</i> file.</b>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_BUTTON
+	EN	Remove dead tracks now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_INPROGRESS
+	EN	removing dead tracks...
