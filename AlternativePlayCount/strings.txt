@@ -54,27 +54,33 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_DESC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_BUTTON
 	EN	Reset APC database now
+	FR	Réinitialiser la base de données APC maintenant
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_INPROGRESS
 	EN	resetting APC database...
+	FR	réinitialisation de la base de données APC...
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_MINPLAYCOUNT
 	EN	Minimum play count of included songs
+	FR	Nombre minimum de lecture des morceaux inclus
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_MINPLAYCOUNT_DESC
 	EN	Unlike <i>Alternative Play Count</i>, LMS will also increment the play count of <b>skipped</b> tracks.<br>When APC populates its <i>empty</i> database with current play count values from the LMS persistent database, you can limit the copied play counts to higher values and skip lower play count values that may have been caused by skipping tracks.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE
 	EN	Clear Alternative Play Count database
+	FR	Effacer la base de données APC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_DESC
 	EN	This will clear all play counts, skip counts and <i>last played</i> dates from your <i>Alternative Play Count</i> database. Useful if you want to start from scratch without any previous play count and skip count values.<br><b>Careful: Unless you have created a backup of your APC database, you will lose all APC data.</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_BUTTON
 	EN	Clear APC database now
+	FR	Effacer de la base de données APC maintenant
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_INPROGRESS
 	EN	clearing APC database...
+	FR	effaçage de la base de données APC...
 
 
 
@@ -88,6 +94,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_DESC
 	EN	Backup all values from the <i>Alternative Play Count</i> database table to a single backup file.
+	FR	Sauvegarder toutes les valeurs de la table de la base de données <i>Alternative Play Count</i> dans un seul fichier de sauvegarde.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_BUTTON
 	EN	Backup now
@@ -126,9 +133,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_AUTODELETEBACKUPS_WARNING
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPDAYSTOKEEP
 	EN	Delete backups older than
+	FR	Supprimer les sauvegardes plus anciennes que
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPDAYSTOKEEP_DESC
 	EN	Set the number of days after which old backups will be deleted.
+	FR	Définit le nombre de jours après lesquels les anciennes sauvegardes seront supprimées.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPDAYS
 	EN	day(s)
@@ -136,6 +145,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPDAYS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP
 	EN	Minimum number of backups to keep
+	FR	Nombre minimum de sauvegarde à garder
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP_DESC
 	EN	Keep at least this number of backup files, regardless of their creation date.<br>If you don't create scheduled or regular manual backups, this will prevent APC from accidentally deleting <b>all</b> of your old backup files.
@@ -164,12 +174,14 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_BUTTON
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE
 	EN	You have to select a file first!
+	FR	Vous devez sélectionner un fichier d'abord !
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE
 	EN	Please select a valid XML file created with <i>Alternative Play Count</i> !
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGESS
 	EN	restoring...
+	FR	restauration...
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE
 	EN	Clear all APC database values<br>before restoring
@@ -180,49 +192,64 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE_DESC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE
 	EN	Reset
+	FR	Réinitialiser
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE_TRACK
 	EN	for this track
+	FR	pour ce morceau
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_CB
 	EN	Reset successful.
+	FR	Réinitialisation réussie.
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_NAME
 	EN	Recently played albums (APC)
+	FR	Albums joués récemment (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_DESC
 	EN	Skip songs from albums that have been<br>recently played (according to the APC database)
+	FR	Sauter les morceaux des albums qui ont été<br>récemment joués (d'après la base de données APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_PARAM_NAME
 	EN	Skip if played in the last
+	FR	Sauter si joués dans les derniers
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_NAME
 	EN	Recently played artists (APC)
+	FR	Artistes joués récemment (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_DESC
 	EN	Skip songs by artists that have been<br>recently played (according to the APC database)
+	FR	Sauter les morceaux par artistes qui ont été<br>récemment joués (d'après la base de données APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_PARAM_NAME
 	EN	Skip if played in the last
+	FR	Sauter si joués dans les derniers
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYPLAYED_NAME
 	EN	Recently played songs (APC)
+	FR	Morceaux joués récemment (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYPLAYED_DESC
 	EN	Skip songs that have been<br>recently played (according to the APC database)
+	FR	Sauter les morceaux qui ont été<br>récemment joués (d'après la base de données APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYPLAYED_PARAM_NAME
 	EN	Skip if played in the last
+	FR	Sauter si joués dans les derniers
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_NAME
 	EN	Recently skipped songs (APC)
+	FR	Morceaux sautés récemment (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_DESC
 	EN	Skip songs that have been<br>recently skipped (according to the APC database)
+	FR	Sauter les morceaux qui ont été<br>récemment sautés (d'après la base de données APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_PARAM_NAME
 	EN	Skip if skipped in the last
+	FR	Sauter si sauté dans les derniers
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_NAME
 	EN	High APC skip count
@@ -293,6 +320,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_DESC
 	EN	This will remove all (dead) tracks from the LMS <b>tracks_persistent</b> table whose file URL has no match in the current LMS <b>tracks</b> table.<br><br><b>Only use this if you're know what you're doing and if you have a backup of the LMS <i>persist.db</i> file.</b>
+	FR	Ceci va supprimer tous les morceaux (morts) de la table <b>tracks_persistent</b> de LMS dont l'URL ne correspond pas avec la table <b>tracks</b> courante de LMS.<br><br><b>Utiliser ceci seulement si vous savez ce que vous faites et si vous avez une sauvegarde du fichier <i>persist.db</i> de LMS.</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_BUTTON
 	EN	Remove dead tracks now
