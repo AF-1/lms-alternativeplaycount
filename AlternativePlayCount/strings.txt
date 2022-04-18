@@ -112,24 +112,31 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_PRESCANBACKUP_DESC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS
 	EN	Scheduled Backups
+	FR	Sauvegardes programmées
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS_DESC
 	EN	Enable scheduled daily backups
+	FR	Activer les sauvegardes quotidiennes programmées
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS_BACKUPTIME
 	EN	Backup Time
+	FR	Heure de sauvegarde
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS_BACKUPTIME_DESC
 	EN	Set the time for your daily backup. If you leave this empty, no scheduled backups will occur.
+	FR	Definit l'heure pour la sauvegarde quotidienne. Si vous laissez vide, aucune sauvegarde ne sera faite.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_AUTODELETEBACKUPS
 	EN	Auto-delete old backups
+	FR	Supprimes automatiquement les anciennes sauvegardes
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_AUTODELETEBACKUPS_DESC
 	EN	Have APC delete old backups automatically (esp. recommended if you have enabled <i>scheduled daily backups</i>).
+	FR	Laisser APC supprimer les vieilles sauvegardes automatiquement (recommandé si vous activez les <i>sauvegarde quotidienne programmées</i>).
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_AUTODELETEBACKUPS_WARNING
 	EN	recommended if scheduled backups are enabled
+	FR	recommandé si les sauvegardes programmées sont activées
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPDAYSTOKEEP
 	EN	Delete backups older than
@@ -149,7 +156,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP_DESC
 	EN	Keep at least this number of backup files, regardless of their creation date.<br>If you don't create scheduled or regular manual backups, this will prevent APC from accidentally deleting <b>all</b> of your old backup files.
-
+	FR	Garder au moins e nombre de sauvegardes, sans consideration de leur date de création.<br>Si vous ne créez pas de sauvegardes programmées ou manuelles régulières, cela évitera à APC de supprimer accidentellement <b>toutes</b> les sauvegardes.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE
 	EN	Restore
@@ -157,6 +164,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE
 	EN	Select a backup file to restore from
+	FR	Sélectionner une sauvegarde depuis laquelle restaurer
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE_DESC
 	EN	Select a backup file (created with <i>Alternative Play Count</i>) to restore your APC database values from.
@@ -178,6 +186,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE
 	EN	Please select a valid XML file created with <i>Alternative Play Count</i> !
+	FR	Merci de sélectionner un ficher XML valide créé avec <i>Alternative Play Count</i> !
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGESS
 	EN	restoring...
@@ -185,9 +194,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGESS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE
 	EN	Clear all APC database values<br>before restoring
+	FR	Vider toute la base de données APC<br>avant de restaurer
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE_DESC
 	EN	This will clear all values in the APC database before starting the restore process. All current values in your APC database will be reset to the values from the backup. In other words, values not contained in the backup will be lost.
+	FR	Cela va vider toutes les valeurs dans la base de données APC avant de démarrer le processus de restauration. Toutes les valeurs courantes de la base de données APC seront remises aux valeurs de la sauvegarde. En autres mots, les valeurs non sauvegardées seront perdues.
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE
