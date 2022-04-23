@@ -36,18 +36,21 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT_DESC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH
 	EN	Location of the<br>Alternative Play Count folder
+	FR	Emplacement du dossier Alternative Play Count
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH_DESC
 	EN	Choose a location (<b>parent</b> folder) for the <i>Alternative Play Count</i> folder where this plugin stores (scheduled) backups.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS
 	EN	Always display APC values
+	FR	Afficher toujours les valeurs APC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC
 	EN	<b>Always</b> display APC values <b><i>or</i></b> display <b>only</b> APC values that are <b>different from the LMS default database values</b> and that are <b>not zero</b>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE
 	EN	Reset Alternative Play Count database<br>to LMS values
+	FR	Réinitialiser la base de données Alternative Play Count<br> aux valeurs de LMS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_DESC
 	EN	This will delete your <i>Alternative Play Count</i> database and create a new one using current LMS values for <i>play count</i> and <i>last played</i>. It basically resets the APC database to current LMS values.<br><b>Careful: Unless you have created a backup of your APC database, you will lose all APC data.</b>
@@ -106,9 +109,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_INPROGRESS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_PRESCANBACKUP
 	EN	Backup before each library rescan
+	FR	Sauvegarder avant chaque rescan de la bibliothèque
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_PRESCANBACKUP_DESC
 	EN	Have APC automatically create a backup of your database values right <b>before</b> the scan process starts.<br>This setting affects only <b>pre-scan</b> backups. It's unrelated to the <i>scheduled</i> backup function.
+	FR	Faire qu'APC crée automatiquement une sauvegarde de votre base de données juste <b>avant</b> que le processus de scan commence.<br>Ce réglage impacte seulement les sauvegardes <b>pre-scan</b>. Ce n'est pas lié à la fonction de sauvegarde <i>programmées</i>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS
 	EN	Scheduled Backups
@@ -168,6 +173,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE_DESC
 	EN	Select a backup file (created with <i>Alternative Play Count</i>) to restore your APC database values from.
+	FR	Sélectionne une sauvegarde (créée avec <i>Alternative Play Count</i>) pour restaurer votre base de données APC.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW
 	EN	Restore from backup file now
@@ -175,6 +181,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW_DESC
 	EN	Restore APC database values from the backup file you chose above.<br><br><b>All APC database values will be reset to the values of the backup file.</b>
+	FR	Restaure les données de la base APC à partir du fichier de sauvegarde sélectionné ci-dessus.<br><br><b>Toutes les données APC seront réinitialisées aux valeurs de la sauvegarde.</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_BUTTON
 	EN	Restore now
@@ -278,19 +285,19 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_PARAM_NAME
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCPLAYCOUNT
 	EN	APC Play Count
-	FR	APC Nombre de Lecture
+	FR	APC Nombre de lectures
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTPLAYED
 	EN	APC Last Played
-	FR	APC Dernière Lecture
+	FR	APC Dernière lecture
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCSKIPCOUNT
 	EN	APC Skip Count
-	FR	APC Nombre de Sauts
+	FR	APC Nombre de sauts
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTSKIPPED
 	EN	APC Last Skipped
-	FR	APC Dernier Saut
+	FR	APC Dernier saut
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_SONG
 	EN	song
