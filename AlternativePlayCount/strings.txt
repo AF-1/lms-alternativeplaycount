@@ -1,6 +1,6 @@
 PLUGIN_ALTERNATIVEPLAYCOUNT
 	EN	Alternative Play Count
-	FR	Alternative Play Count (compte de lectures alternatif)
+	FR	Compte de Lectures Alternatif (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_DESC
 	EN	Provides alternative play counts and skip counts that reflect your true listening history. You set a time after which a song counts as played. Create (scheduled) backups, restore from backups.
@@ -8,11 +8,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_DESC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LOG_DESC
 	EN	Log of plugin Alternative Play Count
-	FR	Journal du plugin Alternative Play Count
+	FR	Journal du plugin Compte de Lectures Alternatif (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SUBPAGE
 	EN	Settings Section
-	FR	Section réglages
+	FR	Section de réglages
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SUBPAGE_DESC
 	EN	Select a settings section
@@ -33,13 +33,15 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT_DESC
 	EN	Select the <b>percentage</b> of a song that <b>must be played before it is marked as <i>played</i></b>.<br>If you <b>skip</b> the song <b>before</b> this percentage of the song has played, the song will be marked as <b>skipped</b> instead.
+	FR	Sélectionnez le <b>pourcentage</b> du morceau qui <b>doit être joué avant qu'il soit marqué comme <i>joué</i></b>.<br>Si vous <b>sautez</b> la chanson <b>avant</b> que ce pourcentage du morceau soit joué, le morceau sera à la place marqué comme <b>sauté</b>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH
 	EN	Location of the<br>Alternative Play Count folder
-	FR	Emplacement du dossier Alternative Play Count
+	FR	Emplacement du dossier Compte de Lectures Alternatif
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH_DESC
 	EN	Choose a location (<b>parent</b> folder) for the <i>Alternative Play Count</i> folder where this plugin stores (scheduled) backups.
+	FR	Choississez un emplacement (dossier <b>parent</b>) pour le dossier de <i>Compte de Lectures Alternatif</i> où ce plugin stocke les sauvegardes (programmées).
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS
 	EN	Always display APC values
@@ -47,13 +49,15 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC
 	EN	<b>Always</b> display APC values <b><i>or</i></b> display <b>only</b> APC values that are <b>different from the LMS default database values</b> and that are <b>not zero</b>.
+	FR	<b>Toujours</b> afficher les valeurs APC <b><i>ou</i></b> afficher <b>seulement</b> les valeurs d'APC qui sont <b>différentes des valeurs de la base de données LMS</b> et qui ne sont <b>pas à zéro</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE
 	EN	Reset Alternative Play Count database<br>to LMS values
-	FR	Réinitialiser la base de données Alternative Play Count<br> aux valeurs de LMS
+	FR	Réinitialiser la base de données d'APC aux valeurs de LMS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_DESC
 	EN	This will delete your <i>Alternative Play Count</i> database and create a new one using current LMS values for <i>play count</i> and <i>last played</i>. It basically resets the APC database to current LMS values.<br><b>Careful: Unless you have created a backup of your APC database, you will lose all APC data.</b>
+	FR	Cela va supprimer votre base de données de <i>Compte de Lectures Alternatif</i> et crée une nouvelle en utilisant les valeurs courante de <i>dernière lecture</i> et <i>nombre d'écoute</i> de LMS. Cela va basiquement réinitialiser la base de données APC aux valeurs de LMS.<br><b>Attention: Sauf si vous avez créé une sauvegarde de votre base APC, vous perdrez toutes les données d'APC.</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_BUTTON
 	EN	Reset APC database now
@@ -69,6 +73,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_MINPLAYCOUNT
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_MINPLAYCOUNT_DESC
 	EN	Unlike <i>Alternative Play Count</i>, LMS will also increment the play count of <b>skipped</b> tracks.<br>When APC populates its <i>empty</i> database with current play count values from the LMS persistent database, you can limit the copied play counts to higher values and skip lower play count values that may have been caused by skipping tracks.
+	FR	Contrairement à <i>Compte de Lectures Alternatif</i>, LMS augmentera aussi le nombre de lecture des morceaux <b>sautés</b>.<br>Quand APC remplit sa base de données <i>vide</i> avec les nombre de lecture courants de la base LMS, vous pouvez limiter la copie des nombres de lectures aux grandes valeurs et sauter les valeurs basses qui peuvent avoir été causée par des sauts de morceaux.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE
 	EN	Clear Alternative Play Count database
@@ -76,6 +81,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_DESC
 	EN	This will clear all play counts, skip counts and <i>last played</i> dates from your <i>Alternative Play Count</i> database. Useful if you want to start from scratch without any previous play count and skip count values.<br><b>Careful: Unless you have created a backup of your APC database, you will lose all APC data.</b>
+	FR	Cela va effacer tous les comptes de lecture, de sauts et les dates de dernière écoute de votre base de <i>Compte de Lectures Alternatif</i>. Utile si vous voulez demarrer de zéro sans aucune valeurs de lecture ou sauts.<br><b>Attention : Sauf si vous avez créé une sauvegarde de votre base APC, vous perdrez toutes les données APC.</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_BUTTON
 	EN	Clear APC database now
@@ -97,7 +103,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_DESC
 	EN	Backup all values from the <i>Alternative Play Count</i> database table to a single backup file.
-	FR	Sauvegarder toutes les valeurs de la table de la base de données <i>Alternative Play Count</i> dans un seul fichier de sauvegarde.
+	FR	Sauvegarder toutes les valeurs de la table de la base de données de <i>Compte de Lectures Alternatif</i> dans un seul fichier de sauvegarde.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_BUTTON
 	EN	Backup now
@@ -113,7 +119,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_PRESCANBACKUP
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_PRESCANBACKUP_DESC
 	EN	Have APC automatically create a backup of your database values right <b>before</b> the scan process starts.<br>This setting affects only <b>pre-scan</b> backups. It's unrelated to the <i>scheduled</i> backup function.
-	FR	Faire qu'APC crée automatiquement une sauvegarde de votre base de données juste <b>avant</b> que le processus de scan commence.<br>Ce réglage impacte seulement les sauvegardes <b>pre-scan</b>. Ce n'est pas lié à la fonction de sauvegarde <i>programmées</i>.
+	FR	Faire qu'APC crée automatiquement une sauvegarde de votre base de données juste <b>avant</b> que le processus de scan commence.<br>Ce réglage impacte seulement les sauvegardes <b>pre-scan</b>. Ce n'est pas lié à la fonction de sauvegarde <i>programmée</i>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS
 	EN	Scheduled Backups
@@ -133,7 +139,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS_BACKUPTIME_DESC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_AUTODELETEBACKUPS
 	EN	Auto-delete old backups
-	FR	Supprimes automatiquement les anciennes sauvegardes
+	FR	Supprimer automatiquement les anciennes sauvegardes
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_AUTODELETEBACKUPS_DESC
 	EN	Have APC delete old backups automatically (esp. recommended if you have enabled <i>scheduled daily backups</i>).
@@ -161,11 +167,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP_DESC
 	EN	Keep at least this number of backup files, regardless of their creation date.<br>If you don't create scheduled or regular manual backups, this will prevent APC from accidentally deleting <b>all</b> of your old backup files.
-	FR	Garder au moins e nombre de sauvegardes, sans consideration de leur date de création.<br>Si vous ne créez pas de sauvegardes programmées ou manuelles régulières, cela évitera à APC de supprimer accidentellement <b>toutes</b> les sauvegardes.
+	FR	Garder au moins ce nombre de sauvegardes, sans consideration de leur date de création.<br>Si vous ne créez pas de sauvegardes programmées ou manuelles régulières, cela évitera à APC de supprimer accidentellement <b>toutes</b> les sauvegardes.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE
 	EN	Restore
-	FR	Restaurer
+	FR	Restauration
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE
 	EN	Select a backup file to restore from
@@ -173,7 +179,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE_DESC
 	EN	Select a backup file (created with <i>Alternative Play Count</i>) to restore your APC database values from.
-	FR	Sélectionne une sauvegarde (créée avec <i>Alternative Play Count</i>) pour restaurer votre base de données APC.
+	FR	Sélectionne une sauvegarde (créée avec <i>Compte de Lecture Alternatif</i>) pour restaurer votre base de données APC.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW
 	EN	Restore from backup file now
@@ -193,7 +199,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE
 	EN	Please select a valid XML file created with <i>Alternative Play Count</i> !
-	FR	Merci de sélectionner un ficher XML valide créé avec <i>Alternative Play Count</i> !
+	FR	Merci de sélectionner un ficher XML valide créé avec <i>Compte de Lecture Alternatif</i> !
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGESS
 	EN	restoring...
@@ -285,7 +291,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_PARAM_NAME
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCPLAYCOUNT
 	EN	APC Play Count
-	FR	APC Nombre de lectures
+	FR	APC Compte de lectures
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTPLAYED
 	EN	APC Last Played
