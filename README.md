@@ -19,6 +19,7 @@ Over time, the LMS and APC play counts will diverge more and more, so the longer
 - Set a time[^1] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
 - *Separate database table* for APC values (play count, date last played, skip count, date last skipped)
 - *Create* (scheduled) **backups** of your APC data and *restore* values from backup files.
+- Option to undo a track's last (accidental) skip count increment if the track is played within a certain time span afterwards.
 - **Reset play count** or **skip count** for **individual** tracks by clicking on the corresponding context menu item.
 - Use APC data with plugins like [**Dynamic Playlists 3**](https://github.com/AF-1/lms-dynamicplaylists) or [**Visual Statistics**](https://github.com/AF-1/lms-visualstatistics).
 <br><br><br>

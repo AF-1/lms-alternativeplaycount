@@ -64,7 +64,7 @@ sub pages {
 }
 
 sub prefs {
-	return ($prefs, qw(apcparentfolderpath playedtreshold_percent dbpopminplaycount alwaysdisplayvals));
+	return ($prefs, qw(apcparentfolderpath playedtreshold_percent undoskiptimespan dbpopminplaycount alwaysdisplayvals));
 }
 
 sub handler {

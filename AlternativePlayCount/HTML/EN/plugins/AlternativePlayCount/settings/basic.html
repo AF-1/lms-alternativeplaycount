@@ -19,6 +19,10 @@
 [% END %]
 <br>
 
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_UNDOSKIPTIMESPAN" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_UNDOSKIPTIMESPAN_DESC" %]
+	<input type="text" class="stdedit sliderInput_0_15_1" name="pref_undoskiptimespan" id="undoskiptimespan" value="[% prefs.undoskiptimespan %]" size="3"> [% "PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_MINS_BOTH" | string %]
+[% END %]
+<br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH_DESC" %]
 	<input type="text" class="stdedit selectFolder" name="pref_apcparentfolderpath" id="apcparentfolderpath" value="[% prefs.apcparentfolderpath %]" size="40">
