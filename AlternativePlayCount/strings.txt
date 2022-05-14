@@ -37,9 +37,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT_DESC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_UNDOSKIPTIMESPAN
 	EN	Skip undo time span
+	FR	Durée d'annulation des sauts 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_UNDOSKIPTIMESPAN_DESC
 	EN	If you have skipped a track (perhaps by mistake) and then decide - within the time span you set here - to play it after all, the skip counter is reduced by 1 to correct the accidental skip.<br>Set the time span to 0 to disable undoing skips.
+	FR	Si vous avez sauté un morceau (peut-être par erreur) et ensuite - dans le temps définit ici - de le jouer, le compteur de saut sera réduit d'un pour corriger le saut accidentel.<br>Définisser la durée à 0 pour désactiver l'annulation des sauts.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH
 	EN	Location of the<br>Alternative Play Count folder
@@ -341,6 +343,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_MINS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_MINS_BOTH
 	EN	minute(s)
+	FR	minute(s)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_NEVER
 	EN	never
