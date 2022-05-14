@@ -60,6 +60,7 @@ my $prefs = preferences('plugin.alternativeplaycount');
 
 my (%restoreitem, $currentKey, $inTrack, $inValue, $backupParser, $backupParserNB, $restorestarted, %itemNames);
 my $opened = 0;
+my $dbh = getCurrentDBH();
 
 sub initPlugin {
 	my $class = shift;
@@ -121,6 +122,7 @@ sub initPrefs {
 	$prefs->init({
 		apcparentfolderpath => $serverPrefs->get('playlistdir'),
 		playedtreshold_percent => 20,
+		undoskiptimespan => 5,
 		alwaysdisplayvals => 1,
 		dbpopminplaycount => 1,
 		prescanbackup => 1,
@@ -138,6 +140,7 @@ sub initPrefs {
 	$prefs->set('status_restoringfrombackup', '0');
 	$prefs->set('status_resetapcdatabase', '0');
 
+	$prefs->setValidate({'validator' => 'intlimit', 'low' => 0, 'high' => 15}, 'undoskiptimespan');
 	$prefs->setValidate({'validator' => \&isTimeOrEmpty}, 'backuptime');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 365}, 'backupsdaystokeep');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 90}, 'playedtreshold_percent');
@@ -164,7 +167,6 @@ sub trackInfoHandler {
 	my $returnVal = 0;
 	my ($apcPlayCount, $apcLastPlayed, $persistentPlayCount, $persistentLastPlayed, $apcSkipCount, $apcLastSkipped);
 	my $urlmd5 = $track->urlmd5 || md5_hex($url);
-	my $dbh = getCurrentDBH();
 
 	my $sql = "select ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(tracks_persistent.playCount, 0), ifnull(tracks_persistent.lastPlayed, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.urlmd5 = \"$urlmd5\"";
 	eval {
@@ -392,7 +394,6 @@ sub resetValVFD {
 sub resetValue {
 	my ($infoItem, $urlmd5) = @_;
 	return if (!$infoItem || !$urlmd5);
-	my $dbh = getCurrentDBH();
 
 	my $sqlstatement;
 	if ($infoItem eq 'playCount') {
@@ -402,13 +403,7 @@ sub resetValue {
 	}
 
 	return if (!$sqlstatement);
-
-	eval {$dbh->do($sqlstatement)};
-	commit($dbh);
-	if($@) {
-		$log->warn("Database error: $DBI::errstr\n");
-		eval { rollback($dbh); };
-	}
+	executeSQLstat($sqlstatement);
 	$log->debug("Finished resetting value for \"$infoItem\"");
 }
 
@@ -523,38 +518,45 @@ sub markAsPlayed {
 	$log->debug('Marking track with url "'.$trackURL.'" as played');
 	$client->pluginData('markedAsPlayed' => $trackURL);
 	my $urlmd5 = md5_hex($trackURL);
-	my $dbh = getCurrentDBH();
 	my $lastPlayed = time();
 
 	my $sqlstatement = "update alternativeplaycount set playCount = ifnull(playCount, 0) + 1, lastPlayed = $lastPlayed where urlmd5 = \"$urlmd5\"";
-	eval {$dbh->do($sqlstatement)};
-	commit($dbh);
-	if ($@) {
-		$log->warn("Database error: $DBI::errstr");
-		eval {
-			rollback($dbh);
-		};
-	}
+	executeSQLstat($sqlstatement);
 	$log->debug('Marked track as played.');
+
+	# if the track was skipped very recently => undo last skip count increment
+	undoLastSkipCountIncrement($trackURL);
 }
 
 sub markAsSkipped {
 	my $trackURL = shift;
 	$log->debug('Marking track with url "'.$trackURL.'" as skipped');
 	my $urlmd5 = md5_hex($trackURL);
-	my $dbh = getCurrentDBH();
 	my $lastSkipped = time();
 
 	my $sqlstatement = "update alternativeplaycount set skipCount = ifnull(skipCount, 0) + 1, lastSkipped = $lastSkipped where urlmd5 = \"$urlmd5\"";
-	eval {$dbh->do($sqlstatement)};
-	commit($dbh);
-	if ($@) {
-		$log->warn("Database error: $DBI::errstr");
-		eval {
-			rollback($dbh);
-		};
-	}
+	executeSQLstat($sqlstatement);
 	$log->debug('Marked track as skipped.');
+}
+
+sub undoLastSkipCountIncrement {
+	my $undoSkipTimeSpan = $prefs->get('undoskiptimespan');
+	if ($undoSkipTimeSpan > 0) {
+		my $trackURL = shift;
+		my $urlmd5 = md5_hex($trackURL);
+		my $lastSkippedSQL = "select ifnull(alternativeplaycount.lastSkipped, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.urlmd5 = \"$urlmd5\"";
+		my $lastSkipped = quickSQLquery($lastSkippedSQL);
+
+		my $track = Slim::Schema->objectForUrl({ 'url' => $trackURL });
+		my $songDuration = $track->secs;
+		my $playedTreshold_percent = ($prefs->get('playedtreshold_percent') || 20) / 100;
+
+		if ($lastSkipped > 0 && (time()-$lastSkipped < ($undoSkipTimeSpan * 60 + $songDuration * $playedTreshold_percent))) {
+			$log->info("Played track was skipped in the last $undoSkipTimeSpan mins. Reducing skip count by 1.");
+			my $reduceSkipCountSQL = "update alternativeplaycount set skipCount = skipCount - 1 where urlmd5 = \"$urlmd5\"";
+			executeSQLstat($reduceSkipCountSQL);
+		}
+	}
 }
 
 
@@ -787,16 +789,8 @@ sub handleEndElement {
 			my $skipCount = ($curTrack->{'skipcount'} == 0 ? "null" : $curTrack->{'skipcount'});
 			my $lastSkipped = ($curTrack->{'lastskipped'} == 0 ? "null" : $curTrack->{'lastskipped'});
 
-			my $dbh = getCurrentDBH();
 			my $sqlstatement = "update alternativeplaycount set playCount = $playCount, lastPlayed = $lastPlayed, skipCount = $skipCount, lastSkipped = $lastSkipped where urlmd5 = \"$urlmd5\"";
-			eval {$dbh->do($sqlstatement)};
-			commit($dbh);
-			if ($@) {
-				$log->warn("Database error: $DBI::errstr");
-				eval {
-					rollback($dbh);
-				};
-			}
+			executeSQLstat($sqlstatement);
 		}
 		%restoreitem = ();
 	}
@@ -907,7 +901,6 @@ sub checkCustomSkipFilterType {
 	my $parameters = $filter->{'parameter'};
 	my $sql = undef;
 	my $result = 0;
-	my $dbh = getCurrentDBH();
 	if ($filter->{'id'} eq 'alternativeplaycount_recentlyplayedtrack') {
 		for my $parameter (@{$parameters}) {
 			if ($parameter->{'id'} eq 'time') {
@@ -917,7 +910,6 @@ sub checkCustomSkipFilterType {
 				my $urlmd5 = $track->urlmd5;
 				if (defined($urlmd5)) {
 					my $lastPlayed;
-					my $dbh = getCurrentDBH();
 					my $sth = $dbh->prepare("select ifnull(alternativeplaycount.lastPlayed, 0) from alternativeplaycount where alternativeplaycount.urlmd5 = ?");
 					eval {
 						$sth->bind_param(1, $urlmd5);
@@ -947,7 +939,6 @@ sub checkCustomSkipFilterType {
 				my $urlmd5 = $track->urlmd5;
 				if (defined($urlmd5)) {
 					my $lastSkipped;
-					my $dbh = getCurrentDBH();
 					my $sth = $dbh->prepare("select ifnull(alternativeplaycount.lastSkipped, 0) from alternativeplaycount where alternativeplaycount.urlmd5 = ?");
 					eval {
 						$sth->bind_param(1, $urlmd5);
@@ -977,7 +968,6 @@ sub checkCustomSkipFilterType {
 				my $urlmd5 = $track->urlmd5;
 				if (defined($urlmd5)) {
 					my $skipCount;
-					my $dbh = getCurrentDBH();
 					my $sth = $dbh->prepare("select ifnull(alternativeplaycount.skipCount, 0) from alternativeplaycount where alternativeplaycount.urlmd5 = ?");
 					eval {
 						$sth->bind_param(1, $urlmd5);
@@ -1007,7 +997,6 @@ sub checkCustomSkipFilterType {
 				my $artist = $track->artist;
 				if (defined($artist)) {
 					my $lastPlayed;
-					my $dbh = getCurrentDBH();
 					my $sth = $dbh->prepare("select max(ifnull(alternativeplaycount.lastPlayed,0)) from tracks, alternativeplaycount, contributor_track where tracks.urlmd5 = alternativeplaycount.urlmd5 and tracks.id = contributor_track.track and contributor_track.contributor = ?");
 					eval {
 						$sth->bind_param(1, $artist->id);
@@ -1037,7 +1026,6 @@ sub checkCustomSkipFilterType {
 				my $album = $track->album;
 				if (defined($album)) {
 					my $lastPlayed;
-					my $dbh = getCurrentDBH();
 					my $sth = $dbh->prepare("select max(ifnull(alternativeplaycount.lastPlayed,0)) from tracks, alternativeplaycount where tracks.urlmd5 = alternativeplaycount.urlmd5 and tracks.album = ?");
 					eval {
 						$sth->bind_param(1, $album->id);
@@ -1064,12 +1052,40 @@ sub checkCustomSkipFilterType {
 
 
 
+sub quickSQLquery {
+	my $sqlstatement = shift;
+	my $thisResult;
+	my $sth = $dbh->prepare($sqlstatement);
+	$sth->execute();
+	$sth->bind_columns(undef, \$thisResult);
+	$sth->fetch();
+	return $thisResult;
+}
+
+sub executeSQLstat {
+	my $sqlstatement = shift;
+
+	for my $sql (split(/[\n\r]/, $sqlstatement)) {
+		my $sth = $dbh->prepare($sql);
+		eval {
+			$sth->execute();
+			commit($dbh);
+		};
+		if ($@) {
+			$log->warn("Database error: $DBI::errstr");
+			eval {
+				rollback($dbh);
+			};
+		}
+		$sth->finish();
+	}
+}
+
 sub initDatabase {
 	if (Slim::Music::Import->stillScanning) {
 		$log->warn("Warning: can't initialize table until library scan is completed");
 		return;
 	}
-	my $dbh = getCurrentDBH();
 	my $st = $dbh->table_info();
 	my $tableExists;
 	while (my ($qual, $owner, $table, $type) = $st->fetchrow_array()) {
@@ -1086,17 +1102,13 @@ sub initDatabase {
 		$log->debug('Creating table.');
 		my $sqlstatement = "create table if not exists persistentdb.alternativeplaycount (url text not null, playCount int(10), lastPlayed int(10), skipCount int(10), lastSkipped int(10), urlmd5 char(32) not null default '0');";
 		$log->debug('Creating APC database table');
-		eval {$dbh->do($sqlstatement)};
-		if ($@) {
-			$log->warn("Couldn't create APC database table: [$@]");
-		}
-		commit($dbh);
+		executeSQLstat($sqlstatement);
 
 		# create indices
 		$log->debug('Creating indices.');
 		my $dbIndex = "create index if not exists persistentdb.cpurlIndex on alternativeplaycount (url);
 create index if not exists persistentdb.cpurlmd5Index on alternativeplaycount (urlmd5);";
-		executeMultiSQLstats($dbIndex);
+		executeSQLstat($dbIndex);
 
 		populateAPCtable(1);
 	}
@@ -1106,7 +1118,6 @@ create index if not exists persistentdb.cpurlmd5Index on alternativeplaycount (u
 
 sub populateAPCtable {
 	my $useLMSvalues = shift || 0;
-	my $dbh = getCurrentDBH();
 
 	if ($useLMSvalues == 1) {
 		# populate table with playCount + lastPlayed values from persistentdb
@@ -1151,7 +1162,6 @@ sub refreshDatabase {
 		$log->warn("Warning: can't refresh database until library scan is completed.");
 		return;
 	}
-	my $dbh = getCurrentDBH();
 	my $sth;
 	my $count;
 	$log->debug('Refreshing APC database');
@@ -1182,7 +1192,6 @@ sub refreshDatabase {
 
 sub removeDeadTracks {
 	my $database = shift || 'alternativeplaycount';
-	my $dbh = getCurrentDBH();
 	my $sth;
 	my $count;
 	$log->debug('Removing dead tracks from APC database that no longer exist in LMS database');
@@ -1215,14 +1224,8 @@ sub resetAPCDatabase {
 	}
 	$prefs->set('status_resetapcdatabase', 1);
 	my $useLMSvalues = shift || 0;
-	my $dbh = getCurrentDBH();
 	my $sqlstatement = "delete from alternativeplaycount";
-	eval {$dbh->do($sqlstatement)};
-	commit($dbh);
-	if($@) {
-		$log->warn("Database error: $DBI::errstr\n");
-		eval { rollback($dbh); };
-	}
+	executeSQLstat($sqlstatement);
 	$log->debug('APC table cleared.');
 	populateAPCtable($useLMSvalues);
 }
@@ -1241,19 +1244,6 @@ sub delayedPostScanRefresh {
 	} else {
 		$log->debug('Starting post-scan database table refresh.');
 		initDatabase();
-	}
-}
-
-sub executeMultiSQLstats {
-	my $sqlstatement = shift;
-	my $dbh = getCurrentDBH();
-
-	for my $sql (split(/[\n\r]/, $sqlstatement)) {
-		eval {$dbh->do($sql)};
-		if ($@) {
-			$log->warn("Executing sqlstatement \"$sql\" failed with error: [$@]");
-		}
-		commit($dbh);
 	}
 }
 
