@@ -1,11 +1,10 @@
 Alternative Play Count
 ====
 
-*Alternative Play Count* provides *alternative* **play count**s and **skip count**s that reflect your true listening history.<br><br>
-If you *skip* tracks in a playlist, LMS still increases their *play* counts.<br>
-The more tracks you *skip* over time, the less the default LMS *play count* reflects your true listening history.<br><br>
-With **Alternative Play Count** you set a time *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**. This should also benefit (dynamic) playlists and mixes that use APC play counts and APC skip counts.<br><br>
-Over time, the LMS and APC play counts will diverge more and more, so the longer you use the plugin, the more valuable the APC data becomes.
+*Alternative Play Count* provides *alternative* **play count**s and **skip count**s that aim to reflect your true listening history.<br><br>
+If you *skip* tracks in a playlist, LMS still increases their *play* counts. With **Alternative Play Count** you set a time *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.<br><br>
+You can use APC data with plugins like [**Dynamic Playlists 3**](https://github.com/AF-1/lms-dynamicplaylists) or [**Visual Statistics**](https://github.com/AF-1/lms-visualstatistics).<br><br>
+The longer you use APC, the more you will benefit from the more accurate quality of the data.
 <br><br>
 
 ## Requirements
