@@ -2,7 +2,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT
 	EN	Alternative Play Count
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_DESC
-	EN	Provides alternative play counts and skip counts that reflect your true listening history. You set a time after which a song counts as played. Create (scheduled) backups, restore from backups.
+	EN	Provides alternative play counts and skip counts that aim to reflect your true listening history. You set a time after which a song counts as played. Create (scheduled) backups, restore from backups.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LOG_DESC
 	EN	Log of plugin Alternative Play Count
