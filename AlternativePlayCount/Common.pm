@@ -59,11 +59,7 @@ sub createBackup {
 	}
 	$prefs->set('status_creatingbackup', 1);
 
-	my $apcparentfolderpath = $prefs->get('apcparentfolderpath');
-	my $backupDir = $apcparentfolderpath.'/AlternativePlayCount';
-	mkdir($backupDir, 0755) unless (-d $backupDir);
-	chdir($backupDir) or $backupDir = $apcparentfolderpath;
-
+	my $backupDir = $prefs->get('apcfolderpath');
 	my ($sql, $sth) = undef;
 	my $dbh = getCurrentDBH();
 	my ($trackURL, $apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped);
@@ -129,8 +125,7 @@ sub cleanupBackups {
 	my $autodeletebackups = $prefs->get('autodeletebackups');
 	my $backupFilesMin = $prefs->get('backupfilesmin');
 	if (defined $autodeletebackups) {
-		my $apcparentfolderpath = $prefs->get('apcparentfolderpath');
-		my $backupDir = $apcparentfolderpath.'/AlternativePlayCount';
+		my $backupDir = $prefs->get('apcfolderpath');
 		return unless (-d $backupDir);
 		my $backupsdaystokeep = $prefs->get('backupsdaystokeep');
 		my $maxkeeptime = $backupsdaystokeep * 24 * 60 * 60; # in seconds

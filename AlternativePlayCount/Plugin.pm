@@ -129,11 +129,33 @@ sub initPrefs {
 		backup_lastday => '',
 		backupsdaystokeep => 30,
 		backupfilesmin => 20,
+		apcfolderpath => sub {
+			my $apcParentFolderPath = $prefs->get('apcparentfolderpath') || $serverPrefs->get('playlistdir');
+			my $apcFolderPath = $apcParentFolderPath.'/AlternativePlayCount';
+			eval {
+				mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
+				chdir($apcFolderPath);
+				return $apcFolderPath;
+			} or do {
+				$log->error("Could not create AlternativePlayCount folder in parent folder '$apcParentFolderPath'!");
+				return undef;
+			};
+		}
 	});
 
-	my $apcparentfolderpath = $prefs->get('apcparentfolderpath');
-	my $apcfolderpath = $apcparentfolderpath.'/AlternativePlayCount';
-	mkdir($apcfolderpath, 0755) unless (-d $apcfolderpath);
+	$prefs->setValidate(sub {
+		return if (!$_[1] || !(-d $_[1]) || (main::ISWINDOWS && !(-d Win32::GetANSIPathName($_[1]))) || !(-d Slim::Utils::Unicode::encode_locale($_[1])));
+		my $apcFolderPath = $_[1].'/AlternativePlayCount';
+		eval {
+			mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
+			chdir($apcFolderPath);
+		} or do {
+			$log->warn("Could not create or access AlternativePlayCount folder in parent folder '$_[1]'!");
+			return;
+		};
+		$prefs->set('apcfolderpath', $apcFolderPath);
+		return 1;
+	}, 'apcparentfolderpath');
 
 	$prefs->set('status_creatingbackup', '0');
 	$prefs->set('status_restoringfrombackup', '0');
@@ -144,14 +166,7 @@ sub initPrefs {
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 365}, 'backupsdaystokeep');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 90}, 'playedtreshold_percent');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 50}, 'dbpopminplaycount');
-	$prefs->setValidate('dir', 'apcparentfolderpath');
 	$prefs->setValidate('file', 'restorefile');
-
-	$prefs->setChange(sub {
-		my $apcparentfolderpath = $prefs->get('apcparentfolderpath');
-		my $apcfolderpath = $apcparentfolderpath.'/AlternativePlayCount';
-		mkdir($apcfolderpath, 0755) unless (-d $apcfolderpath);
-		}, 'apcparentfolderpath');
 
 	%itemNames = ('playCount' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCPLAYCOUNT'),
 				'lastPlayed' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTPLAYED'),
