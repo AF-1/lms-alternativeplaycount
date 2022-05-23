@@ -435,7 +435,7 @@ sub _APCcommandCB {
 	}
 
 	if (!defined $client) {
-		$log->warn('No client. Exiting APCcommandCB');
+		$log->debug('No client. Exiting APCcommandCB');
 		return;
 	}
 
