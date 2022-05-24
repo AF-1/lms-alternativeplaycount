@@ -79,9 +79,7 @@ sub createBackup {
 	$sth->finish();
 
 	if (@APCTracks) {
-		my $PLfilename = 'APC_Backup_'.$filename_timestamp.'.xml';
-
-		my $filename = catfile($backupDir, $PLfilename);
+		my $filename = catfile($backupDir, 'APC_Backup_'.$filename_timestamp.'.xml');
 		my $output = FileHandle->new($filename, '>:utf8') or do {
 			$log->warn('could not open '.$filename.' for writing.');
 			$prefs->set('status_creatingbackup', 0);
