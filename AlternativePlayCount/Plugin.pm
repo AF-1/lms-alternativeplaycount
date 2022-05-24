@@ -131,7 +131,7 @@ sub initPrefs {
 		backupfilesmin => 20,
 		apcfolderpath => sub {
 			my $apcParentFolderPath = $prefs->get('apcparentfolderpath') || $serverPrefs->get('playlistdir');
-			my $apcFolderPath = $apcParentFolderPath.'/AlternativePlayCount';
+			my $apcFolderPath = catdir($apcParentFolderPath, 'AlternativePlayCount');
 			eval {
 				mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
 				chdir($apcFolderPath);
@@ -145,7 +145,7 @@ sub initPrefs {
 
 	$prefs->setValidate(sub {
 		return if (!$_[1] || !(-d $_[1]) || (main::ISWINDOWS && !(-d Win32::GetANSIPathName($_[1]))) || !(-d Slim::Utils::Unicode::encode_locale($_[1])));
-		my $apcFolderPath = $_[1].'/AlternativePlayCount';
+		my $apcFolderPath = catdir($_[1], 'AlternativePlayCount');
 		eval {
 			mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
 			chdir($apcFolderPath);
