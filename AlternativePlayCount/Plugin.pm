@@ -128,20 +128,10 @@ sub initPrefs {
 		backuptime => '05:28',
 		backup_lastday => '',
 		backupsdaystokeep => 30,
-		backupfilesmin => 20,
-		apcfolderpath => sub {
-			my $apcParentFolderPath = $prefs->get('apcparentfolderpath') || $serverPrefs->get('playlistdir');
-			my $apcFolderPath = catdir($apcParentFolderPath, 'AlternativePlayCount');
-			eval {
-				mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
-				chdir($apcFolderPath);
-				return $apcFolderPath;
-			} or do {
-				$log->error("Could not create AlternativePlayCount folder in parent folder '$apcParentFolderPath'!");
-				return undef;
-			};
-		}
+		backupfilesmin => 20
 	});
+
+	createAPCfolder();
 
 	$prefs->setValidate(sub {
 		return if (!$_[1] || !(-d $_[1]) || (main::ISWINDOWS && !(-d Win32::GetANSIPathName($_[1]))) || !(-d Slim::Utils::Unicode::encode_locale($_[1])));
@@ -1272,6 +1262,19 @@ sub delayedPostScanRefresh {
 		$log->debug('Starting post-scan database table refresh.');
 		initDatabase();
 	}
+}
+
+sub createAPCfolder {
+	my $apcParentFolderPath = $prefs->get('apcparentfolderpath') || $serverPrefs->get('playlistdir');
+	my $apcFolderPath = catdir($apcParentFolderPath, 'AlternativePlayCount');
+	eval {
+		mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
+		chdir($apcFolderPath);
+	} or do {
+		$log->error("Could not create or access AlternativePlayCount folder in parent folder '$apcParentFolderPath'!");
+		return;
+	};
+	$prefs->set('apcfolderpath', $apcFolderPath);
 }
 
 1;
