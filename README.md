@@ -9,7 +9,7 @@ As LMS and APC play counts diverge in the long term, you will benefit from the m
 
 ## Requirements
 
-- LMS version >= 7.**9**
+- LMS version >= **8.2**
 - LMS database = **SQLite**
 <br><br><br>
 
