@@ -3,7 +3,7 @@
 	<id>af18a10e-3810-ee03-55f4-87cca698a191</id>
 	<name>PLUGIN_ALTERNATIVEPLAYCOUNT</name>
 	<module>Plugins::AlternativePlayCount::Plugin</module>
-	<version>0.2.0</version>
+	<version>0.3.7</version>
 	<description>PLUGIN_ALTERNATIVEPLAYCOUNT_DESC</description>
 	<creator>AF</creator>
 	<importmodule>Plugins::AlternativePlayCount::Importer</importmodule>
@@ -12,7 +12,7 @@
 	<defaultState>enabled</defaultState>
 	<targetApplication>
 		<id>Logitech Media Server</id>
-		<minVersion>7.9</minVersion>
+		<minVersion>8.2</minVersion>
 		<maxVersion>*</maxVersion>
 	</targetApplication>
 </extension>

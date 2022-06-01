@@ -59,11 +59,7 @@ sub createBackup {
 	}
 	$prefs->set('status_creatingbackup', 1);
 
-	my $apcparentfolderpath = $prefs->get('apcparentfolderpath');
-	my $backupDir = $apcparentfolderpath.'/AlternativePlayCount';
-	mkdir($backupDir, 0755) unless (-d $backupDir);
-	chdir($backupDir) or $backupDir = $apcparentfolderpath;
-
+	my $backupDir = $prefs->get('apcfolderpath');
 	my ($sql, $sth) = undef;
 	my $dbh = getCurrentDBH();
 	my ($trackURL, $apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped);
@@ -83,9 +79,7 @@ sub createBackup {
 	$sth->finish();
 
 	if (@APCTracks) {
-		my $PLfilename = 'APC_Backup_'.$filename_timestamp.'.xml';
-
-		my $filename = catfile($backupDir,$PLfilename);
+		my $filename = catfile($backupDir, 'APC_Backup_'.$filename_timestamp.'.xml');
 		my $output = FileHandle->new($filename, '>:utf8') or do {
 			$log->warn('could not open '.$filename.' for writing.');
 			$prefs->set('status_creatingbackup', 0);
@@ -129,8 +123,7 @@ sub cleanupBackups {
 	my $autodeletebackups = $prefs->get('autodeletebackups');
 	my $backupFilesMin = $prefs->get('backupfilesmin');
 	if (defined $autodeletebackups) {
-		my $apcparentfolderpath = $prefs->get('apcparentfolderpath');
-		my $backupDir = $apcparentfolderpath.'/AlternativePlayCount';
+		my $backupDir = $prefs->get('apcfolderpath');
 		return unless (-d $backupDir);
 		my $backupsdaystokeep = $prefs->get('backupsdaystokeep');
 		my $maxkeeptime = $backupsdaystokeep * 24 * 60 * 60; # in seconds
@@ -144,9 +137,10 @@ sub cleanupBackups {
 		my $n = 0;
 		if (scalar(@files) > $backupFilesMin) {
 			foreach my $file (@files) {
-				$mtime = stat($file)->mtime;
+				my $filepath = catfile($backupDir, $file);
+				$mtime = stat($filepath)->mtime;
 				if (($etime - $mtime) > $maxkeeptime) {
-					unlink($file) or die "Can\'t delete $file: $!";
+					unlink($filepath) or die "Can't delete $file: $!";
 					$n++;
 					last if ((scalar(@files) - $n) <= $backupFilesMin);
 				}

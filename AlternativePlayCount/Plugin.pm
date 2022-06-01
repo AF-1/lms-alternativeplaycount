@@ -60,7 +60,6 @@ my $prefs = preferences('plugin.alternativeplaycount');
 
 my (%restoreitem, $currentKey, $inTrack, $inValue, $backupParser, $backupParserNB, $restorestarted, %itemNames);
 my $opened = 0;
-my $dbh = getCurrentDBH();
 
 sub initPlugin {
 	my $class = shift;
@@ -129,12 +128,24 @@ sub initPrefs {
 		backuptime => '05:28',
 		backup_lastday => '',
 		backupsdaystokeep => 30,
-		backupfilesmin => 20,
+		backupfilesmin => 20
 	});
 
-	my $apcparentfolderpath = $prefs->get('apcparentfolderpath');
-	my $apcfolderpath = $apcparentfolderpath.'/AlternativePlayCount';
-	mkdir($apcfolderpath, 0755) unless (-d $apcfolderpath);
+	createAPCfolder();
+
+	$prefs->setValidate(sub {
+		return if (!$_[1] || !(-d $_[1]) || (main::ISWINDOWS && !(-d Win32::GetANSIPathName($_[1]))) || !(-d Slim::Utils::Unicode::encode_locale($_[1])));
+		my $apcFolderPath = catdir($_[1], 'AlternativePlayCount');
+		eval {
+			mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
+			chdir($apcFolderPath);
+		} or do {
+			$log->warn("Could not create or access AlternativePlayCount folder in parent folder '$_[1]'!");
+			return;
+		};
+		$prefs->set('apcfolderpath', $apcFolderPath);
+		return 1;
+	}, 'apcparentfolderpath');
 
 	$prefs->set('status_creatingbackup', '0');
 	$prefs->set('status_restoringfrombackup', '0');
@@ -145,14 +156,7 @@ sub initPrefs {
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 365}, 'backupsdaystokeep');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 90}, 'playedtreshold_percent');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 50}, 'dbpopminplaycount');
-	$prefs->setValidate('dir', 'apcparentfolderpath');
 	$prefs->setValidate('file', 'restorefile');
-
-	$prefs->setChange(sub {
-		my $apcparentfolderpath = $prefs->get('apcparentfolderpath');
-		my $apcfolderpath = $apcparentfolderpath.'/AlternativePlayCount';
-		mkdir($apcfolderpath, 0755) unless (-d $apcfolderpath);
-		}, 'apcparentfolderpath');
 
 	%itemNames = ('playCount' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCPLAYCOUNT'),
 				'lastPlayed' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTPLAYED'),
@@ -167,6 +171,7 @@ sub trackInfoHandler {
 	my $returnVal = 0;
 	my ($apcPlayCount, $apcLastPlayed, $persistentPlayCount, $persistentLastPlayed, $apcSkipCount, $apcLastSkipped);
 	my $urlmd5 = $track->urlmd5 || md5_hex($url);
+	my $dbh = getCurrentDBH();
 
 	my $sql = "select ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(tracks_persistent.playCount, 0), ifnull(tracks_persistent.lastPlayed, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.urlmd5 = \"$urlmd5\"";
 	eval {
@@ -415,12 +420,12 @@ sub _APCcommandCB {
 	my $client = $request->client();
 
 	if (Slim::Music::Import->stillScanning) {
-		$log->info('Access to APC table blocked until library scan is completed.');
+		$log->debug('Access to APC table blocked until library scan is completed.');
 		return;
 	}
 
 	if (!defined $client) {
-		$log->warn('No client. Exiting APCcommandCB');
+		$log->debug('No client. Exiting APCcommandCB');
 		return;
 	}
 
@@ -552,7 +557,7 @@ sub undoLastSkipCountIncrement {
 		my $playedTreshold_percent = ($prefs->get('playedtreshold_percent') || 20) / 100;
 
 		if ($lastSkipped > 0 && (time()-$lastSkipped < ($undoSkipTimeSpan * 60 + $songDuration * $playedTreshold_percent))) {
-			$log->info("Played track was skipped in the last $undoSkipTimeSpan mins. Reducing skip count by 1.");
+			$log->debug("Played track was skipped in the last $undoSkipTimeSpan mins. Reducing skip count by 1.");
 			my $reduceSkipCountSQL = "update alternativeplaycount set skipCount = skipCount - 1 where urlmd5 = \"$urlmd5\"";
 			executeSQLstat($reduceSkipCountSQL);
 		}
@@ -899,6 +904,7 @@ sub checkCustomSkipFilterType {
 
 	my $currentTime = time();
 	my $parameters = $filter->{'parameter'};
+	my $dbh = getCurrentDBH();
 	my $sql = undef;
 	my $result = 0;
 	if ($filter->{'id'} eq 'alternativeplaycount_recentlyplayedtrack') {
@@ -1055,6 +1061,7 @@ sub checkCustomSkipFilterType {
 sub quickSQLquery {
 	my $sqlstatement = shift;
 	my $thisResult;
+	my $dbh = getCurrentDBH();
 	my $sth = $dbh->prepare($sqlstatement);
 	$sth->execute();
 	$sth->bind_columns(undef, \$thisResult);
@@ -1064,6 +1071,7 @@ sub quickSQLquery {
 
 sub executeSQLstat {
 	my $sqlstatement = shift;
+	my $dbh = getCurrentDBH();
 
 	for my $sql (split(/[\n\r]/, $sqlstatement)) {
 		my $sth = $dbh->prepare($sql);
@@ -1086,14 +1094,20 @@ sub initDatabase {
 		$log->warn("Warning: can't initialize table until library scan is completed");
 		return;
 	}
-	my $st = $dbh->table_info();
+	my $dbh = getCurrentDBH();
+	my $sth = $dbh->table_info();
 	my $tableExists;
-	while (my ($qual, $owner, $table, $type) = $st->fetchrow_array()) {
-		if ($table eq 'alternativeplaycount') {
-			$tableExists=1;
+	eval {
+		while (my ($qual, $owner, $table, $type) = $sth->fetchrow_array()) {
+			if ($table eq 'alternativeplaycount') {
+				$tableExists=1;
+			}
 		}
+	};
+	if($@) {
+		$log->warn("Database error: $DBI::errstr\n");
 	}
-	$st->finish();
+	$sth->finish();
 	$log->debug($tableExists ? 'APC table table found.' : 'No APC table table found.');
 
 	# create APC db table if it doesn't exist
@@ -1118,6 +1132,7 @@ create index if not exists persistentdb.cpurlmd5Index on alternativeplaycount (u
 
 sub populateAPCtable {
 	my $useLMSvalues = shift || 0;
+	my $dbh = getCurrentDBH();
 
 	if ($useLMSvalues == 1) {
 		# populate table with playCount + lastPlayed values from persistentdb
@@ -1162,6 +1177,7 @@ sub refreshDatabase {
 		$log->warn("Warning: can't refresh database until library scan is completed.");
 		return;
 	}
+	my $dbh = getCurrentDBH();
 	my $sth;
 	my $count;
 	$log->debug('Refreshing APC database');
@@ -1192,6 +1208,7 @@ sub refreshDatabase {
 
 sub removeDeadTracks {
 	my $database = shift || 'alternativeplaycount';
+	my $dbh = getCurrentDBH();
 	my $sth;
 	my $count;
 	$log->debug('Removing dead tracks from APC database that no longer exist in LMS database');
@@ -1245,6 +1262,19 @@ sub delayedPostScanRefresh {
 		$log->debug('Starting post-scan database table refresh.');
 		initDatabase();
 	}
+}
+
+sub createAPCfolder {
+	my $apcParentFolderPath = $prefs->get('apcparentfolderpath') || $serverPrefs->get('playlistdir');
+	my $apcFolderPath = catdir($apcParentFolderPath, 'AlternativePlayCount');
+	eval {
+		mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
+		chdir($apcFolderPath);
+	} or do {
+		$log->error("Could not create or access AlternativePlayCount folder in parent folder '$apcParentFolderPath'!");
+		return;
+	};
+	$prefs->set('apcfolderpath', $apcFolderPath);
 }
 
 1;

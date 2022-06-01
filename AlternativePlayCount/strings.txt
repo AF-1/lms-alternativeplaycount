@@ -3,8 +3,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT
 	FR	Nombre de Lectures Alternatif (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_DESC
-	EN	Provides alternative play counts and skip counts that reflect your true listening history. You set a time after which a song counts as played. Create (scheduled) backups, restore from backups.
-	FR	Fournit un nombre de lectures et de sauts alternatif qui reflete votre vrai historique de lecture. Vous définissez une durée après laquelle un morceau est considéré comme joué. Créez des sauvegardes (programmées), restaurez depuis des sauvegardes.
+	EN	Provides alternative play counts and skip counts that aim to reflect your true listening history. You set a time after which a song counts as played. Create (scheduled) backups, restore from backups.
+	FR	Fournit un nombre de lectures et de sauts alternatif qui vise à refléter votre vrai historique de lecture. Vous définissez une durée après laquelle un morceau est considéré comme joué. Créez des sauvegardes (programmées), restaurez depuis des sauvegardes.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LOG_DESC
 	EN	Log of plugin Alternative Play Count
