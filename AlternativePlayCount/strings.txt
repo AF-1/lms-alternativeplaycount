@@ -37,7 +37,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT_DESC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_UNDOSKIPTIMESPAN
 	EN	Skip undo time span
-	FR	Durée d'annulation des sauts 
+	FR	Durée d'annulation des sauts
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_UNDOSKIPTIMESPAN_DESC
 	EN	If you have skipped a track (perhaps by mistake) and then decide - within the time span you set here - to play it after all, the skip counter is reduced by 1 to correct the accidental skip.<br>Set the time span to 0 to disable undoing skips.
