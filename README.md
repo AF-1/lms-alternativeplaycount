@@ -27,16 +27,13 @@ As LMS and APC play counts diverge in the long term, you will benefit from the m
 
 ## Installation
 
-### Using the repository URL
+You should be able to install **Alternative Play Count** from the LMS main repository (LMS plugin library):<br>**LMS > Settings > Plugins**.<br>
 
-- Add the repository URL below at the bottom of *LMS* > *Settings* > *Plugins* and click *Apply*:
-[https://raw.githubusercontent.com/AF-1/lms-alternativeplaycount/main/public.xml](https://raw.githubusercontent.com/AF-1/lms-alternativeplaycount/main/public.xml)
-- Install the new version
+If you want to test a new patch that hasn't made it into a release version yet or you need to install a previous version you'll have to [install the plugin manually](https://github.com/AF-1/sobras/wiki/Manual-installation-of-LMS-plugins).
 
-### Manual Install
-Please read notes on how to [install a plugin manually](https://github.com/AF-1/sobras/wiki/Manual-installation-of-LMS-plugins).
+*Previously released* versions are available here for a very *limited* time after the release of a new version. The official LMS plugins page is updated about twice a day so it usually takes a couple of hours before new released versions are listed.
+<br><br>
 
-<br>
 
 ### Initial values to start with
 The plugin will use the current LMS play counts as a starting point.<br>
