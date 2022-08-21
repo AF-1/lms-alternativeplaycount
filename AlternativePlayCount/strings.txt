@@ -26,6 +26,14 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP
 	EN	Backup / Restore
 	FR	Sauvegarde / Restauration
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_GITHUB_LINK_TEXT
+	EN	Click here for more information.
+	FR	Cliquez ici pour plus d'informations.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_GITHUB_LINK
+	EN	https://github.com/AF-1/lms-alternativeplaycount#alternative-play-count
+	FR	https://github.com/AF-1/lms-alternativeplaycount#alternative-play-count
+
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT
 	EN	Played threshold

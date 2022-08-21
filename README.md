@@ -6,6 +6,8 @@ If you *skip* tracks in a playlist, LMS still increases their *play* counts. Wit
 💡 Even though you can use APC data with any plugin and in any SQLite query, the ***Alternative Play Count* plugin was designed with [Dynamic Playlists 3](https://github.com/AF-1/lms-dynamicplaylists) and [Visual Statistics](https://github.com/AF-1/lms-visualstatistics) in mind**.<br><br>
 As LMS and APC play counts diverge in the long term, you will benefit from the more accurate quality of the data (e.g. in DPL mixes & VS charts).
 <br><br>
+[⬅️ **Back to the list of all plugins**](https://github.com/AF-1/)
+<br><br>
 
 ## Requirements
 
