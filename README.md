@@ -46,8 +46,7 @@ If you want to start from scratch (no play counts) or use only higher LMS play c
 
 ## Reporting a bug
 
-If you think that you've found a bug, open an [**issue here on GitHub**](https://github.com/AF-1/lms-alternativeplaycount/issues) and fill out the ***Bug report* issue template**.<br>
-**Don't** post bug reports on the LMS forum.
+If you think that you've found a bug, open an [**issue here on GitHub**](https://github.com/AF-1/lms-alternativeplaycount/issues) and fill out the ***Bug report* issue template**. Please post bug reports on **GitHub only**.
 <br><br><br><br>
 
 ### Translation
