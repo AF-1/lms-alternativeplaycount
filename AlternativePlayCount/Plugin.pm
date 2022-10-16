@@ -42,6 +42,7 @@ use File::stat;
 use FindBin qw($Bin);
 use POSIX qw(strftime);
 use Scalar::Util qw(blessed);
+use Time::HiRes qw(time);
 use URI::Escape qw(uri_escape_utf8 uri_unescape);
 use XML::Parser;
 
@@ -128,7 +129,8 @@ sub initPrefs {
 		backuptime => '05:28',
 		backup_lastday => '',
 		backupsdaystokeep => 30,
-		backupfilesmin => 20
+		backupfilesmin => 20,
+		postscanscheduledelay => 20
 	});
 
 	createAPCfolder();
@@ -156,6 +158,7 @@ sub initPrefs {
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 365}, 'backupsdaystokeep');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 90}, 'playedtreshold_percent');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 50}, 'dbpopminplaycount');
+	$prefs->setValidate({'validator' => 'intlimit', 'low' => 5, 'high' => 600}, 'postscanscheduledelay');
 	$prefs->setValidate('file', 'restorefile');
 
 	%itemNames = ('playCount' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCPLAYCOUNT'),
@@ -1094,13 +1097,14 @@ sub initDatabase {
 		$log->warn("Warning: can't initialize table until library scan is completed");
 		return;
 	}
+	my $started = time();
 	my $dbh = getCurrentDBH();
 	my $sth = $dbh->table_info();
 	my $tableExists;
 	eval {
 		while (my ($qual, $owner, $table, $type) = $sth->fetchrow_array()) {
 			if ($table eq 'alternativeplaycount') {
-				$tableExists=1;
+				$tableExists = 1;
 			}
 		}
 	};
@@ -1127,7 +1131,8 @@ create index if not exists persistentdb.cpurlmd5Index on alternativeplaycount (u
 		populateAPCtable(1);
 	}
 	refreshDatabase();
-	$log->debug('Finished DB init.');
+	my $ended = time() - $started;
+	$log->info('DB init completed after '.$ended.' seconds.');
 }
 
 sub populateAPCtable {
@@ -1251,7 +1256,7 @@ sub _setRefreshCBTimer {
 	$log->debug('Killing existing timers for post-scan refresh to prevent multiple calls');
 	Slim::Utils::Timers::killOneTimer(undef, \&delayedPostScanRefresh);
 	$log->debug('Scheduling a delayed post-scan refresh');
-	Slim::Utils::Timers::setTimer(undef, time() + 10, \&delayedPostScanRefresh);
+	Slim::Utils::Timers::setTimer(undef, time() + $prefs->get('postscanscheduledelay'), \&delayedPostScanRefresh);
 }
 
 sub delayedPostScanRefresh {

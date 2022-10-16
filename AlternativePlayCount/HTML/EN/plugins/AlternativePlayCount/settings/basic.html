@@ -52,11 +52,16 @@
 <br>
 
 [% IF advmode %]
-<br>
 	[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_DESC" %]
 		<input style="margin-top:-1px;" name="purgedeadtrackspersistent" type="submit" class="stdclick" onClick="inprogress('purgedeadtrackspersistentstatus');" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_BUTTON" | string %]">
 		<span class='status' id='purgedeadtrackspersistentstatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_INPROGRESS" | string %]</span>
 	[% END %]
+<br>
+
+	[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY_DESC" %]
+		<input type="text" class="stdedit sliderInput_5_180_5" name="pref_postscanscheduledelay" id="postscanscheduledelay" value="[% prefs.postscanscheduledelay %]" size="2"> seconds
+	[% END %]
+<br>
 [% END %]
 
 [% PROCESS settings/footer.html %]
