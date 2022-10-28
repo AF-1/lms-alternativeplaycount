@@ -442,9 +442,11 @@ sub _APCcommandCB {
 			return;
 		}
 		my $currentTrackURL = $track->url;
+		my $currentTrackURLmd5 = $track->urlmd5;
 		my $previousTrackURL = $client->pluginData('currentTrackURL');
-		$log->debug('Current track on client "'.$clientID.'" is '.$currentTrackURL);
-		$log->debug('Previous track on client "'.$clientID.'" is '.Dumper($previousTrackURL));
+		my $previousTrackURLmd5 = $client->pluginData('currentTrackURLmd5');
+		$log->debug('Current track on client "'.$clientID.'" is '.$currentTrackURL.' with urlmd5 = '.$currentTrackURLmd5);
+		$log->debug('Previous track on client "'.$clientID.'" is '.Dumper($previousTrackURL).' with urlmd5 = '.Dumper($previousTrackURLmd5));
 
 		## newsong
 		if ($request->isCommand([['playlist'],['newsong']])) {
@@ -456,11 +458,12 @@ sub _APCcommandCB {
 			if (!defined($previousTrackURL) || ($currentTrackURL ne $previousTrackURL)) {
 				# if previous song wasn't marked as played, mark as skipped
 				if (defined($previousTrackURL) && (!defined($client->pluginData('markedAsPlayed')) || $client->pluginData('markedAsPlayed') ne $previousTrackURL)) {
-					markAsSkipped($previousTrackURL);
+					markAsSkipped($previousTrackURL, $previousTrackURLmd5);
 				}
 
 				$client->pluginData('markedAsPlayed' => undef);
 				$client->pluginData('currentTrackURL' => $currentTrackURL);
+				$client->pluginData('currentTrackURLmd5' => $currentTrackURLmd5);
 			}
 
 			startPlayCountTimer($client, $track);
@@ -510,39 +513,39 @@ sub startPlayCountTimer {
 
 	if ($songProgress >= $playedTreshold_percent) {
 		$log->debug('songProgress > playedTreshold_percent. Will mark song as played.');
-		markAsPlayed($client, $track->url);
+		markAsPlayed($client, $track->url, $track->urlmd5);
 	} else {
 		my $songDuration = $track->secs;
 		my $remainingTresholdTime = $songDuration * $playedTreshold_percent - $songDuration * $songProgress;
 		$log->debug('songDuration = '.$songDuration.' seconds -- remainingTresholdTime = '.(sprintf "%.1f", $remainingTresholdTime).' seconds');
 
 		# Start timer for new song
-		Slim::Utils::Timers::setTimer($client, time() + $remainingTresholdTime, \&markAsPlayed, $track->url);
+		Slim::Utils::Timers::setTimer($client, time() + $remainingTresholdTime, \&markAsPlayed, $track->url, $track->urlmd5);
 	}
 }
 
 sub markAsPlayed {
-	my ($client, $trackURL) = @_;
-	$log->debug('Marking track with url "'.$trackURL.'" as played');
+	my ($client, $trackURL, $trackURLmd5) = @_;
+	$log->info('Marking track with url "'.$trackURL.'" as played. urlmd5 = '.Dumper($trackURLmd5));
 	$client->pluginData('markedAsPlayed' => $trackURL);
-	my $urlmd5 = md5_hex($trackURL);
+	$trackURLmd5 = md5_hex($trackURL) if !$trackURLmd5;
 	my $lastPlayed = time();
 
-	my $sqlstatement = "update alternativeplaycount set playCount = ifnull(playCount, 0) + 1, lastPlayed = $lastPlayed where urlmd5 = \"$urlmd5\"";
+	my $sqlstatement = "update alternativeplaycount set playCount = ifnull(playCount, 0) + 1, lastPlayed = $lastPlayed where urlmd5 = \"$trackURLmd5\"";
 	executeSQLstat($sqlstatement);
 	$log->debug('Marked track as played.');
 
 	# if the track was skipped very recently => undo last skip count increment
-	undoLastSkipCountIncrement($trackURL);
+	undoLastSkipCountIncrement($trackURL, $trackURLmd5);
 }
 
 sub markAsSkipped {
-	my $trackURL = shift;
-	$log->debug('Marking track with url "'.$trackURL.'" as skipped');
-	my $urlmd5 = md5_hex($trackURL);
+	my ($trackURL, $trackURLmd5) = @_;
+	$log->info('Marking track with url "'.$trackURL.'" as skipped. urlmd5 = '.Dumper($trackURLmd5));
+	$trackURLmd5 = md5_hex($trackURL) if !$trackURLmd5;
 	my $lastSkipped = time();
 
-	my $sqlstatement = "update alternativeplaycount set skipCount = ifnull(skipCount, 0) + 1, lastSkipped = $lastSkipped where urlmd5 = \"$urlmd5\"";
+	my $sqlstatement = "update alternativeplaycount set skipCount = ifnull(skipCount, 0) + 1, lastSkipped = $lastSkipped where urlmd5 = \"$trackURLmd5\"";
 	executeSQLstat($sqlstatement);
 	$log->debug('Marked track as skipped.');
 }
@@ -550,18 +553,18 @@ sub markAsSkipped {
 sub undoLastSkipCountIncrement {
 	my $undoSkipTimeSpan = $prefs->get('undoskiptimespan');
 	if ($undoSkipTimeSpan > 0) {
-		my $trackURL = shift;
-		my $urlmd5 = md5_hex($trackURL);
-		my $lastSkippedSQL = "select ifnull(alternativeplaycount.lastSkipped, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.urlmd5 = \"$urlmd5\"";
+		my ($trackURL, $trackURLmd5) = @_;
+		$trackURLmd5 = md5_hex($trackURL) if !$trackURLmd5;
+		my $lastSkippedSQL = "select ifnull(alternativeplaycount.lastSkipped, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.urlmd5 = \"$trackURLmd5\"";
 		my $lastSkipped = quickSQLquery($lastSkippedSQL);
-
-		my $track = Slim::Schema->objectForUrl({ 'url' => $trackURL });
+		my $track = Slim::Schema->rs('Track')->single({'urlmd5' => $trackURLmd5});
+		$track = Slim::Schema->objectForUrl({ 'url' => $trackURL }) if !$track;
 		my $songDuration = $track->secs;
 		my $playedTreshold_percent = ($prefs->get('playedtreshold_percent') || 20) / 100;
 
 		if ($lastSkipped > 0 && (time()-$lastSkipped < ($undoSkipTimeSpan * 60 + $songDuration * $playedTreshold_percent))) {
-			$log->debug("Played track was skipped in the last $undoSkipTimeSpan mins. Reducing skip count by 1.");
-			my $reduceSkipCountSQL = "update alternativeplaycount set skipCount = skipCount - 1 where urlmd5 = \"$urlmd5\"";
+			$log->info("Played track was skipped in the last $undoSkipTimeSpan mins. Reducing skip count by 1.");
+			my $reduceSkipCountSQL = "update alternativeplaycount set skipCount = skipCount - 1 where urlmd5 = \"$trackURLmd5\"";
 			executeSQLstat($reduceSkipCountSQL);
 		}
 	}
@@ -755,6 +758,7 @@ sub handleEndElement {
 		my $curTrack = \%restoreitem;
 		my $trackURL = undef;
 		my $fullTrackURL = $curTrack->{'url'};
+		my $trackURLmd5 = $curTrack->{'urlmd5'};
 		my $relTrackURL = $curTrack->{'relurl'};
 
 		# check if FULL file url is valid
@@ -788,16 +792,16 @@ sub handleEndElement {
 				}
 			}
 		}
-		if (!$trackURL) {
-			$log->warn("Couldn't find file for url \"$fullTrackURL\".");
+		if (!$trackURL && !$trackURLmd5) {
+			$log->warn("Couldn't find file with url \"$fullTrackURL\".");
 		} else {
-			my $urlmd5 = md5_hex($trackURL);
+			$trackURLmd5 = md5_hex($trackURL) if !$trackURLmd5;
 			my $playCount = ($curTrack->{'playcount'} == 0 ? "null" : $curTrack->{'playcount'});
 			my $lastPlayed = ($curTrack->{'lastplayed'} == 0 ? "null" : $curTrack->{'lastplayed'});
 			my $skipCount = ($curTrack->{'skipcount'} == 0 ? "null" : $curTrack->{'skipcount'});
 			my $lastSkipped = ($curTrack->{'lastskipped'} == 0 ? "null" : $curTrack->{'lastskipped'});
 
-			my $sqlstatement = "update alternativeplaycount set playCount = $playCount, lastPlayed = $lastPlayed, skipCount = $skipCount, lastSkipped = $lastSkipped where urlmd5 = \"$urlmd5\"";
+			my $sqlstatement = "update alternativeplaycount set playCount = $playCount, lastPlayed = $lastPlayed, skipCount = $skipCount, lastSkipped = $lastSkipped where urlmd5 = \"$trackURLmd5\"";
 			executeSQLstat($sqlstatement);
 		}
 		%restoreitem = ();
@@ -1160,9 +1164,9 @@ sub populateAPCtable {
 		}
 		$sth->finish();
 	} else {
-		# insert track urls only
+		# insert only values for track url & urlmd5
 		$log->debug('Populating empty APC table with track urls.');
-		my $sql = "INSERT INTO alternativeplaycount (url, urlmd5) select tracks.url, tracks.urlmd5 from tracks left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio=1 and alternativeplaycount.urlmd5 is null;";
+		my $sql = "INSERT INTO alternativeplaycount (url, urlmd5) select tracks.url, tracks.urlmd5 from tracks left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio = 1 and alternativeplaycount.urlmd5 is null;";
 		my $sth = $dbh->prepare($sql);
 		eval {
 			$sth->execute();
@@ -1189,7 +1193,7 @@ sub refreshDatabase {
 
 	# add new tracks
 	$log->debug('If LMS database has new tracks, add them to APC database.');
-	my $sqlstatement = "INSERT INTO alternativeplaycount (url, urlmd5) select tracks.url, tracks.urlmd5 from tracks left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio=1 and alternativeplaycount.urlmd5 is null;";
+	my $sqlstatement = "INSERT INTO alternativeplaycount (url, urlmd5) select tracks.url, tracks.urlmd5 from tracks left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio = 1 and alternativeplaycount.urlmd5 is null;";
 	$sth = $dbh->prepare($sqlstatement);
 	$count = 0;
 	eval {
@@ -1218,7 +1222,7 @@ sub removeDeadTracks {
 	my $count;
 	$log->debug('Removing dead tracks from APC database that no longer exist in LMS database');
 
-	my $sqlstatement = "delete from $database where urlmd5 not in (select urlmd5 from tracks where tracks.urlmd5=$database.urlmd5)";
+	my $sqlstatement = "delete from $database where urlmd5 not in (select urlmd5 from tracks where tracks.urlmd5 = $database.urlmd5)";
 
 	$sth = $dbh->prepare($sqlstatement);
 	$count = 0;

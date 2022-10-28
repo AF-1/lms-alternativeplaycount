@@ -62,19 +62,19 @@ sub createBackup {
 	my $backupDir = $prefs->get('apcfolderpath');
 	my ($sql, $sth) = undef;
 	my $dbh = getCurrentDBH();
-	my ($trackURL, $apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped);
+	my ($trackURL, $trackURLmd5, $apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped);
 	my $started = time();
 	my $backuptimestamp = strftime "%Y-%m-%d %H:%M:%S", localtime time;
 	my $filename_timestamp = strftime "%Y%m%d-%H%M", localtime time;
 
-	$sql = "select alternativeplaycount.url, ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0) from alternativeplaycount where (alternativeplaycount.playCount > 0 or alternativeplaycount.skipCount > 0)";
+	$sql = "select alternativeplaycount.url, alternativeplaycount.urlmd5, ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0) from alternativeplaycount where (alternativeplaycount.playCount > 0 or alternativeplaycount.skipCount > 0)";
 	$sth = $dbh->prepare($sql);
 	$sth->execute();
-	$sth->bind_columns(undef, \$trackURL, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped);
+	$sth->bind_columns(undef, \$trackURL, \$trackURLmd5, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped);
 
 	my @APCTracks = ();
 	while ($sth->fetch()) {
-		push (@APCTracks, {'url' => $trackURL, 'playcount' => $apcPlayCount, 'lastplayed' => $apcLastPlayed, 'skipcount' => $apcSkipCount, 'lastskipped' => $apcLastSkipped});
+		push (@APCTracks, {'url' => $trackURL, 'urlmd5' => $trackURLmd5, 'playcount' => $apcPlayCount, 'lastplayed' => $apcLastPlayed, 'skipcount' => $apcSkipCount, 'lastskipped' => $apcLastSkipped});
 	}
 	$sth->finish();
 
@@ -95,6 +95,7 @@ sub createBackup {
 		print $output "<AlternativePlayCount>\n";
 		for my $APCTrack (@APCTracks) {
 			my $BACKUPtrackURL = $APCTrack->{'url'};
+			my $BACKUPtrackURLmd5 = $APCTrack->{'urlmd5'};
 			my $BACKUPrelFilePath = getRelFilePath($BACKUPtrackURL);
 			my $BACKUPplayCount = $APCTrack->{'playcount'} || 0;
 			my $BACKUPlastPlayed = $APCTrack->{'lastplayed'} || 0;
@@ -103,7 +104,7 @@ sub createBackup {
 
 			$BACKUPtrackURL = uri_escape_utf8($BACKUPtrackURL);
 			$BACKUPrelFilePath = uri_escape_utf8($BACKUPrelFilePath);
-			print $output "\t<track>\n\t\t<url>".$BACKUPtrackURL."</url>\n\t\t<relurl>".$BACKUPrelFilePath."</relurl>\n\t\t<playcount>".$BACKUPplayCount."</playcount>\n\t\t<lastplayed>".$BACKUPlastPlayed."</lastplayed>\n\t\t<skipcount>".$BACKUPskipCount."</skipcount>\n\t\t<lastskipped>".$BACKUPlastSkipped."</lastskipped>\n\t</track>\n";
+			print $output "\t<track>\n\t\t<url>".$BACKUPtrackURL."</url>\n\t\t<urlmd5>".$BACKUPtrackURLmd5."</urlmd5>\n\t\t<relurl>".$BACKUPrelFilePath."</relurl>\n\t\t<playcount>".$BACKUPplayCount."</playcount>\n\t\t<lastplayed>".$BACKUPlastPlayed."</lastplayed>\n\t\t<skipcount>".$BACKUPskipCount."</skipcount>\n\t\t<lastskipped>".$BACKUPlastSkipped."</lastskipped>\n\t</track>\n";
 		}
 		print $output "</AlternativePlayCount>\n";
 
