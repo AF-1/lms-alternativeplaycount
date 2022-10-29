@@ -793,7 +793,7 @@ sub handleEndElement {
 			}
 		}
 		if (!$trackURL && !$trackURLmd5) {
-			$log->warn("Couldn't find file with url \"$fullTrackURL\".");
+			$log->warn("Neither track urlmd5 nor valid track url. Can't restore values for file with restore url \"$fullTrackURL\"");
 		} else {
 			$trackURLmd5 = md5_hex($trackURL) if !$trackURLmd5;
 			my $playCount = ($curTrack->{'playcount'} == 0 ? "null" : $curTrack->{'playcount'});
