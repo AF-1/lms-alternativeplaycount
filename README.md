@@ -22,8 +22,8 @@ As LMS and APC play counts diverge in the long term, you will benefit from the m
 - *Create* (scheduled) **backups** of your APC data and *restore* values from backup files.
 - Option to undo a track's last (accidental) skip count increment if the track is played within a certain time span afterwards.
 - **Reset play count** or **skip count** for **individual** tracks by clicking on the corresponding context menu item.
-- Use APC data with plugins like [**Dynamic Playlists 3**](https://github.com/AF-1/lms-dynamicplaylists) or [**Visual Statistics**](https://github.com/AF-1/lms-visualstatistics).
-- Includes skip/filter rules for [**Custom Skip 3**](https://github.com/AF-1/lms-customskip).
+- Use APC data with plugins like [**Dynamic Playlists**](https://github.com/AF-1/lms-dynamicplaylists#dynamic-playlists) or [**Visual Statistics**](https://github.com/AF-1/lms-visualstatistics#visual-statistics).
+- Includes skip/filter rules for [**Custom Skip**](https://github.com/AF-1/lms-customskip#custom-skip).
 <br><br><br>
 
 [^1]: i.e. percentage of the total song duration
