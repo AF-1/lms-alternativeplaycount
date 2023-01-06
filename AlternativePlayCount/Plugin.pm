@@ -142,7 +142,7 @@ sub initPrefs {
 			mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
 			chdir($apcFolderPath);
 		} or do {
-			$log->warn("Could not create or access AlternativePlayCount folder in parent folder '$_[1]'!");
+			$log->error("Could not create or access AlternativePlayCount folder in parent folder '$_[1]'!");
 			return;
 		};
 		$prefs->set('apcfolderpath', $apcFolderPath);
@@ -181,14 +181,14 @@ sub trackInfoHandler {
 			my $sth = $dbh->prepare($sql);
 			$sth->execute() or do {
 				$sql = undef;
-				$log->warn("Error executing: $sql");
+				$log->error("Error executing: $sql");
 			};
 			$sth->bind_columns(undef, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped, \$persistentPlayCount, \$persistentLastPlayed);
 			$sth->fetch();
 			$sth->finish();
 	};
 	if ($@) {
-		$log->warn("Database error: $DBI::errstr");
+		$log->error("Database error: $DBI::errstr");
 	}
 	$log->debug('apcPlayCount = '.$apcPlayCount.' -- persistentPlayCount = '.$persistentPlayCount.' -- apcSkipCount = '.$apcSkipCount.' -- apcLastPlayed = '.$apcLastPlayed.' -- persistentLastPlayed = '.$persistentLastPlayed.' -- apcLastSkipped = '.$apcLastSkipped);
 
@@ -669,7 +669,7 @@ sub restoreScanFunction {
 	my $restorefile = $prefs->get('restorefile');
 	if ($opened != 1) {
 		open(BACKUPFILE, $restorefile) || do {
-			$log->warn('Couldn\'t open backup file: '.$restorefile);
+			$log->error('Couldn\'t open backup file: '.$restorefile);
 			$prefs->set('status_restoringfrombackup', 0);
 			return 0;
 		};
@@ -931,7 +931,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->warn("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@\n$DBI::errstr");
 					}
 					$sth->finish();
 					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->url))) {
@@ -960,7 +960,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->warn("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@\n$DBI::errstr");
 					}
 					$sth->finish();
 					if (defined($lastSkipped) && $lastSkipped > 0) {
@@ -989,7 +989,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->warn("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@\n$DBI::errstr");
 					}
 					$sth->finish();
 					if (defined($skipCount) && !defined($client->pluginData('markedAsPlayed'))) {
@@ -1018,7 +1018,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->warn("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@\n$DBI::errstr");
 					}
 					$sth->finish();
 					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->url))) {
@@ -1047,7 +1047,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->warn("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@\n$DBI::errstr");
 					}
 					$sth->finish();
 					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->url))) {
@@ -1087,7 +1087,7 @@ sub executeSQLstat {
 			commit($dbh);
 		};
 		if ($@) {
-			$log->warn("Database error: $DBI::errstr");
+			$log->error("Database error: $DBI::errstr");
 			eval {
 				rollback($dbh);
 			};
@@ -1113,7 +1113,7 @@ sub initDatabase {
 		}
 	};
 	if($@) {
-		$log->warn("Database error: $DBI::errstr\n");
+		$log->error("Database error: $DBI::errstr\n");
 	}
 	$sth->finish();
 	$log->debug($tableExists ? 'APC table table found.' : 'No APC table table found.');
@@ -1159,7 +1159,7 @@ sub populateAPCtable {
 			commit($dbh);
 		};
 		if($@) {
-			$log->warn("Database error: $DBI::errstr\n");
+			$log->error("Database error: $DBI::errstr\n");
 			eval { rollback($dbh); };
 		}
 		$sth->finish();
@@ -1173,7 +1173,7 @@ sub populateAPCtable {
 			commit($dbh);
 		};
 		if($@) {
-			$log->warn("Database error: $DBI::errstr\n");
+			$log->error("Database error: $DBI::errstr\n");
 			eval { rollback($dbh); };
 		}
 		$sth->finish();
@@ -1204,7 +1204,7 @@ sub refreshDatabase {
 		commit($dbh);
 	};
 	if($@) {
-		$log->warn("Database error: $DBI::errstr\n");
+		$log->error("Database error: $DBI::errstr\n");
 		eval { rollback($dbh); };
 	}
 	$sth->finish();
@@ -1234,7 +1234,7 @@ sub removeDeadTracks {
 		commit($dbh);
 	};
 	if($@) {
-		$log->warn("Database error: $DBI::errstr\n");
+		$log->error("Database error: $DBI::errstr\n");
 		eval { rollback($dbh); };
 	}
 
