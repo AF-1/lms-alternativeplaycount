@@ -1,12 +1,4 @@
-<script TYPE="text/javascript">
-	function inprogress(elementid) {
-		document.getElementById(elementid).className = "inprogress";
-	}
-</script>
-
-<style>
-@-webkit-keyframes Pulse{from{color:#630030;-webkit-text-shadow:0 0 2px transparent}50%{color:#e33100;-webkit-text-shadow:0 0 5px #e33100}to{color:#630030;-webkit-text-shadow:0 0 2px transparent}}@keyframes Pulse{from{color:#630030;text-shadow:0 0 2px transparent}50%{color:#e33100;text-shadow:0 0 5px #e33100}to{color:#630030;text-shadow:0 0 2px transparent}}.inprogress{padding-left:15px;-webkit-animation-name:Pulse;animation-name:Pulse;-webkit-animation-duration:2s;animation-duration:2s;-webkit-animation-iteration-count:infinite;animation-iteration-count:infinite}.status{visibility:hidden;}.advmode{visibility:[% IF advmode %]visible[% ELSE %]hidden[% END %];}
-</style>
+<style>.advmode{visibility:[% IF advmode %]visible[% ELSE %]hidden[% END %];}</style>
 
 [% page = "PLUGIN_ALTERNATIVEPLAYCOUNT" %]
 [% PROCESS settings/header.html %]
@@ -31,37 +23,13 @@
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC" %]
 	<input name="pref_alwaysdisplayvals" id="alwaysdisplayvals" type="checkbox" [% IF prefs.alwaysdisplayvals %] checked [% END %]>
 [% END %]
-<br><br><br>
-
-[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_DESC" %]
-	<input style="margin-top:-1px;" name="resetapcdatabase" type="submit" class="stdclick" onClick="inprogress('resetapcdatabasestatus');" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_BUTTON" | string %]">
-	<span class='status' id='resetapcdatabasestatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_INPROGRESS" | string %]</span>
-[% END %]
 <br>
-
-[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_MINPLAYCOUNT" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_MINPLAYCOUNT_DESC" %]
-	<input type="text" class="stdedit sliderInput_1_50_1" name="pref_dbpopminplaycount" id="dbpopminplaycount" value="[% prefs.dbpopminplaycount %]" size="3">
-[% END %]
-<br>
-
-[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_DESC" %]
-	<input style="margin-top:-1px;" name="clearapcdatabase" type="submit" class="stdclick" onClick="inprogress('clearapcdatabasestatus');" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_BUTTON" | string %]">
-	<span class='status' id='clearapcdatabasestatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_INPROGRESS" | string %]</span>
-[% END %]
-<br>
-
-[% IF advmode %]
-[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_DESC" %]
-	<input style="margin-top:-1px;" name="purgedeadtrackspersistent" type="submit" class="stdclick" onClick="inprogress('purgedeadtrackspersistentstatus');" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_BUTTON" | string %]">
-	<span class='status' id='purgedeadtrackspersistentstatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_INPROGRESS" | string %]</span>
-[% END %]
-<br>
-[% END %]
 
 <span class="advmode">
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY_DESC" %]
 	<input type="text" class="stdedit sliderInput_5_180_5" name="pref_postscanscheduledelay" id="postscanscheduledelay" value="[% prefs.postscanscheduledelay %]" size="2"> seconds
 [% END %]
+<br>
 </span>
 
 [% PROCESS settings/footer.html %]

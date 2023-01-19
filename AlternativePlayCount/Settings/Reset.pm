@@ -18,7 +18,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-package Plugins::AlternativePlayCount::Settings::Basic;
+package Plugins::AlternativePlayCount::Settings::Reset;
 
 use strict;
 use warnings;
@@ -39,24 +39,24 @@ my $plugin;
 sub new {
 	my $class = shift;
 	$plugin = shift;
-	$class->SUPER::new($plugin,1);
+	$class->SUPER::new($plugin);
 }
 
 sub name {
-	return Slim::Web::HTTP::CSRF->protectName('PLUGIN_ALTERNATIVEPLAYCOUNT');
+	return Slim::Web::HTTP::CSRF->protectName('PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET');
 }
 
 sub page {
-	return Slim::Web::HTTP::CSRF->protectURI('plugins/AlternativePlayCount/settings/basic.html');
+	return Slim::Web::HTTP::CSRF->protectURI('plugins/AlternativePlayCount/settings/reset.html');
 }
 
 sub currentPage {
-	return Slim::Utils::Strings::string('PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS');
+	return name();
 }
 
 sub pages {
 	my %page = (
-		'name' => Slim::Utils::Strings::string('PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS'),
+		'name' => name(),
 		'page' => page(),
 	);
 	my @pages = (\%page);
@@ -64,12 +64,41 @@ sub pages {
 }
 
 sub prefs {
-	return ($prefs, qw(apcparentfolderpath playedtreshold_percent undoskiptimespan alwaysdisplayvals postscanscheduledelay));
+	return ($prefs, qw(dbpoplmsminplaycount dbpoplmsvalues dbpopdpsvinitial dbpopdpsv));
 }
 
 sub handler {
 	my ($class, $client, $paramRef) = @_;
-	return $class->SUPER::handler($client, $paramRef);
+	my $result = undef;
+	my $callHandler = 1;
+	if ($paramRef->{'saveSettings'}) {
+		$result = $class->SUPER::handler($client, $paramRef);
+		$callHandler = 0;
+	}
+	if ($paramRef->{'resetapcdatabase'}) {
+		if ($callHandler) {
+			$result = $class->SUPER::handler($client, $paramRef);
+		}
+		Plugins::AlternativePlayCount::Plugin::resetAPCDatabase();
+	} elsif ($paramRef->{'resetdpsv'}) {
+		if ($callHandler) {
+			$result = $class->SUPER::handler($client, $paramRef);
+		}
+		Plugins::AlternativePlayCount::Plugin::resetDPSV();
+	} elsif ($paramRef->{'resetskipcount'}) {
+		if ($callHandler) {
+			$result = $class->SUPER::handler($client, $paramRef);
+		}
+		Plugins::AlternativePlayCount::Plugin::resetSkipCounts();
+	} elsif ($paramRef->{'purgedeadtrackspersistent'}) {
+		if ($callHandler) {
+			$result = $class->SUPER::handler($client, $paramRef);
+		}
+		Plugins::AlternativePlayCount::Plugin::removeDeadTracks('tracks_persistent');
+	} elsif ($callHandler) {
+		$result = $class->SUPER::handler($client, $paramRef);
+	}
+	return $result;
 }
 
 sub beforeRender {

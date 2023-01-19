@@ -26,13 +26,13 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP
 	EN	Backup / Restore
 	FR	Sauvegarde / Restauration
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_GITHUB_LINK_TEXT
-	EN	Click here for more information.
-	FR	Cliquez ici pour plus d'informations.
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK_TEXT
+	EN	Click here to read the FAQ.
+	FR	Cliquez ici pour lire la FAQ.
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_GITHUB_LINK
-	EN	https://github.com/AF-1/lms-alternativeplaycount#alternative-play-count
-	FR	https://github.com/AF-1/lms-alternativeplaycount#alternative-play-count
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK
+	EN	https://github.com/AF-1/lms-alternativeplaycount#faq
+	FR	https://github.com/AF-1/lms-alternativeplaycount#faq
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT
@@ -67,45 +67,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC
 	EN	<b>Always</b> display APC values <b><i>or</i></b> display <b>only</b> APC values that are <b>different from the LMS default database values</b> and that are <b>not zero</b>.
 	FR	<b>Toujours</b> afficher les valeurs APC <b><i>ou</i></b> afficher <b>seulement</b> les valeurs d'APC qui sont <b>différentes des valeurs de la base de données LMS</b> et qui ne sont <b>pas à zéro</b>
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE
-	EN	Reset Alternative Play Count database<br>to LMS values
-	FR	Réinitialiser la base de données d'APC aux valeurs de LMS
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY
+	EN	Post-Scan Delay
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_DESC
-	EN	This will delete your <i>Alternative Play Count</i> database and create a new one using current LMS values for <i>play count</i> and <i>last played</i>. It basically resets the APC database to current LMS values.<br><b>Careful: Unless you have created a backup of your APC database, you will lose all APC data.</b>
-	FR	Cela va supprimer votre base de données de <i>Nombre de Lectures Alternatif</i> et crée une nouvelle en utilisant les valeurs courante de <i>dernière lecture</i> et <i>nombre d'écoute</i> de LMS. Cela va basiquement réinitialiser la base de données APC aux valeurs de LMS.<br><b>Attention: Sauf si vous avez créé une sauvegarde de votre base APC, vous perdrez toutes les données d'APC.</b>
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_BUTTON
-	EN	Reset APC database now
-	FR	Réinitialiser la base de données APC maintenant
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_INPROGRESS
-	EN	resetting APC database...
-	FR	réinitialisation de la base de données APC...
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_MINPLAYCOUNT
-	EN	Minimum play count of included songs
-	FR	Nombre minimum de lectures des morceaux inclus
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_RESET_APCDATABASE_MINPLAYCOUNT_DESC
-	EN	Unlike <i>Alternative Play Count</i>, LMS will also increment the play count of <b>skipped</b> tracks.<br>When APC populates its <i>empty</i> database with current play count values from the LMS persistent database, you can limit the copied play counts to higher values and skip lower play count values that may have been caused by skipping tracks.
-	FR	Contrairement à <i>Nombre de Lectures Alternatif</i>, LMS augmentera aussi le nombre de lectures des morceaux <b>sautés</b>.<br>Quand APC remplit sa base de données <i>vide</i> avec les nombre de lectures courants de la base LMS, vous pouvez limiter la copie des nombres de lectures aux grandes valeurs et sauter les valeurs basses qui peuvent avoir été causée par des sauts de morceaux.
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE
-	EN	Clear Alternative Play Count database
-	FR	Effacer la base de données APC
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_DESC
-	EN	This will clear all play counts, skip counts and <i>last played</i> dates from your <i>Alternative Play Count</i> database. Useful if you want to start from scratch without any previous play count and skip count values.<br><b>Careful: Unless you have created a backup of your APC database, you will lose all APC data.</b>
-	FR	Cela va effacer tous les nombres de lectures, de sauts et les dates de dernière écoute de votre base de <i>Nombre de Lectures Alternatif</i>. Utile si vous voulez demarrer de zéro sans aucune valeurs de lecture ou sauts.<br><b>Attention : Sauf si vous avez créé une sauvegarde de votre base APC, vous perdrez toutes les données APC.</b>
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_BUTTON
-	EN	Clear APC database now
-	FR	Effacer de la base de données APC maintenant
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CLEAR_APCDATABASE_INPROGRESS
-	EN	clearing APC database...
-	FR	effaçage de la base de données APC...
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY_DESC
+	EN	Time to wait after a rescan before starting a database refresh
 
 
 
@@ -186,6 +152,105 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP_DESC
 	FR	Garder au moins ce nombre de sauvegardes, sans consideration de leur date de création.<br>Si vous ne créez pas de sauvegardes programmées ou manuelles régulières, cela évitera à APC de supprimer accidentellement <b>toutes</b> les sauvegardes.
 
 
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET
+	EN	Reset
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV
+	EN	Reset dynamic played/skipped values (DPSV)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV_DESC
+	EN	This will <b>reset</b> all <b>dynamic played/skipped values</b> (DPSV) to the <b>initial values</b> that you have selected in the setting below. It will <b>not</b> reset the <i>complete</i> APC database.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV_BUTTON
+	EN	Reset DPSV now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV_INPROGRESS
+	EN	resetting DPSV...
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS
+	EN	Initial dynamic played/skipped values
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS_DESC
+	EN	Select the <b><i>initial</i> dynamic played/skipped values</b> (DPSV) after a reset of the complete APC database or the DPSV column.<br>You can set DPSV to:<br>- <b>zero</b> or<br>- <b>values calculated using APC play counts and APC skip counts</b> or<br>- <b>values derived from track ratings</b>.<br><br>If you select option <b>2</b>, APC will use the APC <b>play count/skip count <i>ratio</i></b> to calculate initial DPSV.<br>Roughly speaking, a delta of 10 or 1/10 corresponds to an increase or decrease in DPSV of 20 or -20, respectively, on a scale from -100 to 100. This is not an exact conversion, but just a starting point so that the initial values reflect at least somewhat your previous listening history.<br><br>With option <b>3</b> APC will calculate initial DPSV using <b>track ratings</b>.<br>1 star = -80, 2 stars = -40, 3 stars = 0, 4 stars = 40, 5 stars = 80<br>Again, not an exact conversion, but at least it allows you to translate ratings into DPSV.<br><br><b>Please note:</b> Calculated values from options 2 und 3 are <b>only</b> used to generate <b>initial</b> dynamic played/skipped values after a DPSV or database reset (or when the plugin is started for the first time). When you play or skip tracks, DPSV changes are calculated according to a different formula (see FAQ).
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS_ZERO
+	EN	Zero (recommended)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS_PCSCRATIO
+	EN	Use play count/skip count ratio
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS_RATINGS
+	EN	Use track ratings
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT
+	EN	Reset skip counts
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_DESC
+	EN	This will <b>reset</b> all <b>skip counts</b>. It will <b>not</b> reset the <i>complete</i> APC database.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_BUTTON
+	EN	Reset skip counts now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_INPROGRESS
+	EN	resetting skip counts...
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_APCDATABASE
+	EN	Reset <i>complete</i> Alternative Play Count database
+	FR	Réinitialiser la base de données d'APC
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_APCDATABASE_DESC
+	EN	This will clear your <i>Alternative Play Count</i> database and create a new one.<br><b>Please note: Unless you have created a backup of your APC database, you will lose all APC data.</b>
+	FR	Cela va supprimer votre base de données de <i>Nombre de Lectures Alternatif</i> et crée une nouvelle en utilisant les valeurs courante de <i>dernière lecture</i> et <i>nombre d'écoute</i> de LMS. Cela va basiquement réinitialiser la base de données APC aux valeurs de LMS.<br><b>Attention: Sauf si vous avez créé une sauvegarde de votre base APC, vous perdrez toutes les données d'APC.</b>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_APCDATABASE_BUTTON
+	EN	Reset APC database now
+	FR	Réinitialiser la base de données APC maintenant
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_APCDATABASE_INPROGRESS
+	EN	resetting APC database...
+	FR	réinitialisation de la base de données APC...
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_LMSDEFAULT
+	EN	Populate with LMS play count values
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_LMSDEFAULT_DESC
+	EN	If checked, APC will use current LMS values for <i>play count</i> and <i>last played</i> to populate the empty database after a reset. It basically resets the APC database to current LMS values.<br>Leave unchecked if you want to start from scratch without any previous play count values.
+	FR	APC utilise les valeurs courante de <i>dernière lecture</i> et <i>nombre d'écoute</i> de LMS pour remplir sa base de données <i>vide</i>. Cela va basiquement réinitialiser la base de données APC aux valeurs de LMS.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_DPSV
+	EN	Populate with initial dynamic<br>played/skipped values (DPSV)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_DPSV_DESC
+	EN	If checked, APC will populate the empty APC database after a reset with initial DPSV values according to the method you've selected in the setting above called <i>Initial dynamic played/skipped values</i>.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_MINPLAYCOUNT
+	EN	Minimum LMS play count
+	FR	Nombre minimum de lectures LMS
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_MINPLAYCOUNT_DESC
+	EN	Unlike <i>Alternative Play Count</i>, LMS also increments the play count of a track when you skip it.<br>When APC populates its <i>empty</i> database with current <i>play count</i> values from the LMS persistent database, you can <b>limit the copied LMS play counts</b> to higher values and skip lower play counts that may have been caused by skipping tracks.
+	FR	Contrairement à <i>Nombre de Lectures Alternatif</i>, LMS augmente aussi le nombre de lectures des morceaux <b>sautés</b>.<br>Quand APC remplit sa base de données <i>vide</i> avec les nombre de lectures courants de la base LMS, vous pouvez limiter la copie des nombres de lectures aux grandes valeurs et sauter les valeurs basses qui peuvent avoir été causée par des sauts de morceaux.
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_PURGEDEADTRACKS_PERSISTENT
+	EN	Remove dead tracks from<br>LMS tracks_persistent table
+	FR	Supprimer les morceaux morts <br>de la table LMS tracks_persistent
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_PURGEDEADTRACKS_PERSISTENT_DESC
+	EN	This will remove all (dead) tracks from the LMS <b>tracks_persistent</b> table whose file URL has no match in the current LMS <b>tracks</b> table.<br><br><b>Only use this if you're know what you're doing and if you have a backup of the LMS <i>persist.db</i> file.</b>
+	FR	Ceci va supprimer tous les morceaux (morts) de la table <b>tracks_persistent</b> de LMS dont l'URL ne correspond pas avec la table <b>tracks</b> courante de LMS.<br><br><b>Utiliser ceci seulement si vous savez ce que vous faites et si vous avez une sauvegarde du fichier <i>persist.db</i> de LMS.</b>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_PURGEDEADTRACKS_PERSISTENT_BUTTON
+	EN	Remove dead tracks now
+	FR	Supprimer les morceaux morts maintenant
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_PURGEDEADTRACKS_PERSISTENT_INPROGRESS
+	EN	removing dead tracks...
+	FR	suppression des morceaux morts
+
+
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE
 	EN	Restore
 	FR	Restauration
@@ -229,6 +294,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE_DESC
 	EN	This will clear all values in the APC database before starting the restore process. All current values in your APC database will be reset to the values from the backup. In other words, values not contained in the backup will be lost.
 	FR	Cela va vider toutes les valeurs dans la base de données APC avant de démarrer le processus de restauration. Toutes les valeurs courantes de la base de données APC seront remises aux valeurs de la sauvegarde. En autres mots, les valeurs non sauvegardées seront perdues.
+
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE
@@ -304,6 +370,33 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_PARAM_NAME
 	EN	Skip if APC skip count is greater than
 	FR	Sauter si le nombre de sauts APC est supérieur à
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_DPSVHIGH_NAME
+	EN	High dynamic played/skipped value (DPSV)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_DPSVHIGH_DESC
+	EN	Skip songs with high DPSV, i.e. that have been played more often than skipped recently
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_DPSVHIGH_PARAM_NAME
+	EN	Skip if DPSV is greater than
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_DPSVLOW_NAME
+	EN	Low dynamic played/skipped value (DPSV)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_DPSVLOW_DESC
+	EN	Skip songs with low DPSV, i.e. that have been skipped more often than played recently
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_DPSVLOW_PARAM_NAME
+	EN	Skip if DPSV is lower than
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_DPSVEXACTROUNDED_NAME
+	EN	Exact dynamic played/skipped value (DPSV)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_DPSVEXACTROUNDED_DESC
+	EN	Skip songs with a specific exact (rounded) DPSV
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_DPSVEXACTROUNDED_PARAM_NAME
+	EN	Skip if exact (rounded) DPSV equals
+
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCPLAYCOUNT
@@ -321,6 +414,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCSKIPCOUNT
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTSKIPPED
 	EN	APC Last Skipped
 	FR	APC Dernier saut
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCDYNPSVAL
+	EN	APC Dynamic Played/Skipped Value
+	FR	APC Dynamic Played/Skipped Value
+
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_SONG
 	EN	song
@@ -357,26 +455,3 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_MINS_BOTH
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_NEVER
 	EN	never
 	FR	jamais
-
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT
-	EN	Remove dead tracks from<br>LMS tracks_persistent table
-	FR	Supprimer les morceaux morts <br>de la table LMS tracks_persistent
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_DESC
-	EN	This will remove all (dead) tracks from the LMS <b>tracks_persistent</b> table whose file URL has no match in the current LMS <b>tracks</b> table.<br><br><b>Only use this if you're know what you're doing and if you have a backup of the LMS <i>persist.db</i> file.</b>
-	FR	Ceci va supprimer tous les morceaux (morts) de la table <b>tracks_persistent</b> de LMS dont l'URL ne correspond pas avec la table <b>tracks</b> courante de LMS.<br><br><b>Utiliser ceci seulement si vous savez ce que vous faites et si vous avez une sauvegarde du fichier <i>persist.db</i> de LMS.</b>
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_BUTTON
-	EN	Remove dead tracks now
-	FR	Supprimer les morceaux morts maintenant
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ADV_PURGEDEADTRACKS_PERSISTENT_INPROGRESS
-	EN	removing dead tracks...
-	FR	suppression des morceaux morts
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY
-	EN	Post-Scan Delay
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY_DESC
-	EN	Time to wait after a rescan before starting a database refresh

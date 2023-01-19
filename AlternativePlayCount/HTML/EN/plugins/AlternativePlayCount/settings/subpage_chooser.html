@@ -6,7 +6,7 @@
 		[% FOREACH option = subpages.keys.sort %]
 			<option [% IF subpage == option %]selected[% END %] value="[% subpages.$option %]">[% option | getstring %]</option>
 		[%- END -%]
-	</select> <span class="githublink"><a href="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_GITHUB_LINK" | string %]" target="_blank" rel="noopener noreferrer"><b>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_GITHUB_LINK_TEXT" | string %]</b></a></span>
+	</select> <span class="githublink"><a href="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK" | string %]" target="_blank" rel="noopener noreferrer"><b>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK_TEXT" | string %]</b></a></span>
 [% END %]
 <br>
 [% END %]

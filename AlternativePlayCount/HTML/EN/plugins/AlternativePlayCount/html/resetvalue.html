@@ -10,8 +10,14 @@ a {text-decoration: none;}
 </style>
 <br>
 	<div class="wrapper">
-		<a href="[% webroot %]plugins/AlternativePlayCount/resetvalue?urlmd5=[% urlmd5 %]&amp;infoitem=[% infoitem %]&amp;player=[% playerURI %]" [% IF browserTarget %]target="[% browserTarget %]"[% END %]">
+		<a href="[% webroot %]plugins/AlternativePlayCount/resetvalue?urlmd5=[% urlmd5 %]&amp;infoitem=[% infoitem %]&amp;action=1&amp;trackid=[% trackid %]&amp;player=[% playerURI %]" [% IF browserTarget %]target="[% browserTarget %]"[% END %]">
 			[% "PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE" | string %] <span class="rltitlebold">[% name %]</span> [% "PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE_TRACK" | string %]
 		</a>
 	</div>
 [% PROCESS pagefooter.html %]
+
+[% IF resetdone %]
+<script type="text/javascript">
+		setTimeout(location.href = "[% webroot %]songinfo.html?item=[% trackid %]&amp;player=[% playerURI %]", 500);
+</script>
+[% END %]
