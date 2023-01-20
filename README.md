@@ -18,10 +18,11 @@ As LMS and APC play counts diverge in the long term, you will benefit from the m
 
 ## Features
 - Set a time[^2] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
-- *Separate database table* for APC values (play count, date last played, skip count, date last skipped)
+- The **dynamic played/skipped value** (DPSV) reflects your **listening history/decisions of the *recent past*** and is independent of the absolute play count and skip count values. A track's DPSV increases if played and decreases if skipped (see FAQ for details). You can use it to create dynamic playlists with [Dynamic Playlist Creator](https://github.com/AF-1/lms-dynamicplaylistcreator) for [Dynamic Playlists](https://github.com/AF-1/lms-dynamicplaylists) or filter rules in [Custom Skip](https://github.com/AF-1/lms-customskip#custom-skip).
+- *Separate database table* for APC values (play count, date last played, skip count, date last skipped, dynamic played/skipped value)
 - *Create* (scheduled) **backups** of your APC data and *restore* values from backup files.
-- Option to undo a track's last (accidental) skip count increment if the track is played within a certain time span afterwards.
-- **Reset play count** or **skip count** for **individual** tracks by clicking on the corresponding context menu item.
+- Automatically undo a track's last (accidental) skip count increment if the track is played within a certain time span afterwards (see plugin settings).
+- **Reset** *play count*, *skip count* or *dynamic played/skipped value* (DPSV) for **individual** or **all** tracks (see FAQ).
 - Use APC data with plugins like [**Dynamic Playlists**](https://github.com/AF-1/lms-dynamicplaylists#dynamic-playlists) or [**Visual Statistics**](https://github.com/AF-1/lms-visualstatistics#visual-statistics).
 - Includes skip/filter rules for [**Custom Skip**](https://github.com/AF-1/lms-customskip#custom-skip).
 <br><br><br>
@@ -40,12 +41,28 @@ If you want to test a new patch that hasn't made it into a release version yet o
 
 ### Initial values to start with
 The plugin will use the current LMS play counts as a starting point.<br>
-If you want to start from scratch (no play counts) or use only higher LMS play count values to start your APC database, then you should change this in the APC settings right after installation.
+If you want to start from scratch (no play counts) or use only higher LMS play count values to start your APC database, then you should change this in the APC settings right after installation.<br>
+APC play count and skip count values are used <i>once</i> to populate the DPSV column of the APC database when you <i>first</i> install version 1.2 or higher. These are just initial values which you can <i>reset</i> at any time on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
 <br><br><br>
 
 
 ## Reporting a bug
 
 If you think that you've found a bug, open an [**issue here on GitHub**](https://github.com/AF-1/lms-alternativeplaycount/issues) and fill out the ***Bug report* issue template**. Please post bug reports on **GitHub only**.
+<br><br><br>
+
+
+## FAQ
+
+<details><summary>»<b>What's a <i>dynamic played/skipped</i> value? How does it work?</b>«</summary><br><p>
+The <b>dynamic played/skipped value (DPSV)</b> is supposed to reflect your listening history/decisions of the <i>recent past</i> and <b>range</b>s between <b>-100</b> (skipped very often in the recent past) and <b>100</b> (played very often in the recent past). When a track has been played long enough to count as played, the DPSV increases, just as it decreases if the track is skipped. The closer the current DPSV is to the middle of the scale (0), the greater the increase/decrease. Conversely, DPSV close to 100 or -100, i.e. tracks that have been played or skipped very often in the recent past, change less and will therefore have to be played or skipped more often to move away from the end of the scale. Also, skipping a track decreases its DPSV twice as much as playing it increases it (this is hard-coded and not a user setting).<br>
+Example: You've been listening to a great track (rated 5 stars) too many times and you started skipping when it came up in a mix. It's still a great track, therefore the rating shouldn't change. If you create a dynamic playlist or a CustomSkip filter that excludes tracks with a DPSV of -80 or lower, eventually this track will no longer be played, either skipped by CustomSkip or filtered out in a dynamic playlist. And all without changing its rating. A quick way to get the track back into mix would be to reset the track's DPSV to zero by clicking on the DPSV value in the track's context menu.
+</p></details><br>
+
+<details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> for individual or all tracks?</b>«</summary><br><p>
+You can <b>reset play count</b>, <b>skip count</b> or <b>DPSV</b> for <b>individual</b> tracks by clicking on the corresponding item in a track's context menu (AKA song details page). Some web skins and controllers will list APC values in the >b>More info</b> submenu.<br>
+If you want to reset *all* skip counts, DPSV or the *complete* database, please see this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
+</p></details><br>
+<br><br><br>
 
 [^1]: If you want localized strings in your language, read <a href="https://github.com/AF-1/sobras/wiki/Adding-localization-to-LMS-plugins"><b>this</b></a>.
