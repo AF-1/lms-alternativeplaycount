@@ -130,7 +130,7 @@ sub initPrefs {
 		playedtreshold_percent => 20,
 		undoskiptimespan => 5,
 		alwaysdisplayvals => 1,
-		dbpopdpsv_method => 1,
+		dbpopdpsvinitial => 1,
 		dbpoplmsvalues => 1,
 		dbpoplmsminplaycount => 1,
 		prescanbackup => 1,
@@ -613,7 +613,6 @@ sub _setDynamicPlayedSkippedValue {
 	# calculate new DPSV (range -100 to 100)
 	my ($newDPSV, $logActionPrefix);
 	my $delta = 100 - abs($curDPSV);
-
 	if ($action == 1 && $curDPSV < 100) {
 		$logActionPrefix = 'Increased';
 		$delta = $delta/8;
@@ -1405,7 +1404,7 @@ create index if not exists persistentdb.cpurlmd5Index on alternativeplaycount (u
 	}
 	refreshDatabase();
 	my $ended = time() - $started;
-	$log->info('DB init completed after '.$ended.' seconds.');
+	$log->debug('DB init completed after '.$ended.' seconds.');
 }
 
 sub populateAPCtable {
@@ -1463,7 +1462,7 @@ sub populateDPSV {
 		my $sqlstatement = "update alternativeplaycount set dynPSval = case when (ifnull(playCount, 0) > 0 and ifnull(skipCount, 0) == 0) then playCount when (ifnull(playCount, 0) == 0 and skipCount == 1) then cast(95 as float)/100 when (ifnull(playCount, 0) == 0 and ifnull(skipCount, 0) > 1) then cast(1 as float)/skipCount when (ifnull(playCount, 0) > 0 and ifnull(skipCount, 0) > 0) then cast(playCount as float)/skipCount end where ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0;
 update alternativeplaycount set dynPSval = case when (dynPSval == 1 and ifnull(skipCount, 0) == 0) then 10 when dynPSval == 1 then 0 when (dynPSval > 1 and dynPSval <= 15) then 10 when (dynPSval > 15 and dynPSval <= 25) then 20 when (dynPSval > 25 and dynPSval <= 35) then 30 when (dynPSval > 35 and dynPSval <= 45) then 40 when (dynPSval > 45 and dynPSval <= 55) then 50 when (dynPSval > 55 and dynPSval <= 65) then 60 when (dynPSval > 65 and dynPSval <= 75) then 70 when (dynPSval > 75 and dynPSval <= 85) then 80 when (dynPSval > 85 and dynPSval <= 95) then 90 when dynPSval > 95 then 100 when (dynPSval < 1 and dynPSval > cast(85 as float)/100) then -10 when (dynPSval <= cast(85 as float)/100 and dynPSval > cast(75 as float)/100) then -20 when (dynPSval <= cast(75 as float)/100 and dynPSval > cast(65 as float)/100) then -30 when (dynPSval <= cast(65 as float)/100 and dynPSval > cast(55 as float)/100) then -40 when (dynPSval <= cast(55 as float)/100 and dynPSval > cast(45 as float)/100) then -50 when (dynPSval <= cast(45 as float)/100 and dynPSval > cast(35 as float)/100) then -60 when (dynPSval <= cast(35 as float)/100 and dynPSval > cast(25 as float)/100) then -70 when (dynPSval <= cast(25 as float)/100 and dynPSval > cast(15 as float)/100) then -80 when (dynPSval <= cast(15 as float)/100 and dynPSval > cast(5 as float)/100) then -90 when dynPSval <= cast(5 as float)/100 then -100 end;";
 		executeSQLstat($sqlstatement);
-		$log->info('Finished populating DPSV column with values calculated using APC play count/skip count ratio');
+		$log->debug('Finished populating DPSV column with values calculated using APC play count/skip count ratio');
 
 	} elsif ($popMethod == 3) {
 		# get all rated tracks
@@ -1503,10 +1502,10 @@ update alternativeplaycount set dynPSval = case when (dynPSval == 1 and ifnull(s
 			$sthUpdate->execute();
 			$sth->finish();
 		}
-		$log->info('Finished populating DPSV column with values derived from track ratings');
+		$log->debug('Finished populating DPSV column with values derived from track ratings');
 
 	} else {
-		$log->info('DPSV already null');
+		$log->debug('DPSV already null');
 	}
 	$prefs->set('status_resetapcdatabase', 0);
 }
