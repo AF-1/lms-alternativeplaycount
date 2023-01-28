@@ -360,14 +360,8 @@ sub resetValueChoiceJive {
 	$request->addResultLoop('item_loop', 0, 'type', 'redirect');
 	$request->addResultLoop('item_loop', 0, 'actions', $action);
 	$request->addResultLoop('item_loop', 0, 'nextWindow', 'parent');
+	$request->addResult('window', {text => $windowTitle});
 
-	my $materialCaller = 1 if (defined($request->{'_connectionid'}) && $request->{'_connectionid'} =~ 'Slim::Web::HTTP::ClientConn' && defined($request->{'_source'}) && $request->{'_source'} eq 'JSONRPC');
-	# Material always displays last selection as window title. Add correct window title as textarea
-	if ($materialCaller) {
-		$request->addResult('window', {textarea => $windowTitle});
-	} else {
-		$request->addResult('window', {text => $windowTitle});
-	}
 	$request->addResult('offset', 0);
 	$request->addResult('count', 1);
 	$request->setStatusDone();
