@@ -199,7 +199,16 @@ sub trackInfoHandler {
 	if ($@) {
 		$log->error("Database error: $DBI::errstr");
 	}
-	$log->debug('apcPlayCount = '.$apcPlayCount.' -- persistentPlayCount = '.$persistentPlayCount.' -- apcSkipCount = '.$apcSkipCount.' -- apcLastPlayed = '.$apcLastPlayed.' -- persistentLastPlayed = '.$persistentLastPlayed.' -- apcLastSkipped = '.$apcLastSkipped.' -- apcdynPSval = '.$dynPSval);
+	$log->debug('apcPlayCount = '.Dumper($apcPlayCount).'persistentPlayCount = '.Dumper($persistentPlayCount).'apcSkipCount = '.Dumper($apcSkipCount).'apcLastPlayed = '.Dumper($apcLastPlayed).'persistentLastPlayed = '.Dumper($persistentLastPlayed).'apcLastSkipped = '.Dumper($apcLastSkipped).'apcdynPSval = '.Dumper($dynPSval));
+
+	if (!defined($persistentPlayCount) && !defined($apcPlayCount) && !defined($apcSkipCount) && !defined($apcLastPlayed) && !defined($persistentLastPlayed) && !defined($apcLastSkipped) && !defined($dynPSval)) {
+		my $sqlTrackExists = "select count(*) from alternativeplaycount where alternativeplaycount.urlmd5 = \"$urlmd5\"";
+		my $trackInDB = quickSQLquery($sqlTrackExists);
+		if (!$trackInDB) {
+			$log->warn("Couldn't retrieve information for this track.\nCould be part of a (client) playlist whose track references are no longer valid after a *rescan*.\nTrack url = ".$url."\nTrack urlmd5 = ".$urlmd5);
+			return;
+		}
+	}
 
 	if ($infoItem eq 'playCount') {
 		# Don't display APC play count if values in APC and LMS table are the same or value is zero
