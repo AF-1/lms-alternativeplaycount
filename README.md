@@ -16,6 +16,11 @@ As LMS and APC play counts diverge in the long term, you will benefit from the m
 <br><br><br>
 
 
+## Screenshots
+<img src="screenshots/apc.gif" width="100%">
+<br><br><br>
+
+
 ## Features
 - Set a time[^2] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
 - The **dynamic played/skipped value** (DPSV) reflects your **listening history/decisions of the *recent past*** and is independent of the absolute play count and skip count values. A track's DPSV increases if played and decreases if skipped (see FAQ for details). You can use it to create dynamic playlists with [Dynamic Playlist Creator](https://github.com/AF-1/lms-dynamicplaylistcreator) for [Dynamic Playlists](https://github.com/AF-1/lms-dynamicplaylists) or filter rules in [Custom Skip](https://github.com/AF-1/lms-customskip#custom-skip).
@@ -65,4 +70,4 @@ If you want to reset *all* skip counts, DPSV or the *complete* database, you can
 </p></details><br>
 <br><br><br>
 
-[^1]: If you want localized strings in your language, read <a href="https://github.com/AF-1/sobras/wiki/Adding-localization-to-LMS-plugins"><b>this</b></a>.
+[^1]: If you want localized strings in your language, please read <a href="https://github.com/AF-1/sobras/wiki/Adding-localization-to-LMS-plugins"><b>this</b></a>.
