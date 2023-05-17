@@ -81,7 +81,7 @@ sub createBackup {
 	if (@APCTracks) {
 		my $filename = catfile($backupDir, 'APC_Backup_'.$filename_timestamp.'.xml');
 		my $output = FileHandle->new($filename, '>:utf8') or do {
-			$log->error('could not open '.$filename.' for writing.');
+			$log->error('Could not open '.$filename.' for writing. Does the AlternativePlayCount folder exist? Does LMS have read/write permissions (755) for the (parent) folder?');
 			$prefs->set('status_creatingbackup', 0);
 			return;
 		};

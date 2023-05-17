@@ -68,6 +68,13 @@ The <b>dynamic played/skipped value (DPSV)</b> is supposed to reflect your <i>re
 You can <b>reset play counts</b>, <b>skip counts</b> or <b>DPSV</b> for <b>individual</b> tracks by clicking on the corresponding item in a track's context menu (AKA song details page). Some web skins and controllers will list APC values in the >b>More info</b> submenu.<br>
 If you want to reset *all* skip counts, DPSV or the *complete* database, you can do so on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
 </p></details><br>
+
+<details><summary>»<b>When I create a backup, APC <i>does not write a backup file</i>.</b>«</summary><br><p>
+The <i>AlternativePlayCount</i> folder is where APC stores its backup files. On every LMS (re)start, APC checks if there's a folder called <i>AlternativePlayCount</i> in the parent folder. The default <b>parent</b> folder is the <i>LMS playlist folder</i> but you can change that in APC's preferences. If it doesn't find the folder <i>AlternativePlayCount</i> inside the specified parent folder, it will try to create it.<br><br>
+The most likely cause is that APC can't create the folder because LMS doesn't have read/write permissions for the parent folder (or the <i>AlternativePlayCount</i> folder). You'll probably find matching error messages in the server log.<br><br>
+So please make sure that <b>LMS has read/write permissions (755) for the <i>parent</i> folder - and the <i>AlternativePlayCount</i> folder</b> (if it exists but cannot be accessed).
+</p></details><br>
+
 <br><br><br>
 
 [^1]: If you want localized strings in your language, please read <a href="https://github.com/AF-1/sobras/wiki/Adding-localization-to-LMS-plugins"><b>this</b></a>.

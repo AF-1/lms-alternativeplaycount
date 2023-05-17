@@ -150,7 +150,7 @@ sub initPrefs {
 			mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
 			chdir($apcFolderPath);
 		} or do {
-			$log->error("Could not create or access AlternativePlayCount folder in parent folder '$_[1]'!");
+			$log->error("Could not create or access AlternativePlayCount folder in parent folder '$_[1]'! Please make sure that LMS has read/write permissions (755) for the parent folder.");
 			return;
 		};
 		$prefs->set('apcfolderpath', $apcFolderPath);
@@ -1626,7 +1626,7 @@ sub createAPCfolder {
 		mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
 		chdir($apcFolderPath);
 	} or do {
-		$log->error("Could not create or access AlternativePlayCount folder in parent folder '$apcParentFolderPath'!");
+		$log->error("Could not create or access AlternativePlayCount folder in parent folder '$apcParentFolderPath'! Please make sure that LMS has read/write permissions (755) for the parent folder.");
 		return;
 	};
 	$prefs->set('apcfolderpath', $apcFolderPath);
