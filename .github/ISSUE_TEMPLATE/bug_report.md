@@ -1,13 +1,16 @@
 ---
 name: Report a new issue
-about: Please only use THIS template to report issues
+about: Please use THIS template to report issues
 title: "[ISSUE] "
 labels: ''
 assignees: ''
 
 ---
 
-**Please read the *FAQ* (if available) and take a look at the *closed* issues first to avoid duplicates. Thank you.**
+## Checklist
+
+❗️ **Please take a quick look at [**this checklist**](https://github.com/AF-1/sobras/wiki/Checklist-to-eliminate-common-causes-of-LMS-(plugin)-problems) to eliminate common causes of LMS (plugin) problems. Thank you.**
+<br><br><br>
 
 ---
 
@@ -67,3 +70,5 @@ Add any other context about the problem here.
 ## UPLOADS
 In case you want to provide larger files to illustrate the problem (e.g. your library.db, persist.db or LMS server log file), please use a service like **https://wetransfer.com/** and **include the download link in your bug report**.
 <br>
+
+You can delete the checklist and other parts from your issue report that don't apply to your problem.
