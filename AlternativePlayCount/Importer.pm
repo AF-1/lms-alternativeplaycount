@@ -26,7 +26,6 @@ use utf8;
 
 use Slim::Utils::Prefs;
 use Slim::Utils::Log;
-use Data::Dumper;
 use Slim::Schema;
 use Plugins::AlternativePlayCount::Common ':all';
 
@@ -35,18 +34,18 @@ my $prefs = preferences('plugin.alternativeplaycount');
 my $serverPrefs = preferences('server');
 
 sub initPlugin {
-	$log->info('importer module init');
+	main::INFOLOG && $log->is_info && $log->info('importer module init');
 
 	my $preScanBackup = $prefs->get('prescanbackup');
-	$log->info('prescanbackup = '.Dumper($preScanBackup));
+	main::INFOLOG && $log->is_info && $log->info('prescanbackup = '.Data::Dump::dump($preScanBackup));
 	if ($preScanBackup) {
-		$log->info('creating pre-scan backup before scan process starts');
+		main::INFOLOG && $log->is_info && $log->info('creating pre-scan backup before scan process starts');
 		createBackup();
 	}
 }
 
 sub startScan {
-	$log->info('ending importer');
+	main::INFOLOG && $log->is_info && $log->info('ending importer');
 	Slim::Music::Import->endImporter(__PACKAGE__);
 }
 

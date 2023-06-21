@@ -165,7 +165,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV_DESC
 	EN	This will <b>reset</b> all <b>dynamic played/skipped values</b> (DPSV) to the <b>initial values</b> that you have selected in the setting below. It will <b>not</b> reset the <i>complete</i> APC database.
-	FR	Cela <b>réinitialisera</b> toutes les <b>valeurs dynamiques joués/sautés (DPSV)</b> à la <b>valeur initiale</b> que vous avez définie dans le réglage ci-dessous. Cela ne réinitialisera  <b>pas</b> la base de données <b>complète</b> APC
+	FR	Cela <b>réinitialisera</b> toutes les <b>valeurs dynamiques joués/sautés (DPSV)</b> à la <b>valeur initiale</b> que vous avez définie dans le réglage ci-dessous. Cela ne réinitialisera <b>pas</b> la base de données <b>complète</b> APC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV_BUTTON
 	EN	Reset DPSV now

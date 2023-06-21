@@ -24,7 +24,6 @@ use strict;
 use warnings;
 use utf8;
 
-use Data::Dumper;
 use Slim::Utils::Log;
 use Slim::Schema;
 use Slim::Utils::DateTime;
@@ -38,7 +37,6 @@ use File::stat;
 use FindBin qw($Bin);
 use POSIX qw(strftime);
 use Time::HiRes qw(time);
-use URI::Escape qw(uri_escape_utf8 uri_unescape);
 use Path::Class;
 
 use base 'Exporter';
@@ -87,7 +85,7 @@ sub createBackup {
 		};
 		my $trackcount = scalar(@APCTracks);
 		my $ignoredtracks = 0;
-		$log->debug('Found '.$trackcount.($trackcount == 1 ? ' track' : ' tracks').' with values in the APC database');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Found '.$trackcount.($trackcount == 1 ? ' track' : ' tracks').' with values in the APC database');
 
 		print $output "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
 		print $output "<!-- Backup of APC Database Values -->\n";
@@ -103,8 +101,8 @@ sub createBackup {
 			my $BACKUPlastSkipped = $APCTrack->{'lastskipped'} || 0;
 			my $BACKUPdynPSval = $APCTrack->{'dynpsval'} || 0;
 
-			$BACKUPtrackURL = uri_escape_utf8($BACKUPtrackURL);
-			$BACKUPrelFilePath = uri_escape_utf8($BACKUPrelFilePath);
+			$BACKUPtrackURL = escape($BACKUPtrackURL);
+			$BACKUPrelFilePath = escape($BACKUPrelFilePath);
 			print $output "\t<track>\n\t\t<url>".$BACKUPtrackURL."</url>\n\t\t<urlmd5>".$BACKUPtrackURLmd5."</urlmd5>\n\t\t<relurl>".$BACKUPrelFilePath."</relurl>\n\t\t<playcount>".$BACKUPplayCount."</playcount>\n\t\t<lastplayed>".$BACKUPlastPlayed."</lastplayed>\n\t\t<skipcount>".$BACKUPskipCount."</skipcount>\n\t\t<lastskipped>".$BACKUPlastSkipped."</lastskipped>\n\t\t<dynpsval>".$BACKUPdynPSval."</dynpsval>\n\t</track>\n";
 		}
 		print $output "</AlternativePlayCount>\n";
@@ -112,11 +110,11 @@ sub createBackup {
 		print $output "<!-- This backup contains ".$trackcount.($trackcount == 1 ? " track" : " tracks")." -->\n";
 		close $output;
 		my $ended = time() - $started;
-		$log->debug('Backup completed after '.$ended.' seconds.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Backup completed after '.$ended.' seconds.');
 
 		cleanupBackups();
 	} else {
-		$log->debug('Info: no tracks in APC database');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Info: no tracks in APC database');
 	}
 	$prefs->set('status_creatingbackup', 0);
 }
@@ -133,7 +131,7 @@ sub cleanupBackups {
 		opendir(my $DH, $backupDir) or die "Error opening $backupDir: $!";
 		@files = grep(/^APC_Backup_.*$/, readdir($DH));
 		closedir($DH);
-		$log->debug('number of backup files found: '.scalar(@files));
+		main::DEBUGLOG && $log->is_debug && $log->debug('number of backup files found: '.scalar(@files));
 		my $mtime;
 		my $etime = int(time());
 		my $n = 0;
@@ -148,19 +146,19 @@ sub cleanupBackups {
 				}
 			}
 		} else {
-			$log->debug('Not deleting any backups. Number of backup files to keep ('.$backupFilesMin.') '.((scalar(@files) - $n) == $backupFilesMin ? '=' : '>').' backup files found ('.scalar(@files).').');
+			main::DEBUGLOG && $log->is_debug && $log->debug('Not deleting any backups. Number of backup files to keep ('.$backupFilesMin.') '.((scalar(@files) - $n) == $backupFilesMin ? '=' : '>').' backup files found ('.scalar(@files).').');
 		}
-		$log->debug('Deleted '.$n.($n == 1 ? ' backup. ' : ' backups. ').(scalar(@files) - $n).((scalar(@files) - $n) == 1 ? " backup" : " backups")." remaining.");
+		main::DEBUGLOG && $log->is_debug && $log->debug('Deleted '.$n.($n == 1 ? ' backup. ' : ' backups. ').(scalar(@files) - $n).((scalar(@files) - $n) == 1 ? " backup" : " backups")." remaining.");
 	}
 }
 
 
 sub getRelFilePath {
-	$log->debug('Getting relative file url/path.');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Getting relative file url/path.');
 	my $fullTrackURL = shift;
 	my $relFilePath;
 	my $lmsmusicdirs = getMusicDirs();
-	$log->debug('Valid LMS music dirs = '.Dumper($lmsmusicdirs));
+	main::DEBUGLOG && $log->is_debug && $log->debug('Valid LMS music dirs = '.Data::Dump::dump($lmsmusicdirs));
 
 	foreach (@{$lmsmusicdirs}) {
 		my $dirSep = File::Spec->canonpath("/");
@@ -168,17 +166,17 @@ sub getRelFilePath {
 		my $fullTrackPath = Slim::Utils::Misc::pathFromFileURL($fullTrackURL);
 		my $match = checkInFolder($fullTrackPath, $mediaDirPath);
 
-		$log->debug("Full file path \"$fullTrackPath\" is".($match == 1 ? "" : " NOT")." part of media dir \"".$mediaDirPath."\"");
+		main::DEBUGLOG && $log->is_debug && $log->debug("Full file path \"$fullTrackPath\" is".($match == 1 ? "" : " NOT")." part of media dir \"".$mediaDirPath."\"");
 		if ($match == 1) {
 			$relFilePath = file($fullTrackPath)->relative($_);
 			$relFilePath = Slim::Utils::Misc::fileURLFromPath($relFilePath);
 			$relFilePath =~ s/^(file:)?\/+//isg;
-			$log->debug('Saving RELATIVE file path: '.$relFilePath);
+			main::DEBUGLOG && $log->is_debug && $log->debug('Saving RELATIVE file path: '.$relFilePath);
 			last;
 		}
 	}
 	if (!$relFilePath) {
-		$log->debug("Couldn't get relative file path for \"$fullTrackURL\".");
+		main::DEBUGLOG && $log->is_debug && $log->debug("Couldn't get relative file path for \"$fullTrackURL\".");
 	}
 	return $relFilePath;
 }
@@ -189,7 +187,7 @@ sub checkInFolder {
 
 	$path = Slim::Utils::Misc::fixPath($path) || return 0;
 	$path = Slim::Utils::Misc::pathFromFileURL($path) || return 0;
-	$log->debug('path = '.$path.' -- checkdir = '.$checkdir);
+	main::DEBUGLOG && $log->is_debug && $log->debug('path = '.$path.' -- checkdir = '.$checkdir);
 
 	if ($checkdir && $path =~ /^\Q$checkdir\E/) {
 		return 1;
@@ -260,5 +258,8 @@ sub rollback {
 		$dbh->rollback();
 	}
 }
+
+*escape = \&URI::Escape::uri_escape_utf8;
+*unescape = \&URI::Escape::uri_unescape;
 
 1;

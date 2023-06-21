@@ -32,7 +32,6 @@ use Slim::Utils::Prefs;
 use Slim::Utils::Text;
 use Slim::Schema;
 use Slim::Utils::DateTime;
-use Data::Dumper;
 use Digest::MD5 qw(md5_hex);
 use base qw(FileHandle);
 use File::Basename;
@@ -43,14 +42,10 @@ use FindBin qw($Bin);
 use POSIX qw(strftime floor ceil);
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(time);
-use URI::Escape qw(uri_escape_utf8 uri_unescape);
 use XML::Parser;
 
 use Plugins::AlternativePlayCount::Common ':all';
 use Plugins::AlternativePlayCount::Importer;
-use Plugins::AlternativePlayCount::Settings::Basic;
-use Plugins::AlternativePlayCount::Settings::Backup;
-use Plugins::AlternativePlayCount::Settings::Reset;
 
 my $log = Slim::Utils::Log->addLogCategory({
 	'category' => 'plugin.alternativeplaycount',
@@ -71,6 +66,9 @@ sub initPlugin {
 	initPrefs();
 
 	if (main::WEBUI) {
+		require Plugins::AlternativePlayCount::Settings::Basic;
+		require Plugins::AlternativePlayCount::Settings::Backup;
+		require Plugins::AlternativePlayCount::Settings::Reset;
 		Plugins::AlternativePlayCount::Settings::Basic->new($class);
 		Plugins::AlternativePlayCount::Settings::Backup->new($class);
 		Plugins::AlternativePlayCount::Settings::Reset->new($class);
@@ -126,7 +124,7 @@ sub postinitPlugin {
 
 sub initPrefs {
 	$prefs->init({
-		apcparentfolderpath => $serverPrefs->get('playlistdir'),
+		apcparentfolderpath => Slim::Utils::OSDetect::dirsFor('prefs'),
 		playedtreshold_percent => 20,
 		undoskiptimespan => 5,
 		alwaysdisplayvals => 1,
@@ -199,7 +197,7 @@ sub trackInfoHandler {
 	if ($@) {
 		$log->error("Database error: $DBI::errstr");
 	}
-	$log->debug('apcPlayCount = '.Dumper($apcPlayCount).'persistentPlayCount = '.Dumper($persistentPlayCount).'apcSkipCount = '.Dumper($apcSkipCount).'apcLastPlayed = '.Dumper($apcLastPlayed).'persistentLastPlayed = '.Dumper($persistentLastPlayed).'apcLastSkipped = '.Dumper($apcLastSkipped).'apcdynPSval = '.Dumper($dynPSval));
+	main::DEBUGLOG && $log->is_debug && $log->debug('apcPlayCount = '.Data::Dump::dump($apcPlayCount).'persistentPlayCount = '.Data::Dump::dump($persistentPlayCount).'apcSkipCount = '.Data::Dump::dump($apcSkipCount).'apcLastPlayed = '.Data::Dump::dump($apcLastPlayed).'persistentLastPlayed = '.Data::Dump::dump($persistentLastPlayed).'apcLastSkipped = '.Data::Dump::dump($apcLastSkipped).'apcdynPSval = '.Data::Dump::dump($dynPSval));
 
 	if (!defined($persistentPlayCount) && !defined($apcPlayCount) && !defined($apcSkipCount) && !defined($apcLastPlayed) && !defined($persistentLastPlayed) && !defined($apcLastSkipped) && !defined($dynPSval)) {
 		my $sqlTrackExists = "select count(*) from alternativeplaycount where alternativeplaycount.urlmd5 = \"$urlmd5\"";
@@ -325,12 +323,12 @@ sub resetValueWeb {
 	$params->{trackid} = $trackID;
 	$params->{infoitem} = $infoItem;
 	$params->{urlmd5} = $urlmd5;
-	$log->debug('name = '.$itemNames{$infoItem}.' ## infoItem = '.$infoItem.' ## urlmd5 = '.$urlmd5.' ## trackID = '.$trackID);
+	main::DEBUGLOG && $log->is_debug && $log->debug('name = '.$itemNames{$infoItem}.' ## infoItem = '.$infoItem.' ## urlmd5 = '.$urlmd5.' ## trackID = '.$trackID);
 
 	if ($action) {
 		resetValue($infoItem, $urlmd5);
 		$params->{resetdone} = 1;
-		$log->info('Reset '.$itemNames{$infoItem}.' for trackID '.$trackID);
+		main::INFOLOG && $log->is_info && $log->info('Reset '.$itemNames{$infoItem}.' for trackID '.$trackID);
 	}
 	return Slim::Web::HTTP::filltemplatefile('plugins/AlternativePlayCount/html/resetvalue.html', $params);
 }
@@ -351,7 +349,7 @@ sub resetValueChoiceJive {
 	}
 	my $infoItem = $request->getParam('_infoitem');
 	my $urlmd5 = $request->getParam('_urlmd5');
-	$log->debug('infoItem = '.$infoItem.' ## urlmd5 = '.$urlmd5);
+	main::DEBUGLOG && $log->is_debug && $log->debug('infoItem = '.$infoItem.' ## urlmd5 = '.$urlmd5);
 
 	my $action = {
 		'do' => {
@@ -392,7 +390,7 @@ sub resetValueJive {
 	}
 	my $infoItem = $request->getParam('_infoitem');
 	my $urlmd5 = $request->getParam('_urlmd5');
-	$log->debug('infoItem = '.$infoItem.' ## urlmd5 = '.$urlmd5);
+	main::DEBUGLOG && $log->is_debug && $log->debug('infoItem = '.$infoItem.' ## urlmd5 = '.$urlmd5);
 
 	resetValue($infoItem, $urlmd5);
 
@@ -401,8 +399,8 @@ sub resetValueJive {
 
 sub resetValVFD {
 	my ($client, $callback, $params, $infoItem, $urlmd5) = @_;
-	$log->debug('infoItem = '.$infoItem);
-	$log->debug('urlmd5 = '.$urlmd5);
+	main::DEBUGLOG && $log->is_debug && $log->debug('infoItem = '.$infoItem);
+	main::DEBUGLOG && $log->is_debug && $log->debug('urlmd5 = '.$urlmd5);
 
 	resetValue($infoItem, $urlmd5);
 	my $cbtext = string('PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_CB');
@@ -429,7 +427,7 @@ sub resetValue {
 
 	return if (!$sqlstatement);
 	executeSQLstat($sqlstatement);
-	$log->debug("Finished resetting value for \"$infoItem\"");
+	main::DEBUGLOG && $log->is_debug && $log->debug("Finished resetting value for \"$infoItem\"");
 }
 
 
@@ -440,17 +438,17 @@ sub _APCcommandCB {
 	my $client = $request->client();
 
 	if (Slim::Music::Import->stillScanning) {
-		$log->debug('Access to APC table blocked until library scan is completed.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Access to APC table blocked until library scan is completed.');
 		return;
 	}
 
 	if (!defined $client) {
-		$log->debug('No client. Exiting APCcommandCB');
+		main::DEBUGLOG && $log->is_debug && $log->debug('No client. Exiting APCcommandCB');
 		return;
 	}
 
 	my $clientID = $client->id();
-	$log->debug('Received command "'.$request->getRequestString().'" from client "'.$clientID.'"');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Received command "'.$request->getRequestString().'" from client "'.$clientID.'"');
 	my $track = $::VERSION lt '8.2' ? Slim::Player::Playlist::song($client) : Slim::Player::Playlist::track($client);
 
 	if (defined $track) {
@@ -462,12 +460,12 @@ sub _APCcommandCB {
 		my $currentTrackURLmd5 = $track->urlmd5;
 		my $previousTrackURL = $client->pluginData('currentTrackURL');
 		my $previousTrackURLmd5 = $client->pluginData('currentTrackURLmd5');
-		$log->debug('Current track on client "'.$clientID.'" is '.$currentTrackURL.' with urlmd5 = '.$currentTrackURLmd5);
-		$log->debug('Previous track on client "'.$clientID.'" is '.Dumper($previousTrackURL).' with urlmd5 = '.Dumper($previousTrackURLmd5));
+		main::DEBUGLOG && $log->is_debug && $log->debug('Current track on client "'.$clientID.'" is '.$currentTrackURL.' with urlmd5 = '.$currentTrackURLmd5);
+		main::DEBUGLOG && $log->is_debug && $log->debug('Previous track on client "'.$clientID.'" is '.Data::Dump::dump($previousTrackURL).' with urlmd5 = '.Data::Dump::dump($previousTrackURLmd5));
 
 		## newsong
 		if ($request->isCommand([['playlist'],['newsong']])) {
-			$log->debug('Received "newsong" cb.');
+			main::DEBUGLOG && $log->is_debug && $log->debug('Received "newsong" cb.');
 			# stop old timer for this client
 			Slim::Utils::Timers::killTimers($client, \&markAsPlayed);
 
@@ -488,15 +486,15 @@ sub _APCcommandCB {
 
 		## play
 		if (($request->isCommand([['playlist'],['play']])) || ($request->isCommand([['mode','play']]))) {
-			$log->debug('Received "play" or "mode play" cb.');
+			main::DEBUGLOG && $log->is_debug && $log->debug('Received "play" or "mode play" cb.');
 			startPlayCountTimer($client, $track);
 		}
 
 		## pause
 		if ($request->isCommand([['pause']]) || $request->isCommand([['mode'],['pause']])) {
-			$log->debug('Received "pause" or "mode pause" cb.');
+			main::DEBUGLOG && $log->is_debug && $log->debug('Received "pause" or "mode pause" cb.');
 			my $playmode = Slim::Player::Source::playmode($client);
-			$log->debug('playmode = '.$playmode);
+			main::DEBUGLOG && $log->is_debug && $log->debug('playmode = '.$playmode);
 
 			if ($playmode eq 'pause') {
 				Slim::Utils::Timers::killTimers($client, \&markAsPlayed);
@@ -507,7 +505,7 @@ sub _APCcommandCB {
 
 		## stop
 		if ($request->isCommand([["stop"]]) || $request->isCommand([['mode'],['stop']]) || $request->isCommand([['playlist'],['stop']]) || $request->isCommand([['playlist'],['sync']]) || $request->isCommand([['playlist'],['clear']]) || $request->isCommand([['power']])) {
-			$log->debug('Received "stop", "clear", "power" or "sync" cb.');
+			main::DEBUGLOG && $log->is_debug && $log->debug('Received "stop", "clear", "power" or "sync" cb.');
 			Slim::Utils::Timers::killTimers($client, \&markAsPlayed);
 			$client->pluginData('markedAsPlayed' => undef);
 			$client->pluginData('currentTrackURL' => undef);
@@ -520,21 +518,21 @@ sub startPlayCountTimer {
 
 	# check if track has been marked as played already
 	if ($client->pluginData('markedAsPlayed') && $client->pluginData('markedAsPlayed') eq $track->url) {
-		$log->debug('Song has already been marked as played in this session.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Song has already been marked as played in this session.');
 		return;
 	}
 
 	my $playedTreshold_percent = ($prefs->get('playedtreshold_percent') || 20) / 100;
 	my $songProgress = Slim::Player::Source::progress($client);
-	$log->debug('playedTreshold_percent = '.($playedTreshold_percent * 100).'% -- songProgress so far = '.(sprintf "%.1f", ($songProgress * 100)).'%');
+	main::DEBUGLOG && $log->is_debug && $log->debug('playedTreshold_percent = '.($playedTreshold_percent * 100).'% -- songProgress so far = '.(sprintf "%.1f", ($songProgress * 100)).'%');
 
 	if ($songProgress >= $playedTreshold_percent) {
-		$log->debug('songProgress > playedTreshold_percent. Will mark song as played.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('songProgress > playedTreshold_percent. Will mark song as played.');
 		markAsPlayed($client, $track->url, $track->urlmd5);
 	} else {
 		my $songDuration = $track->secs;
 		my $remainingTresholdTime = $songDuration * $playedTreshold_percent - $songDuration * $songProgress;
-		$log->debug('songDuration = '.$songDuration.' seconds -- remainingTresholdTime = '.(sprintf "%.1f", $remainingTresholdTime).' seconds');
+		main::DEBUGLOG && $log->is_debug && $log->debug('songDuration = '.$songDuration.' seconds -- remainingTresholdTime = '.(sprintf "%.1f", $remainingTresholdTime).' seconds');
 
 		# Start timer for new song
 		Slim::Utils::Timers::setTimer($client, time() + $remainingTresholdTime, \&markAsPlayed, $track->url, $track->urlmd5);
@@ -548,7 +546,7 @@ sub markAsPlayed {
 	# and correct dynamic played/skipped value BEFORE increasing it
 	undoLastSkipCountIncrement($trackURL, $trackURLmd5);
 
-	$log->info('Marking track with url "'.$trackURL.'" as played. urlmd5 = '.Dumper($trackURLmd5));
+	main::INFOLOG && $log->is_info && $log->info('Marking track with url "'.$trackURL.'" as played. urlmd5 = '.Data::Dump::dump($trackURLmd5));
 	$client->pluginData('markedAsPlayed' => $trackURL);
 	$trackURLmd5 = md5_hex($trackURL) if !$trackURLmd5;
 	my $lastPlayed = time();
@@ -557,19 +555,19 @@ sub markAsPlayed {
 	executeSQLstat($sqlstatement);
 	_setDynamicPlayedSkippedValue($trackURL, $trackURLmd5, 1);
 
-	$log->debug('Marked track as played');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Marked track as played');
 }
 
 sub markAsSkipped {
 	my ($trackURL, $trackURLmd5) = @_;
-	$log->info('Marking track with url "'.$trackURL.'" as skipped. urlmd5 = '.Dumper($trackURLmd5));
+	main::INFOLOG && $log->is_info && $log->info('Marking track with url "'.$trackURL.'" as skipped. urlmd5 = '.Data::Dump::dump($trackURLmd5));
 	$trackURLmd5 = md5_hex($trackURL) if !$trackURLmd5;
 	my $lastSkipped = time();
 
 	my $sqlstatement = "update alternativeplaycount set skipCount = ifnull(skipCount, 0) + 1, lastSkipped = $lastSkipped where urlmd5 = \"$trackURLmd5\"";
 	executeSQLstat($sqlstatement);
 	_setDynamicPlayedSkippedValue($trackURL, $trackURLmd5, 2);
-	$log->debug('Marked track as skipped');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Marked track as skipped');
 }
 
 sub undoLastSkipCountIncrement {
@@ -585,7 +583,7 @@ sub undoLastSkipCountIncrement {
 		my $playedTreshold_percent = ($prefs->get('playedtreshold_percent') || 20) / 100;
 
 		if ($lastSkipped > 0 && (time()-$lastSkipped < ($undoSkipTimeSpan * 60 + $songDuration * $playedTreshold_percent))) {
-			$log->info("Played track was skipped in the last $undoSkipTimeSpan mins. Reducing skip count (by 1) and dynamic played/skipped value (DPSV)");
+			main::INFOLOG && $log->is_info && $log->info("Played track was skipped in the last $undoSkipTimeSpan mins. Reducing skip count (by 1) and dynamic played/skipped value (DPSV)");
 			my $reduceSkipCountSQL;
 			if ($skipCount - 1 == 0) {
 				$reduceSkipCountSQL = "update alternativeplaycount set skipCount = null, lastSkipped = null where urlmd5 = \"$trackURLmd5\"";
@@ -611,7 +609,7 @@ sub _setDynamicPlayedSkippedValue {
 	$sth->bind_columns(undef, \$curDPSV);
 	$sth->fetch();
 	$sth->finish();
-	$log->debug('Current dynamic played/skipped value (DPSV) = '.$curDPSV);
+	main::DEBUGLOG && $log->is_debug && $log->debug('Current dynamic played/skipped value (DPSV) = '.$curDPSV);
 
 	# calculate new DPSV (range -100 to 100)
 	my ($newDPSV, $logActionPrefix);
@@ -619,7 +617,7 @@ sub _setDynamicPlayedSkippedValue {
 	if ($action == 1 && $curDPSV < 100) {
 		$logActionPrefix = 'Increased';
 		$delta = $delta/8;
-		$log->debug('delta (DPSV increase) = '.$delta);
+		main::DEBUGLOG && $log->is_debug && $log->debug('delta (DPSV increase) = '.$delta);
 		$newDPSV = $curDPSV + $delta;
 		$newDPSV = roundFloat($newDPSV);
 		$newDPSV = 100 if $newDPSV > 100;
@@ -627,7 +625,7 @@ sub _setDynamicPlayedSkippedValue {
 	} elsif ($action == 2 && $curDPSV > -100) {
 		$logActionPrefix = 'Reduced';
 		$delta = $delta/4;
-		$log->debug('delta (DPSV decrease) = '.$delta);
+		main::DEBUGLOG && $log->is_debug && $log->debug('delta (DPSV decrease) = '.$delta);
 		$newDPSV = $curDPSV - $delta;
 		$newDPSV = roundFloat($newDPSV);
 		$newDPSV = -100 if $curDPSV < -100;
@@ -643,14 +641,14 @@ sub _setDynamicPlayedSkippedValue {
 			$newDPSV = (4 * $curDPSV + 100)/5;
 		}
 		$newDPSV = roundFloat($newDPSV);
-		$log->debug('Resetting DPSV to previous DPSV = '.$newDPSV);
+		main::DEBUGLOG && $log->is_debug && $log->debug('Resetting DPSV to previous DPSV = '.$newDPSV);
 		$newDPSV = 100 if $curDPSV > 100;
 	}
 
 	# set new DPSV
 	my $sqlstatement = "update alternativeplaycount set dynPSval = $newDPSV where urlmd5 = \"$trackURLmd5\"";
 	executeSQLstat($sqlstatement);
-	$log->info($logActionPrefix.' dynamic played/skipped value (DPSV) from '.$curDPSV.' to '.$newDPSV.' for track with url: '.$trackURL."\n\n");
+	main::INFOLOG && $log->is_info && $log->info($logActionPrefix.' dynamic played/skipped value (DPSV) from '.$curDPSV.' to '.$newDPSV.' for track with url: '.$trackURL."\n\n");
 }
 
 
@@ -693,7 +691,7 @@ sub backupScheduler {
 				if ($day eq $mday) {
 					$timesleft = $timesleft + 60*60*24;
 				}
-				$log->debug(parse_duration($timesleft)." ($timesleft seconds) left until next scheduled backup");
+				main::DEBUGLOG && $log->is_debug && $log->debug(parse_duration($timesleft)." ($timesleft seconds) left until next scheduled backup");
 			}
 		}
 		Slim::Utils::Timers::setTimer(0, time() + 3600, \&backupScheduler);
@@ -784,7 +782,7 @@ sub restoreScanFunction {
 				last;
 			}
 		}
-		$line =~ s/&#(\d*);/uri_escape_utf8(chr($1))/ge;
+		$line =~ s/&#(\d*);/escape(chr($1))/ge;
 		$backupParserNB->parse_more($line);
 		return 1;
 	}
@@ -805,7 +803,7 @@ sub doneScanning {
 	close(BACKUPFILE);
 
 	my $ended = time() - $restorestarted;
-	$log->debug('Restore completed after '.$ended.' seconds.');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Restore completed after '.$ended.' seconds.');
 	sleep(1.5); # if task is removed too soon from scheduler => undef val as sub ref error
 	Slim::Utils::Scheduler::remove_task(\&restoreScanFunction);
 	$prefs->set('status_restoringfrombackup', 0);
@@ -846,31 +844,31 @@ sub handleEndElement {
 
 		# check if FULL file url is valid
 		# Otherwise, try RELATIVE file URL with current media dirs
-		$fullTrackURL = Encode::decode('utf8', uri_unescape($fullTrackURL));
-		$relTrackURL = Encode::decode('utf8', uri_unescape($relTrackURL));
+		$fullTrackURL = Encode::decode('utf8', unescape($fullTrackURL));
+		$relTrackURL = Encode::decode('utf8', unescape($relTrackURL));
 
 		my $fullTrackPath = pathForItem($fullTrackURL);
 		if (-f $fullTrackPath) {
-			#$log->debug("found file at url \"$fullTrackPath\"");
+			#main::DEBUGLOG && $log->is_debug && $log->debug("found file at url \"$fullTrackPath\"");
 			$trackURL = $fullTrackURL;
 		} else {
-			$log->debug("** Couldn't find file for FULL file url. Will try with RELATIVE file url and current LMS media folders.");
+			main::DEBUGLOG && $log->is_debug && $log->debug("** Couldn't find file for FULL file url. Will try with RELATIVE file url and current LMS media folders.");
 			my $lmsmusicdirs = getMusicDirs();
-			$log->debug('Valid LMS music dirs = '.Dumper($lmsmusicdirs));
+			main::DEBUGLOG && $log->is_debug && $log->debug('Valid LMS music dirs = '.Data::Dump::dump($lmsmusicdirs));
 
 			foreach (@{$lmsmusicdirs}) {
 				my $dirSep = File::Spec->canonpath("/");
 				my $mediaDirURL = Slim::Utils::Misc::fileURLFromPath($_.$dirSep);
-				$log->debug('Trying LMS music dir url: '.$mediaDirURL);
+				main::DEBUGLOG && $log->is_debug && $log->debug('Trying LMS music dir url: '.$mediaDirURL);
 
 				my $newFullTrackURL = $mediaDirURL.$relTrackURL;
 				my $newFullTrackPath = pathForItem($newFullTrackURL);
-				$log->debug('Trying with new full track path: '.$newFullTrackPath);
+				main::DEBUGLOG && $log->is_debug && $log->debug('Trying with new full track path: '.$newFullTrackPath);
 
 				if (-f $newFullTrackPath) {
 					$trackURL = Slim::Utils::Misc::fileURLFromPath($newFullTrackURL);
-					$log->debug('Found file at new full file url: '.$trackURL);
-					$log->debug('OLD full file url was: '.$fullTrackURL);
+					main::DEBUGLOG && $log->is_debug && $log->debug('Found file at new full file url: '.$trackURL);
+					main::DEBUGLOG && $log->is_debug && $log->debug('OLD full file url was: '.$fullTrackURL);
 					last;
 				}
 			}
@@ -1358,14 +1356,14 @@ sub initDatabase {
 		$log->error("Database error: $DBI::errstr\n");
 	}
 	$sth->finish();
-	$log->debug($tableExists ? 'APC table table found.' : 'No APC table table found.');
+	main::DEBUGLOG && $log->is_debug && $log->debug($tableExists ? 'APC table table found.' : 'No APC table table found.');
 
 	# check for dynPSval column if APC table exists
 	if ($tableExists) {
-		$log->debug('APC table already exists.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('APC table already exists.');
 		my $sth = $dbh->prepare (q{pragma table_info(alternativeplaycount)});
 		$sth->execute() or do {
-			$log->debug("Error executing");
+			main::DEBUGLOG && $log->is_debug && $log->debug("Error executing");
 		};
 
 		my $colName;
@@ -1377,9 +1375,9 @@ sub initDatabase {
 		$sth->finish();
 
 		if ($colNames{'dynPSval'}) {
-			$log->debug('APC table column "dynPSval" already exists.');
+			main::DEBUGLOG && $log->is_debug && $log->debug('APC table column "dynPSval" already exists.');
 		} else {
-			$log->debug('Creating APC table column "dynPSval"');
+			main::DEBUGLOG && $log->is_debug && $log->debug('Creating APC table column "dynPSval"');
 			my $sql = qq(alter table alternativeplaycount add column dynPSval int(10));
 			eval {$dbh->do($sql)};
 			if ($@) {
@@ -1392,13 +1390,13 @@ sub initDatabase {
 	# create APC table if it doesn't exist
 	unless ($tableExists) {
 		# create table
-		$log->debug('Creating table.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Creating table.');
 		my $sqlstatement = "create table if not exists persistentdb.alternativeplaycount (url text not null, playCount int(10), lastPlayed int(10), skipCount int(10), lastSkipped int(10), dynPSval int(10), urlmd5 char(32) not null default '0');";
-		$log->debug('Creating APC database table');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Creating APC database table');
 		executeSQLstat($sqlstatement);
 
 		# create indices
-		$log->debug('Creating indices.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Creating indices.');
 		my $dbIndex = "create index if not exists persistentdb.cpurlIndex on alternativeplaycount (url);
 create index if not exists persistentdb.cpurlmd5Index on alternativeplaycount (urlmd5);";
 		executeSQLstat($dbIndex);
@@ -1407,7 +1405,7 @@ create index if not exists persistentdb.cpurlmd5Index on alternativeplaycount (u
 	}
 	refreshDatabase();
 	my $ended = time() - $started;
-	$log->debug('DB init completed after '.$ended.' seconds.');
+	main::DEBUGLOG && $log->is_debug && $log->debug('DB init completed after '.$ended.' seconds.');
 }
 
 sub populateAPCtable {
@@ -1415,7 +1413,7 @@ sub populateAPCtable {
 
 	if ($prefs->get('dbpoplmsvalues')) {
 		# populate table with playCount + lastPlayed values from persistentdb
-		$log->debug('Populating empty APC table with values from LMS persistent database.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Populating empty APC table with values from LMS persistent database.');
 		my $minPlayCount = $prefs->get('dbpoplmsminplaycount');
 		my $sql = "INSERT INTO alternativeplaycount (url,playCount,lastPlayed,urlmd5) select tracks.url,case when ifnull(tracks_persistent.playCount, 0) >= $minPlayCount then tracks_persistent.playCount else null end,case when ifnull(tracks_persistent.playCount, 0) >= $minPlayCount then tracks_persistent.lastPlayed else null end,tracks.urlmd5 from tracks left join tracks_persistent on tracks.urlmd5=tracks_persistent.urlmd5 left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio=1 and alternativeplaycount.urlmd5 is null;";
 
@@ -1435,7 +1433,7 @@ sub populateAPCtable {
 		$sth->finish();
 	} else {
 		# insert only values for track url & urlmd5
-		$log->debug('Populating empty APC table with track urls.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Populating empty APC table with track urls.');
 		my $sql = "INSERT INTO alternativeplaycount (url, urlmd5) select tracks.url, tracks.urlmd5 from tracks left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio = 1 and alternativeplaycount.urlmd5 is null;";
 		my $sth = $dbh->prepare($sql);
 		eval {
@@ -1453,7 +1451,7 @@ sub populateAPCtable {
 	} else {
 		$prefs->set('status_resetapcdatabase', 0);
 	}
-	$log->debug('Finished populating APC database table');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Finished populating APC database table');
 }
 
 sub populateDPSV {
@@ -1465,7 +1463,7 @@ sub populateDPSV {
 		my $sqlstatement = "update alternativeplaycount set dynPSval = case when (ifnull(playCount, 0) > 0 and ifnull(skipCount, 0) == 0) then playCount when (ifnull(playCount, 0) == 0 and skipCount == 1) then cast(95 as float)/100 when (ifnull(playCount, 0) == 0 and ifnull(skipCount, 0) > 1) then cast(1 as float)/skipCount when (ifnull(playCount, 0) > 0 and ifnull(skipCount, 0) > 0) then cast(playCount as float)/skipCount end where ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0;
 update alternativeplaycount set dynPSval = case when (dynPSval == 1 and ifnull(skipCount, 0) == 0) then 10 when dynPSval == 1 then 0 when (dynPSval > 1 and dynPSval <= 15) then 10 when (dynPSval > 15 and dynPSval <= 25) then 20 when (dynPSval > 25 and dynPSval <= 35) then 30 when (dynPSval > 35 and dynPSval <= 45) then 40 when (dynPSval > 45 and dynPSval <= 55) then 50 when (dynPSval > 55 and dynPSval <= 65) then 60 when (dynPSval > 65 and dynPSval <= 75) then 70 when (dynPSval > 75 and dynPSval <= 85) then 80 when (dynPSval > 85 and dynPSval <= 95) then 90 when dynPSval > 95 then 100 when (dynPSval < 1 and dynPSval > cast(85 as float)/100) then -10 when (dynPSval <= cast(85 as float)/100 and dynPSval > cast(75 as float)/100) then -20 when (dynPSval <= cast(75 as float)/100 and dynPSval > cast(65 as float)/100) then -30 when (dynPSval <= cast(65 as float)/100 and dynPSval > cast(55 as float)/100) then -40 when (dynPSval <= cast(55 as float)/100 and dynPSval > cast(45 as float)/100) then -50 when (dynPSval <= cast(45 as float)/100 and dynPSval > cast(35 as float)/100) then -60 when (dynPSval <= cast(35 as float)/100 and dynPSval > cast(25 as float)/100) then -70 when (dynPSval <= cast(25 as float)/100 and dynPSval > cast(15 as float)/100) then -80 when (dynPSval <= cast(15 as float)/100 and dynPSval > cast(5 as float)/100) then -90 when dynPSval <= cast(5 as float)/100 then -100 end;";
 		executeSQLstat($sqlstatement);
-		$log->debug('Finished populating DPSV column with values calculated using APC play count/skip count ratio');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Finished populating DPSV column with values calculated using APC play count/skip count ratio');
 
 	} elsif ($popMethod == 3) {
 		# get all rated tracks
@@ -1505,10 +1503,10 @@ update alternativeplaycount set dynPSval = case when (dynPSval == 1 and ifnull(s
 			$sthUpdate->execute();
 			$sth->finish();
 		}
-		$log->debug('Finished populating DPSV column with values derived from track ratings');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Finished populating DPSV column with values derived from track ratings');
 
 	} else {
-		$log->debug('DPSV already null');
+		main::DEBUGLOG && $log->is_debug && $log->debug('DPSV already null');
 	}
 	$prefs->set('status_resetapcdatabase', 0);
 }
@@ -1516,14 +1514,14 @@ update alternativeplaycount set dynPSval = case when (dynPSval == 1 and ifnull(s
 sub resetDPSV {
 	my $sqlstatement = "update alternativeplaycount set dynPSval = null where ifnull(dynPSval, 0) != 0";
 	executeSQLstat($sqlstatement);
-	$log->debug('Finished resetting DPSV column');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Finished resetting DPSV column');
 	populateDPSV();
 }
 
 sub resetSkipCounts {
 	my $sqlstatement = "update alternativeplaycount set skipCount = null, lastSkipped = null where ifnull(skipCount, 0) != 0";
 	executeSQLstat($sqlstatement);
-	$log->debug('Finished resetting skip counts');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Finished resetting skip counts');
 }
 
 sub refreshDatabase {
@@ -1534,10 +1532,10 @@ sub refreshDatabase {
 	my $dbh = getCurrentDBH();
 	my $sth;
 	my $count;
-	$log->debug('Refreshing APC database');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Refreshing APC database');
 
 	# add new tracks
-	$log->debug('If LMS database has new tracks, add them to APC database.');
+	main::DEBUGLOG && $log->is_debug && $log->debug('If LMS database has new tracks, add them to APC database.');
 	my $sqlstatement = "INSERT INTO alternativeplaycount (url, urlmd5) select tracks.url, tracks.urlmd5 from tracks left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio = 1 and alternativeplaycount.urlmd5 is null;";
 	$sth = $dbh->prepare($sqlstatement);
 	$count = 0;
@@ -1557,7 +1555,7 @@ sub refreshDatabase {
 	removeDeadTracks();
 
 	$dbh->do("analyze alternativeplaycount;");
-	$log->debug('DB refresh complete.');
+	main::DEBUGLOG && $log->is_debug && $log->debug('DB refresh complete.');
 }
 
 sub removeDeadTracks {
@@ -1565,7 +1563,7 @@ sub removeDeadTracks {
 	my $dbh = getCurrentDBH();
 	my $sth;
 	my $count;
-	$log->debug('Removing dead tracks from APC database that no longer exist in LMS database');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Removing dead tracks from APC database that no longer exist in LMS database');
 
 	my $sqlstatement = "delete from $database where urlmd5 not in (select urlmd5 from tracks where tracks.urlmd5 = $database.urlmd5)";
 
@@ -1584,7 +1582,7 @@ sub removeDeadTracks {
 	}
 
 	$sth->finish();
-	$log->debug('Finished removing dead tracks from DB.');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Finished removing dead tracks from DB.');
 }
 
 sub resetAPCDatabase {
@@ -1597,39 +1595,41 @@ sub resetAPCDatabase {
 
 	my $sqlstatement = "delete from alternativeplaycount";
 	executeSQLstat($sqlstatement);
-	$log->debug('APC table cleared');
+	main::DEBUGLOG && $log->is_debug && $log->debug('APC table cleared');
 
 	populateAPCtable();
 }
 
 sub _setRefreshCBTimer {
-	$log->debug('Killing existing timers for post-scan refresh to prevent multiple calls');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Killing existing timers for post-scan refresh to prevent multiple calls');
 	Slim::Utils::Timers::killOneTimer(undef, \&delayedPostScanRefresh);
-	$log->debug('Scheduling a delayed post-scan refresh');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Scheduling a delayed post-scan refresh');
 	Slim::Utils::Timers::setTimer(undef, time() + $prefs->get('postscanscheduledelay'), \&delayedPostScanRefresh);
 }
 
 sub delayedPostScanRefresh {
 	if (Slim::Music::Import->stillScanning) {
-		$log->debug('Scan in progress. Waiting for current scan to finish.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Scan in progress. Waiting for current scan to finish.');
 		_setRefreshCBTimer();
 	} else {
-		$log->debug('Starting post-scan database table refresh.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Starting post-scan database table refresh.');
 		initDatabase();
 	}
 }
 
 sub createAPCfolder {
-	my $apcParentFolderPath = $prefs->get('apcparentfolderpath') || $serverPrefs->get('playlistdir');
+	my $apcParentFolderPath = $prefs->get('apcparentfolderpath') || Slim::Utils::OSDetect::dirsFor('prefs');
 	my $apcFolderPath = catdir($apcParentFolderPath, 'AlternativePlayCount');
 	eval {
 		mkdir($apcFolderPath, 0755) unless (-d $apcFolderPath);
-		chdir($apcFolderPath);
 	} or do {
-		$log->error("Could not create or access AlternativePlayCount folder in parent folder '$apcParentFolderPath'! Please make sure that LMS has read/write permissions (755) for the parent folder.");
+		$log->error("Could not create AlternativePlayCount folder in parent folder '$apcParentFolderPath'! Please make sure that LMS has read/write permissions (755) for the parent folder.");
 		return;
 	};
 	$prefs->set('apcfolderpath', $apcFolderPath);
 }
+
+*escape = \&URI::Escape::uri_escape_utf8;
+*unescape = \&URI::Escape::uri_unescape;
 
 1;
