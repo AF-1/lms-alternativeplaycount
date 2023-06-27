@@ -608,7 +608,9 @@ sub _setDynamicPlayedSkippedValue {
 	$sth->bind_columns(undef, \$curDPSV);
 	$sth->fetch();
 	$sth->finish();
-	main::DEBUGLOG && $log->is_debug && $log->debug('Current dynamic played/skipped value (DPSV) = '.$curDPSV);
+	main::DEBUGLOG && $log->is_debug && $log->debug('Current dynamic played/skipped value (DPSV) = '.Data::Dump::dump($curDPSV));
+
+	return if !defined($curDPSV); # e.g. if rescan invalidated old client playlist
 
 	# calculate new DPSV (range -100 to 100)
 	my ($newDPSV, $logActionPrefix);
@@ -933,6 +935,32 @@ sub getCustomSkipFilterTypes {
 	);
 	push @result, \%recentlyskippedtracks;
 
+	my %recentlyplayedsimilartracksbysameartist = (
+		'id' => 'alternativeplaycount_recentlyplayedsimilartrackbysameartist',
+		'name' => string("PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RACKSRECENTLYPLAYEDSIMILARBYSAMEARTIST_NAME"),
+		'filtercategory' => 'songs',
+		'description' => string("PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RACKSRECENTLYPLAYEDSIMILARBYSAMEARTIST_DESC"),
+		'parameters' => [
+			{
+				'id' => 'time',
+				'type' => 'singlelist',
+				'name' => string("PLUGIN_CUSTOMSKIP3_FILTERS_TRACKSRECENTLYPLAYED_PARAM_NAME"),
+				'data' => '300=5 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_MINS").',600=10 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_MINS").',900=15 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_MINS").',1800=30 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_MINS").',3600=1 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOUR").',7200=2 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOURS").',10800=3 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOURS").',21600=6 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOURS").',43200=12 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOURS").',86400=24 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOURS").',259200=3 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_DAYS").',604800=1 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_WEEK"),
+				'value' => 3600
+			},
+			{
+				'id' => 'similarityval',
+				'type' => 'numberrange',
+				'minvalue' => 50,
+				'maxvalue' => 100,
+				'stepvalue' => 1,
+				'name' => string("PLUGIN_CUSTOMSKIP3_FILTERS_TRACKTITLESIMILARITYVAL_PARAM_NAME"),
+				'value' => 85
+			},
+		]
+	);
+	push @result, \%recentlyplayedsimilartracksbysameartist;
+
 	my %highapcskipcount = (
 		'id' => 'alternativeplaycount_highapcskipcount',
 		'name' => string("PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_NAME"),
@@ -1104,6 +1132,101 @@ sub checkCustomSkipFilterType {
 					}
 				}
 				last;
+			}
+		}
+	} elsif ($filter->{'id'} eq 'alternativeplaycount_recentlyplayedsimilartrackbysameartist') {
+		require String::LCSS;
+		use List::Util qw(max);
+		my $started = time();
+		my $curTitle = $track->title;
+		my $curTitleNormalised = normaliseTrackTitle($curTitle);
+		my $artist = $track->artist;
+
+		if (defined($artist) && defined($curTitle)) {
+			# get available track titles for current artist
+			my @artistTracks = ();
+			my ($trackTitle, $trackTitleSearch, $lastPlayed) = undef;
+			my $dbh = getCurrentDBH();
+			my $sth = $dbh->prepare("select tracks.title,tracks.titlesearch,ifnull(alternativeplaycount.lastPlayed,0) from tracks, alternativeplaycount, contributor_track where tracks.urlmd5 = alternativeplaycount.urlmd5 and tracks.id = contributor_track.track and contributor_track.contributor = ? and tracks.id != ? group by tracks.id");
+			eval {
+				$sth->bind_param(1, $artist->id);
+				$sth->bind_param(2, $track->id);
+				$sth->execute();
+				$sth->bind_columns(undef, \$trackTitle, \$trackTitleSearch, \$lastPlayed);
+				while ($sth->fetch()) {
+					push @artistTracks, {'lastplayed' => $lastPlayed, 'tracktitle' => $trackTitle, 'tracktitlesearch' => $trackTitleSearch}
+				}
+			};
+			if ($@) {
+				$log->error("Error executing SQL: $@\n$DBI::errstr");
+			}
+			$sth->finish();
+
+			main::INFOLOG && $log->is_info && $log->info("Checking playlist track '".$track->titlesearch."' against all tracks by artist '".$track->artist->name."'");
+			if (scalar @artistTracks > 0) {
+				my ($recentlyPlayedPeriod, $similarityTreshold) = undef;
+				# get filter param values
+				for my $parameter (@{$parameters}) {
+					if ($parameter->{'id'} eq 'time') {
+						my $times = $parameter->{'value'};
+						$recentlyPlayedPeriod = $times->[0] if (defined($times) && scalar(@{$times}) > 0);
+					}
+					if ($parameter->{'id'} eq 'similarityval') {
+						my $similarityVals = $parameter->{'value'};
+						$similarityTreshold = $similarityVals->[0] if (defined($similarityVals) && scalar(@{$similarityVals}) > 0);
+					}
+				}
+
+				foreach (@artistTracks) {
+					my $lastPlayed = $_->{'lastplayed'};
+					my $thisTrackTitle = $_->{'tracktitle'};
+
+					if (defined($lastPlayed) && defined($thisTrackTitle)) {
+						# next if not played in specified recent period
+						if (time() - $lastPlayed >= $recentlyPlayedPeriod) {
+							main::DEBUGLOG && $log->is_debug && $log->debug('- Track NOT played recently: '.$_->{'tracktitlesearch'});
+							next;
+						}
+
+						# calc LCSS/similarity
+						require String::LCSS;
+						use List::Util qw(max);
+
+						main::INFOLOG && $log->is_info && $log->info('-- Track played recently, checking similarity: '.$_->{'tracktitlesearch'});
+
+						my $thisTitleNormalised = normaliseTrackTitle($thisTrackTitle);
+						main::DEBUGLOG && $log->is_debug && $log->debug("-- currentTrackTitle normalised = $curTitleNormalised");
+						main::DEBUGLOG && $log->is_debug && $log->debug("-- thisTrackTitle normalised = $thisTitleNormalised");
+
+						my @result = String::LCSS::lcss($curTitleNormalised, $thisTitleNormalised);
+						main::DEBUGLOG && $log->is_debug && $log->debug('-- Longest common substring = '.Data::Dump::dump($result[0]));
+
+						if ($result[0] && length($result[0]) > 3) { # returns undef if LCSS = zero or 1
+							# similarity = max. length LCSS/track title
+							my $similarity = max(length($result[0])/length($curTitleNormalised), length($result[0])/length($thisTitleNormalised)) * 100;
+							main::DEBUGLOG && $log->is_debug && $log->debug('--- longest common substring = '.$result[0]);
+							main::INFOLOG && $log->is_info && $log->info('--- Similarity = '.Data::Dump::dump($similarity)."\t-- ".$_->{'tracktitlesearch'});
+
+							# skip if above similarity threshold
+							if ($similarity > $similarityTreshold) {
+								main::INFOLOG && $log->is_info && $log->info(">>> SKIPPING similar playlist track: $curTitle");
+								main::DEBUGLOG && $log->is_debug && $log->debug('--- filter exec time = '.(time()-$started).' secs.');
+								main::INFOLOG && $log->is_info && $log->info("\n");
+								return 1;
+							} else {
+								main::INFOLOG && $log->is_info && $log->info("--- Similarity of tracks is below user-specified minimum value.");
+							}
+						} else {
+							main::INFOLOG && $log->is_info && $log->info("--- Tracks don't have a common substring with the minimum length.");
+							next;
+						}
+					}
+				}
+				main::DEBUGLOG && $log->is_debug && $log->debug('Filter exec time = '.(time()-$started).' secs.');
+				main::INFOLOG && $log->is_info && $log->info("\n");
+			} else {
+				main::INFOLOG && $log->is_info && $log->info("- Found no further tracks by artist '".$track->artist->name."'.");
+				main::INFOLOG && $log->is_info && $log->info("\n");
 			}
 		}
 	} elsif ($filter->{'id'} eq 'alternativeplaycount_highapcskipcount') {
@@ -1626,6 +1749,15 @@ sub createAPCfolder {
 		return;
 	};
 	$prefs->set('apcfolderpath', $apcFolderPath);
+}
+
+sub normaliseTrackTitle {
+	my $title = shift;
+	return if !$title;
+	$title =~ s/[\[\(].*[\)\]]*//g; # delete everything between brackets + parentheses
+	$title =~ s/((bonus|deluxe|12“|live|extended|instrumental|edit|interlude|alt\.|alternate|alternative|album|single|ep|maxi)+[ -]*(version|remix|mix|take|track))//ig; # delete some common words
+	$title = uc(Slim::Utils::Text::ignoreCase($title, 1));
+	return $title;
 }
 
 *escape = \&URI::Escape::uri_escape_utf8;

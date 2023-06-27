@@ -377,6 +377,12 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_PARAM_NAME
 	EN	Skip if skipped in the last
 	FR	Sauter si sauté dans les derniers
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RACKSRECENTLYPLAYEDSIMILARBYSAMEARTIST_NAME
+	EN	Recently played & similar track titles<br>by same artist (APC)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RACKSRECENTLYPLAYEDSIMILARBYSAMEARTIST_DESC
+	EN	Skip recently played songs by the same artist<br>with similar track titles (according to the APC database)
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_NAME
 	EN	High APC skip count
 	FR	Grand nombre de sauts APC
