@@ -64,7 +64,7 @@ sub pages {
 }
 
 sub prefs {
-	return ($prefs, qw(apcparentfolderpath playedtreshold_percent undoskiptimespan alwaysdisplayvals postscanscheduledelay));
+	return ($prefs, qw(apcparentfolderpath playedthreshold_percent undoskiptimespan alwaysdisplayvals postscanscheduledelay));
 }
 
 sub handler {

@@ -35,11 +35,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK
 	FR	https://github.com/AF-1/lms-alternativeplaycount#faq
 
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTHRESHOLD_PERCENT
 	EN	Played threshold
 	FR	Seuil de lecture
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTRESHOLD_PERCENT_DESC
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTHRESHOLD_PERCENT_DESC
 	EN	Select the <b>percentage</b> of a song that <b>must be played before it is marked as <i>played</i></b>.<br>If you <b>skip</b> the song <b>before</b> this percentage of the song has played, the song will be marked as <b>skipped</b> instead.
 	FR	Sélectionnez le <b>pourcentage</b> du morceau qui <b>doit être joué avant qu'il soit marqué comme <i>joué</i></b>.<br>Si vous <b>sautez</b> la chanson <b>avant</b> que ce pourcentage du morceau soit joué, le morceau sera à la place marqué comme <b>sauté</b>.
 

@@ -125,7 +125,7 @@ sub postinitPlugin {
 sub initPrefs {
 	$prefs->init({
 		apcparentfolderpath => Slim::Utils::OSDetect::dirsFor('prefs'),
-		playedtreshold_percent => 20,
+		playedthreshold_percent => 20,
 		undoskiptimespan => 5,
 		alwaysdisplayvals => 1,
 		dbpopdpsvinitial => 1,
@@ -161,7 +161,7 @@ sub initPrefs {
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 0, 'high' => 15}, 'undoskiptimespan');
 	$prefs->setValidate({'validator' => \&isTimeOrEmpty}, 'backuptime');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 365}, 'backupsdaystokeep');
-	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 90}, 'playedtreshold_percent');
+	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 90}, 'playedthreshold_percent');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 50}, 'dbpoplmsminplaycount');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 5, 'high' => 600}, 'postscanscheduledelay');
 	$prefs->setValidate('file', 'restorefile');
@@ -521,20 +521,20 @@ sub startPlayCountTimer {
 		return;
 	}
 
-	my $playedTreshold_percent = ($prefs->get('playedtreshold_percent') || 20) / 100;
+	my $playedThreshold_percent = ($prefs->get('playedthreshold_percent') || 20) / 100;
 	my $songProgress = Slim::Player::Source::progress($client);
-	main::DEBUGLOG && $log->is_debug && $log->debug('playedTreshold_percent = '.($playedTreshold_percent * 100).'% -- songProgress so far = '.(sprintf "%.1f", ($songProgress * 100)).'%');
+	main::DEBUGLOG && $log->is_debug && $log->debug('playedThreshold_percent = '.($playedThreshold_percent * 100).'% -- songProgress so far = '.(sprintf "%.1f", ($songProgress * 100)).'%');
 
-	if ($songProgress >= $playedTreshold_percent) {
-		main::DEBUGLOG && $log->is_debug && $log->debug('songProgress > playedTreshold_percent. Will mark song as played.');
+	if ($songProgress >= $playedThreshold_percent) {
+		main::DEBUGLOG && $log->is_debug && $log->debug('songProgress > playedThreshold_percent. Will mark song as played.');
 		markAsPlayed($client, $track->url, $track->urlmd5);
 	} else {
 		my $songDuration = $track->secs;
-		my $remainingTresholdTime = $songDuration * $playedTreshold_percent - $songDuration * $songProgress;
-		main::DEBUGLOG && $log->is_debug && $log->debug('songDuration = '.$songDuration.' seconds -- remainingTresholdTime = '.(sprintf "%.1f", $remainingTresholdTime).' seconds');
+		my $remainingThresholdTime = $songDuration * $playedThreshold_percent - $songDuration * $songProgress;
+		main::DEBUGLOG && $log->is_debug && $log->debug('songDuration = '.$songDuration.' seconds -- remainingThresholdTime = '.(sprintf "%.1f", $remainingThresholdTime).' seconds');
 
 		# Start timer for new song
-		Slim::Utils::Timers::setTimer($client, time() + $remainingTresholdTime, \&markAsPlayed, $track->url, $track->urlmd5);
+		Slim::Utils::Timers::setTimer($client, time() + $remainingThresholdTime, \&markAsPlayed, $track->url, $track->urlmd5);
 	}
 }
 
@@ -579,9 +579,9 @@ sub undoLastSkipCountIncrement {
 		my $track = Slim::Schema->rs('Track')->single({'urlmd5' => $trackURLmd5});
 		$track = Slim::Schema->objectForUrl({ 'url' => $trackURL }) if !$track;
 		my $songDuration = $track->secs;
-		my $playedTreshold_percent = ($prefs->get('playedtreshold_percent') || 20) / 100;
+		my $playedThreshold_percent = ($prefs->get('playedthreshold_percent') || 20) / 100;
 
-		if ($lastSkipped > 0 && (time()-$lastSkipped < ($undoSkipTimeSpan * 60 + $songDuration * $playedTreshold_percent))) {
+		if ($lastSkipped > 0 && (time()-$lastSkipped < ($undoSkipTimeSpan * 60 + $songDuration * $playedThreshold_percent))) {
 			main::INFOLOG && $log->is_info && $log->info("Played track was skipped in the last $undoSkipTimeSpan mins. Reducing skip count (by 1) and dynamic played/skipped value (DPSV)");
 			my $reduceSkipCountSQL;
 			if ($skipCount - 1 == 0) {
@@ -1164,7 +1164,7 @@ sub checkCustomSkipFilterType {
 
 			main::INFOLOG && $log->is_info && $log->info("Checking playlist track '".$track->titlesearch."' against all tracks by artist '".$track->artist->name."'");
 			if (scalar @artistTracks > 0) {
-				my ($recentlyPlayedPeriod, $similarityTreshold) = undef;
+				my ($recentlyPlayedPeriod, $similarityThreshold) = undef;
 				# get filter param values
 				for my $parameter (@{$parameters}) {
 					if ($parameter->{'id'} eq 'time') {
@@ -1173,7 +1173,7 @@ sub checkCustomSkipFilterType {
 					}
 					if ($parameter->{'id'} eq 'similarityval') {
 						my $similarityVals = $parameter->{'value'};
-						$similarityTreshold = $similarityVals->[0] if (defined($similarityVals) && scalar(@{$similarityVals}) > 0);
+						$similarityThreshold = $similarityVals->[0] if (defined($similarityVals) && scalar(@{$similarityVals}) > 0);
 					}
 				}
 
@@ -1208,7 +1208,7 @@ sub checkCustomSkipFilterType {
 							main::INFOLOG && $log->is_info && $log->info('--- Similarity = '.Data::Dump::dump($similarity)."\t-- ".$_->{'tracktitlesearch'});
 
 							# skip if above similarity threshold
-							if ($similarity > $similarityTreshold) {
+							if ($similarity > $similarityThreshold) {
 								main::INFOLOG && $log->is_info && $log->info(">>> SKIPPING similar playlist track: $curTitle");
 								main::DEBUGLOG && $log->is_debug && $log->debug('--- filter exec time = '.(time()-$started).' secs.');
 								main::INFOLOG && $log->is_info && $log->info("\n");
