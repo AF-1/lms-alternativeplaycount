@@ -41,7 +41,7 @@ use Path::Class;
 
 use base 'Exporter';
 our %EXPORT_TAGS = (
-	all => [qw( getCurrentDBH commit rollback createBackup cleanupBackups isTimeOrEmpty getMusicDirs parse_duration pathForItem roundFloat)],
+	all => [qw(commit rollback createBackup cleanupBackups isTimeOrEmpty getMusicDirs parse_duration pathForItem roundFloat)],
 );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
 
@@ -59,7 +59,7 @@ sub createBackup {
 
 	my $backupDir = $prefs->get('apcfolderpath');
 	my ($sql, $sth) = undef;
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 	my ($trackURL, $trackURLmd5, $apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped, $apcDynPSval);
 	my $started = time();
 	my $backuptimestamp = strftime "%Y-%m-%d %H:%M:%S", localtime time;
@@ -239,10 +239,6 @@ sub pathForItem {
 sub roundFloat {
 	my $float = shift;
 	return int($float + $float/abs($float*2 || 1));
-}
-
-sub getCurrentDBH {
-	return Slim::Schema->storage->dbh();
 }
 
 sub commit {

@@ -180,7 +180,7 @@ sub trackInfoHandler {
 	my $returnVal = 0;
 	my ($apcPlayCount, $apcLastPlayed, $persistentPlayCount, $persistentLastPlayed, $apcSkipCount, $apcLastSkipped, $dynPSval);
 	my $urlmd5 = $track->urlmd5 || md5_hex($url);
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 
 	my $sql = "select ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(alternativeplaycount.dynPSval, 0), ifnull(tracks_persistent.playCount, 0), ifnull(tracks_persistent.lastPlayed, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.urlmd5 = \"$urlmd5\"";
 	eval {
@@ -600,7 +600,7 @@ sub _setDynamicPlayedSkippedValue {
 	return if (!$trackURL || !$trackURLmd5 || !$action);
 
 	# get current DPSV
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 	my $sql = "select ifnull(dynPSval, 0) from alternativeplaycount where urlmd5 = \"$trackURLmd5\"";
 	my $curDPSV;
 	my $sth = $dbh->prepare($sql);
@@ -1073,7 +1073,7 @@ sub checkCustomSkipFilterType {
 
 	my $currentTime = time();
 	my $parameters = $filter->{'parameter'};
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 	my $sql = undef;
 	my $result = 0;
 	if ($filter->{'id'} eq 'alternativeplaycount_recentlyplayedtrack') {
@@ -1146,7 +1146,7 @@ sub checkCustomSkipFilterType {
 			# get available track titles for current artist
 			my @artistTracks = ();
 			my ($trackTitle, $trackTitleSearch, $lastPlayed) = undef;
-			my $dbh = getCurrentDBH();
+			my $dbh = Slim::Schema->dbh;
 			my $sth = $dbh->prepare("select tracks.title,tracks.titlesearch,ifnull(alternativeplaycount.lastPlayed,0) from tracks, alternativeplaycount, contributor_track where tracks.urlmd5 = alternativeplaycount.urlmd5 and tracks.id = contributor_track.track and contributor_track.contributor = ? and tracks.id != ? group by tracks.id");
 			eval {
 				$sth->bind_param(1, $artist->id);
@@ -1414,7 +1414,7 @@ sub quickSQLquery {
 	my $sqlstatement = shift;
 	my $valuesToBind = shift || 1; # up to 2 vars
 	my ($thisResult, $thisResult2);
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 	my $sth = $dbh->prepare($sqlstatement);
 	eval {
 		$sth->execute() or do {
@@ -1440,7 +1440,7 @@ sub quickSQLquery {
 
 sub executeSQLstat {
 	my $sqlstatement = shift;
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 
 	for my $sql (split(/[\n\r]/, $sqlstatement)) {
 		my $sth = $dbh->prepare($sql);
@@ -1464,7 +1464,7 @@ sub initDatabase {
 		return;
 	}
 	my $started = time();
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 	my $sth = $dbh->table_info();
 	my $tableExists;
 	eval {
@@ -1531,7 +1531,7 @@ create index if not exists persistentdb.cpurlmd5Index on alternativeplaycount (u
 }
 
 sub populateAPCtable {
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 
 	if ($prefs->get('dbpoplmsvalues')) {
 		# populate table with playCount + lastPlayed values from persistentdb
@@ -1579,7 +1579,7 @@ sub populateAPCtable {
 sub populateDPSV {
 	my $firstRun = shift;
 	my $popMethod = $prefs->get('dbpopdpsvinitial');
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 	# revisit both methods when LMS uses SQLite version >= 3.33.0 that supports update FROM
 	if ($popMethod == 2 || $firstRun) {
 		my $sqlstatement = "update alternativeplaycount set dynPSval = case when (ifnull(playCount, 0) > 0 and ifnull(skipCount, 0) == 0) then playCount when (ifnull(playCount, 0) == 0 and skipCount == 1) then cast(95 as float)/100 when (ifnull(playCount, 0) == 0 and ifnull(skipCount, 0) > 1) then cast(1 as float)/skipCount when (ifnull(playCount, 0) > 0 and ifnull(skipCount, 0) > 0) then cast(playCount as float)/skipCount end where ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0;
@@ -1651,7 +1651,7 @@ sub refreshDatabase {
 		$log->warn("Warning: can't refresh database until library scan is completed.");
 		return;
 	}
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 	my $sth;
 	my $count;
 	main::DEBUGLOG && $log->is_debug && $log->debug('Refreshing APC database');
@@ -1682,7 +1682,7 @@ sub refreshDatabase {
 
 sub removeDeadTracks {
 	my $database = shift || 'alternativeplaycount';
-	my $dbh = getCurrentDBH();
+	my $dbh = Slim::Schema->dbh;
 	my $sth;
 	my $count;
 	main::DEBUGLOG && $log->is_debug && $log->debug('Removing dead tracks from APC database that no longer exist in LMS database');
