@@ -176,6 +176,12 @@ sub initPrefs {
 sub trackInfoHandler {
 	my ($infoItem, $client, $url, $track, $remoteMeta, $tags, $filter) = @_;
 
+	# check if remote track is part of online library
+	if ((Slim::Music::Info::isRemoteURL($url) == 1) && (!defined($track->extid))) {
+		main::DEBUGLOG && $log->is_debug && $log->debug('Track is remote but not part of LMS library. Track URL: '.$url);
+		return;
+	}
+
 	my $alwaysDisplayVals = $prefs->get('alwaysdisplayvals');
 	my $returnVal = 0;
 	my ($apcPlayCount, $apcLastPlayed, $persistentPlayCount, $persistentLastPlayed, $apcSkipCount, $apcLastSkipped, $dynPSval);
@@ -455,6 +461,13 @@ sub _APCcommandCB {
 			$log->warn('No track url. Exiting.');
 			return;
 		}
+
+		# check if remote track is part of online library
+		if ((Slim::Music::Info::isRemoteURL($track->url) == 1) && (!defined($track->extid))) {
+			main::DEBUGLOG && $log->is_debug && $log->debug('Track is remote but not part of LMS library. Track URL: '.$track->url);
+			return;
+		}
+
 		my $currentTrackURL = $track->url;
 		my $currentTrackURLmd5 = $track->urlmd5;
 		my $previousTrackURL = $client->pluginData('currentTrackURL');
