@@ -1493,35 +1493,6 @@ sub initDatabase {
 	$sth->finish();
 	main::DEBUGLOG && $log->is_debug && $log->debug($tableExists ? 'APC table table found.' : 'No APC table table found.');
 
-	# check for dynPSval column if APC table exists
-	if ($tableExists) {
-		main::DEBUGLOG && $log->is_debug && $log->debug('APC table already exists.');
-		my $sth = $dbh->prepare (q{pragma table_info(alternativeplaycount)});
-		$sth->execute() or do {
-			main::DEBUGLOG && $log->is_debug && $log->debug("Error executing");
-		};
-
-		my $colName;
-		my %colNames = ();
-		while ($sth->fetch()) {
-			$sth->bind_col(2, \$colName);
-			$colNames{$colName} = 1 if $colName;
-		}
-		$sth->finish();
-
-		if ($colNames{'dynPSval'}) {
-			main::DEBUGLOG && $log->is_debug && $log->debug('APC table column "dynPSval" already exists.');
-		} else {
-			main::DEBUGLOG && $log->is_debug && $log->debug('Creating APC table column "dynPSval"');
-			my $sql = qq(alter table alternativeplaycount add column dynPSval int(10));
-			eval {$dbh->do($sql)};
-			if ($@) {
-				$log->error("Couldn't create column dynPSval in APC database table: [$@]");
-			}
-			populateDPSV(1);
-		}
-	}
-
 	# create APC table if it doesn't exist
 	unless ($tableExists) {
 		# create table
@@ -1676,7 +1647,7 @@ sub refreshDatabase {
 	$count = 0;
 	eval {
 		$count = $sth->execute();
-		if($count eq '0E0') {
+		if ($count eq '0E0') {
 			$count = 0;
 		}
 		commit($dbh);
