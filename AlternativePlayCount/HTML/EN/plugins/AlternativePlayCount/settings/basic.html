@@ -6,12 +6,12 @@
 [% PROCESS plugins/AlternativePlayCount/settings/subpage_chooser.html %]
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTHRESHOLD_PERCENT" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTHRESHOLD_PERCENT_DESC" %]
-	<input type="text" class="stdedit sliderInput_10_90_10" name="pref_playedthreshold_percent" id="playedthreshold_percent" value="[% prefs.playedthreshold_percent %]" size="3"> %
+	<input type="text" class="stdedit sliderInput_10_90_10" name="pref_playedthreshold_percent" id="playedthreshold_percent" value="[% prefs.playedthreshold_percent %]" size="2"> %
 [% END %]
 <br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_UNDOSKIPTIMESPAN" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_UNDOSKIPTIMESPAN_DESC" %]
-	<input type="text" class="stdedit sliderInput_0_15_1" name="pref_undoskiptimespan" id="undoskiptimespan" value="[% prefs.undoskiptimespan %]" size="3"> [% "PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_MINS_BOTH" | string %]
+	<input type="text" class="stdedit sliderInput_0_15_1" name="pref_undoskiptimespan" id="undoskiptimespan" value="[% prefs.undoskiptimespan %]" size="2"> [% "PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_MINS_BOTH" | string %]
 [% END %]
 <br>
 
@@ -22,6 +22,21 @@
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC" %]
 	<input name="pref_alwaysdisplayvals" id="alwaysdisplayvals" type="checkbox" [% IF prefs.alwaysdisplayvals %] checked [% END %]>
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_DESC" %]
+	<input name="pref_autorating" id="autorating" type="checkbox" [% IF prefs.autorating %] checked [% END %]>
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR_DESC" %]
+	<input name="pref_autoratinglinear" id="autoratinglinear" type="checkbox" [% IF prefs.autoratinglinear %] checked [% END %]>
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR_DELTA" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR_DELTA_DESC" %]
+	<input type="text" class="stdedit sliderInput_1_10_1" name="pref_autoratinglineardelta" id="autoratinglineardelta" value="[% prefs.autoratinglineardelta %]" size="2">
 [% END %]
 <br>
 

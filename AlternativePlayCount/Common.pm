@@ -60,19 +60,19 @@ sub createBackup {
 	my $backupDir = $prefs->get('apcfolderpath');
 	my ($sql, $sth) = undef;
 	my $dbh = Slim::Schema->dbh;
-	my ($trackURL, $trackURLmd5, $apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped, $apcDynPSval);
+	my ($trackURL, $trackURLmd5, $apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped, $apcDynPSval, $apcRemote);
 	my $started = time();
 	my $backuptimestamp = strftime "%Y-%m-%d %H:%M:%S", localtime time;
 	my $filename_timestamp = strftime "%Y%m%d-%H%M", localtime time;
 
-	$sql = "select alternativeplaycount.url, alternativeplaycount.urlmd5, ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(alternativeplaycount.dynPSval, 0) from alternativeplaycount where (ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0)";
+	$sql = "select alternativeplaycount.url, alternativeplaycount.urlmd5, ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(alternativeplaycount.dynPSval, 0), alternativeplaycount.remote from alternativeplaycount where (ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0)";
 	$sth = $dbh->prepare($sql);
 	$sth->execute();
-	$sth->bind_columns(undef, \$trackURL, \$trackURLmd5, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped, \$apcDynPSval);
+	$sth->bind_columns(undef, \$trackURL, \$trackURLmd5, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped, \$apcDynPSval, \$apcRemote);
 
 	my @APCTracks = ();
 	while ($sth->fetch()) {
-		push (@APCTracks, {'url' => $trackURL, 'urlmd5' => $trackURLmd5, 'playcount' => $apcPlayCount, 'lastplayed' => $apcLastPlayed, 'skipcount' => $apcSkipCount, 'lastskipped' => $apcLastSkipped, 'dynpsval' => $apcDynPSval});
+		push (@APCTracks, {'url' => $trackURL, 'urlmd5' => $trackURLmd5, 'playcount' => $apcPlayCount, 'lastplayed' => $apcLastPlayed, 'skipcount' => $apcSkipCount, 'lastskipped' => $apcLastSkipped, 'dynpsval' => $apcDynPSval, 'remote' => $apcRemote});
 	}
 	$sth->finish();
 
@@ -92,18 +92,23 @@ sub createBackup {
 		print $output "<!-- ".$backuptimestamp." -->\n";
 		print $output "<AlternativePlayCount>\n";
 		for my $APCTrack (@APCTracks) {
+			if (!defined($APCTrack->{'remote'})) {
+				$trackcount--;
+				next;
+			}
 			my $BACKUPtrackURL = $APCTrack->{'url'};
 			my $BACKUPtrackURLmd5 = $APCTrack->{'urlmd5'};
-			my $BACKUPrelFilePath = getRelFilePath($BACKUPtrackURL);
 			my $BACKUPplayCount = $APCTrack->{'playcount'} || 0;
 			my $BACKUPlastPlayed = $APCTrack->{'lastplayed'} || 0;
 			my $BACKUPskipCount = $APCTrack->{'skipcount'} || 0;
 			my $BACKUPlastSkipped = $APCTrack->{'lastskipped'} || 0;
 			my $BACKUPdynPSval = $APCTrack->{'dynpsval'} || 0;
+			my $BACKUPremote = $APCTrack->{'remote'};
+			my $BACKUPrelFilePath = ($BACKUPremote == 0 ? getRelFilePath($BACKUPtrackURL) : '');
 
 			$BACKUPtrackURL = escape($BACKUPtrackURL);
-			$BACKUPrelFilePath = escape($BACKUPrelFilePath);
-			print $output "\t<track>\n\t\t<url>".$BACKUPtrackURL."</url>\n\t\t<urlmd5>".$BACKUPtrackURLmd5."</urlmd5>\n\t\t<relurl>".$BACKUPrelFilePath."</relurl>\n\t\t<playcount>".$BACKUPplayCount."</playcount>\n\t\t<lastplayed>".$BACKUPlastPlayed."</lastplayed>\n\t\t<skipcount>".$BACKUPskipCount."</skipcount>\n\t\t<lastskipped>".$BACKUPlastSkipped."</lastskipped>\n\t\t<dynpsval>".$BACKUPdynPSval."</dynpsval>\n\t</track>\n";
+			$BACKUPrelFilePath = escape($BACKUPrelFilePath) if $BACKUPrelFilePath;
+			print $output "\t<track>\n\t\t<url>".$BACKUPtrackURL."</url>\n\t\t<urlmd5>".$BACKUPtrackURLmd5."</urlmd5>\n\t\t<relurl>".$BACKUPrelFilePath."</relurl>\n\t\t<playcount>".$BACKUPplayCount."</playcount>\n\t\t<lastplayed>".$BACKUPlastPlayed."</lastplayed>\n\t\t<skipcount>".$BACKUPskipCount."</skipcount>\n\t\t<lastskipped>".$BACKUPlastSkipped."</lastskipped>\n\t\t<dynpsval>".$BACKUPdynPSval."</dynpsval>\n\t\t<remote>".$BACKUPremote."</remote>\n\t</track>\n";
 		}
 		print $output "</AlternativePlayCount>\n";
 

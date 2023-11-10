@@ -67,6 +67,24 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC
 	EN	<b>Always</b> display APC values <b><i>or</i></b> display <b>only</b> APC values that are <b>different from the LMS default database values</b> and that are <b>not zero</b>.
 	FR	<b>Toujours</b> afficher les valeurs APC <b><i>ou</i></b> afficher <b>seulement</b> les valeurs d'APC qui sont <b>différentes des valeurs de la base de données LMS</b> et qui ne sont <b>pas à zéro</b>
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING
+	EN	Enable automatic rating
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_DESC
+	EN	If APC marks a track as played or skipped, it will also change its <i>rating value</i>.<br><br>When a track has been played long enough to count as played, the rating value increases, just as it decreases if the track is skipped. The closer the current track rating is to the middle of the scale (50), the greater the increase/decrease. Conversely, ratings close to 100 or 0, i.e. tracks that have been played or skipped very often, change less and will therefore have to be played or skipped more often to move away from the end of the scale. Also, skipping a track decreases its rating twice as much as playing it increases it (this is hard-coded and not a user setting).<br><br><b>Automatic rating requires the <i>Ratings Light</i> plugin.</b><br><br>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR
+	EN	Enable linear automatic rating
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR_DESC
+	EN	Enable this if you prefer <b>steady/linear</b> rating changes. If a track is then marked as played or skipped, the rating value is always increased or decreased by a <b>constant</b> value that you can set below.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR_DELTA
+	EN	Linear automatic rating change
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR_DELTA_DESC
+	EN	Set the value by which the rating of a track changes when a track is marked as played or skipped. The value can range from 1 to 10 (= a half-star).
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY
 	EN	Post-Scan Delay
 	FR	Delai après scan
