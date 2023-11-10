@@ -12,7 +12,7 @@
 	<defaultState>enabled</defaultState>
 	<targetApplication>
 		<id>Logitech Media Server</id>
-		<minVersion>7.9</minVersion>
+		<minVersion>8.0</minVersion>
 		<maxVersion>*</maxVersion>
 	</targetApplication>
 </extension>
