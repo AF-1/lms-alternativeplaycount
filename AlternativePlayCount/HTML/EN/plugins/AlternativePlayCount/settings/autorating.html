@@ -1,0 +1,40 @@
+[% page = "PLUGIN_ALTERNATIVEPLAYCOUNT" %]
+[% PROCESS settings/header.html %]
+
+[% PROCESS plugins/AlternativePlayCount/settings/subpage_chooser.html %]
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_INFO" %][% END %]<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_ENABLE" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_ENABLE_DESC" %]
+	<select name="pref_autorating" id="autorating">
+		[% FOREACH option = {
+			'0' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DISABLED',
+			'1' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DYNAMIC',
+			'2' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR',
+		} %]
+			<option [% IF prefs.autorating == option.key %]selected='selected' [% END %]value="[% option.key %]">[% option.value | string %]</option>
+		[%- END -%]
+	</select>
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DYNAMICFACTOR" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DYNAMICFACTOR_DESC" %]
+	<input type="text" class="stdedit sliderInput_4_8_1" name="pref_autoratingdynamicfactor" id="autoratingdynamicfactor" value="[% prefs.autoratingdynamicfactor %]" size="2">
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_BASELINERATING" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_BASELINERATING_DESC" %]
+	<select name="pref_baselinerating" id="baselinerating">
+		[% FOREACH ratingvalue = [0,10,20,30,40,50,60,70,80,90,100] %]
+			<option [% IF prefs.baselinerating == ratingvalue %]selected='selected' [% END %]value="[% ratingvalue %]">[% ratingvalue / 20 %]</option>
+		[% END %]
+	</select> [% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_BASELINERATING_STARS" | string %]
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR_DELTA" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR_DELTA_DESC" %]
+	<input type="text" class="stdedit sliderInput_1_10_1" name="pref_autoratinglineardelta" id="autoratinglineardelta" value="[% prefs.autoratinglineardelta %]" size="2">
+[% END %]
+<br>
+
+[% PROCESS settings/footer.html %]

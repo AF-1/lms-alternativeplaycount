@@ -26,6 +26,12 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_RESTORE
 	EN	Backup / Restore
 	FR	Sauvegarde / Restauration
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING
+	EN	Automatic Rating
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_INFO
+	EN	Requires the <b>Ratings Light</b> plugin to work.
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK_TEXT
 	EN	Click here to read the FAQ.
 	FR	Cliquez ici pour lire la FAQ.
@@ -66,24 +72,6 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC
 	EN	<b>Always</b> display APC values <b><i>or</i></b> display <b>only</b> APC values that are <b>different from the LMS default database values</b> and that are <b>not zero</b>.
 	FR	<b>Toujours</b> afficher les valeurs APC <b><i>ou</i></b> afficher <b>seulement</b> les valeurs d'APC qui sont <b>différentes des valeurs de la base de données LMS</b> et qui ne sont <b>pas à zéro</b>
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING
-	EN	Enable automatic rating
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_DESC
-	EN	If APC marks a track as played or skipped, it will also change its <i>rating value</i>.<br><br>When a track has been played long enough to count as played, the rating value increases, just as it decreases if the track is skipped. The closer the current track rating is to the middle of the scale (50), the greater the increase/decrease. Conversely, ratings close to 100 or 0, i.e. tracks that have been played or skipped very often, change less and will therefore have to be played or skipped more often to move away from the end of the scale. Also, skipping a track decreases its rating twice as much as playing it increases it (this is hard-coded and not a user setting).<br><br><b>Automatic rating requires the <i>Ratings Light</i> plugin.</b><br><br>
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR
-	EN	Enable linear automatic rating
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR_DESC
-	EN	Enable this if you prefer <b>steady/linear</b> rating changes. If a track is then marked as played or skipped, the rating value is always increased or decreased by a <b>constant</b> value that you can set below.
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR_DELTA
-	EN	Linear automatic rating change
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTORATING_LINEAR_DELTA_DESC
-	EN	Set the value by which the rating of a track changes when a track is marked as played or skipped. The value can range from 1 to 10 (= a half-star).
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY
 	EN	Post-Scan Delay
@@ -331,6 +319,44 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE_DESC
 	EN	This will clear all values in the APC database before starting the restore process. All current values in your APC database will be reset to the values from the backup. In other words, values not contained in the backup will be lost.
 	FR	Cela va vider toutes les valeurs dans la base de données APC avant de démarrer le processus de restauration. Toutes les valeurs courantes de la base de données APC seront remises aux valeurs de la sauvegarde. En d'autres mots, les valeurs non sauvegardées seront perdues.
+
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_ENABLE
+	EN	Enable automatic rating
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_ENABLE_DESC
+	EN	If you enable this, APC will change the <i>rating value</i> of a track when it's marked as played or skipped. When a track has been played long enough to count as played, the rating value increases, just as it decreases if the track is skipped.<br><br><b>Dynamic rating</b><br>The closer the current track rating is to the middle of the scale (50), the greater the increase/decrease. Conversely, ratings close to 100 or 0, i.e. tracks that have been played or skipped very often, change less and will therefore have to be played or skipped more often to move away from the end of the scale. Also, skipping a track decreases its rating up to twice as much as playing it increases it (this is hard-coded and not a user setting).<br><br><b>Linear rating</b><br>Enable this if you prefer <b>constant/linear</b> rating changes. If a track is then marked as played or skipped, the rating value is always increased or decreased by a <b>constant</b> value that you can set below.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DISABLED
+	EN	Disabled
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DYNAMIC
+	EN	Dynamic rating
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR
+	EN	Linear rating
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DYNAMICFACTOR
+	EN	Dynamic automatic rating change
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DYNAMICFACTOR_DESC
+	EN	This value gives you <i>some</i> control over how much the rating of a track changes when it is marked as played or skipped. It has an effect on how the rating changes are <i>calculated</i>. It is <b>not</b> the <i>actual</i> value by which track ratings will change.<br><br>The <b>smaller</b> the value you set here, the <b>bigger</b> the rating change.<br><br>Only applies to the <b>dynamic</b> rating method.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_BASELINERATING
+	EN	Initial baseline rating
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_BASELINERATING_DESC
+	EN	Set an optional baseline rating that's applied to <b>un</b>played tracks when they're marked as played for the <b>first</b> time. Applies only to the <b>dynamic</b> automatic rating method. Set to 0 to disable it.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_BASELINERATING_STARS
+	EN	star(s)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR_DELTA
+	EN	Linear automatic rating change
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR_DELTA_DESC
+	EN	Set the value by which the rating of a track changes when a track is marked as played or skipped. The value can range from 1 to 10 (= a half-star).
 
 
 

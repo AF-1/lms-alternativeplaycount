@@ -69,9 +69,11 @@ sub initPlugin {
 		require Plugins::AlternativePlayCount::Settings::Basic;
 		require Plugins::AlternativePlayCount::Settings::Backup;
 		require Plugins::AlternativePlayCount::Settings::Reset;
+		require Plugins::AlternativePlayCount::Settings::Autorating;
 		Plugins::AlternativePlayCount::Settings::Basic->new($class);
 		Plugins::AlternativePlayCount::Settings::Backup->new($class);
 		Plugins::AlternativePlayCount::Settings::Reset->new($class);
+		Plugins::AlternativePlayCount::Settings::Autorating->new($class);
 
 		Slim::Web::Pages->addPageFunction('resetvalue', \&resetValueWeb);
 	}
@@ -130,7 +132,8 @@ sub initPrefs {
 		playedthreshold_percent => 20,
 		undoskiptimespan => 5,
 		alwaysdisplayvals => 1,
-		autoratinglineardelta => 3,
+		autoratingdynamicfactor => 8,
+		autoratinglineardelta => 5,
 		dbpopdpsvinitial => 1,
 		dbpoplmsvalues => 1,
 		dbpoplmsminplaycount => 1,
@@ -163,6 +166,7 @@ sub initPrefs {
 
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 0, 'high' => 15}, 'undoskiptimespan');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 10}, 'autoratinglineardelta');
+	$prefs->setValidate({'validator' => 'intlimit', 'low' => 4, 'high' => 8}, 'autoratingdynamicfactor');
 	$prefs->setValidate({'validator' => \&isTimeOrEmpty}, 'backuptime');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 365}, 'backupsdaystokeep');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 90}, 'playedthreshold_percent');
@@ -569,10 +573,19 @@ sub markAsPlayed {
 	$client->pluginData('markedAsPlayed' => $trackURL);
 	my $lastPlayed = time();
 
+	# get previous APC play count for auto-rating baseline rating
+	my $baselineRatingPlayCount;
+	if ($prefs->get('autorating') && $prefs->get('baselinerating')) {
+		my $dbh = Slim::Schema->dbh;
+		my $APCplaycount = $dbh->selectcol_arrayref("select ifnull(alternativeplaycount.playCount, 0) from alternativeplaycount where alternativeplaycount.urlmd5 = \"$trackURLmd5\"");
+		$baselineRatingPlayCount = $APCplaycount->[0];
+		main::DEBUGLOG && $log->is_debug && $log->debug('previous APC play count for baseline rating = '.Data::Dump::dump($baselineRatingPlayCount));
+	}
+
 	my $sqlstatement = "update alternativeplaycount set playCount = ifnull(playCount, 0) + 1, lastPlayed = $lastPlayed where urlmd5 = \"$trackURLmd5\"";
 	executeSQLstat($sqlstatement);
 	_setDynamicPlayedSkippedValue($trackURL, $trackURLmd5, 1);
-	_setAutoRatingValue($client, $track, 1) if $prefs->get('autorating');
+	_setAutoRatingValue($client, $track, 1, $baselineRatingPlayCount) if $prefs->get('autorating');
 
 	main::DEBUGLOG && $log->is_debug && $log->debug('Marked track as played');
 }
@@ -683,7 +696,7 @@ sub _setDynamicPlayedSkippedValue {
 }
 
 sub _setAutoRatingValue {
-	my ($client, $track, $action) = @_;
+	my ($client, $track, $action, $baselineRatingPlayCount) = @_;
 	if (!$ratingslight_enabled) {
 		$log->warn('Auto-rating requires the "Ratings Light" plugin.');
 		return;
@@ -707,14 +720,21 @@ sub _setAutoRatingValue {
 	# rating actions: 1 = increase, 2 = decrease, 3 = undo last decrease
 	if ($action == 1 && $curRating < 100) {
 		$logActionPrefix = 'Increasing';
-		if ($prefs->get('autoratinglinear')) {
+		if ($prefs->get('autorating') == 2) {
 			$delta = $prefs->get('autoratinglineardelta');
 			main::DEBUGLOG && $log->is_debug && $log->debug('linear rating increase = '.$delta);
 		} else {
-			$delta = $delta/8;
-			if ($delta < 1) {
-				main::DEBUGLOG && $log->is_debug && $log->debug('delta increase raw = '.$delta);
-				$delta = 1;
+			# use baseline rating for unplayed tracks?
+			if ($prefs->get('baselinerating') && defined($baselineRatingPlayCount) && $baselineRatingPlayCount == 0) {
+				$delta = $prefs->get('baselinerating');
+				main::DEBUGLOG && $log->is_debug && $log->debug('applying baseline rating of '.$delta.' to unplayed track');
+			} else {
+				my $dynAutoRatingFactor = $prefs->get('autoratingdynamicfactor') || 8;
+				$delta = $delta/$dynAutoRatingFactor;
+				if ($delta < 1) {
+					main::DEBUGLOG && $log->is_debug && $log->debug('delta increase raw = '.$delta);
+					$delta = 1;
+				}
 			}
 			main::DEBUGLOG && $log->is_debug && $log->debug('rating increase = '.$delta);
 		}
@@ -725,7 +745,7 @@ sub _setAutoRatingValue {
 
 	} elsif ($action == 2 && $curRating > 0) {
 		$logActionPrefix = 'Reducing';
-		if ($prefs->get('autoratinglinear')) {
+		if ($prefs->get('autorating') == 2) {
 			$delta = $prefs->get('autoratinglineardelta');
 			main::DEBUGLOG && $log->is_debug && $log->debug('linear rating decrease = '.$delta);
 		} else {
@@ -743,7 +763,7 @@ sub _setAutoRatingValue {
 
 	} elsif ($action == 3 && $curRating < 100) {
 		$logActionPrefix = 'Resetting';
-		if ($prefs->get('autoratinglinear')) {
+		if ($prefs->get('autorating') == 2) {
 			main::DEBUGLOG && $log->is_debug && $log->debug('linear rating reset increase = '.$prefs->get('autoratinglineardelta'));
 			$newRating = $curRating + $prefs->get('autoratinglineardelta');
 		# Because of rounding, the calculated previous value may differ from the actual previous value.
