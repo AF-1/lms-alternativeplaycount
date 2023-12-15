@@ -47,12 +47,18 @@
 <br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_LMSDEFAULT" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_LMSDEFAULT_DESC" %]
-	<input name="pref_dbpoplmsvalues" id="dbpoplmsvalues" type="checkbox" [% IF prefs.dbpoplmsvalues %] checked [% END %]>
+	<select class="stdedit" name="pref_dbpoplmsvalues" id="dbpoplmsvalues">
+		<option [% IF NOT prefs.dbpoplmsvalues %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.dbpoplmsvalues %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
 [% END %]
 <br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_DPSV" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_DPSV_DESC" %]
-	<input name="pref_dbpopdpsv" id="dbpopdpsv" type="checkbox" [% IF prefs.dbpopdpsv %] checked [% END %]>
+	<select class="stdedit" name="pref_dbpopdpsv" id="dbpopdpsv">
+		<option [% IF NOT prefs.dbpopdpsv %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.dbpopdpsv %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
 [% END %]
 <br>
 

@@ -21,7 +21,18 @@
 <br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC" %]
-	<input name="pref_alwaysdisplayvals" id="alwaysdisplayvals" type="checkbox" [% IF prefs.alwaysdisplayvals %] checked [% END %]>
+	<select class="stdedit" name="pref_alwaysdisplayvals" id="alwaysdisplayvals">
+		<option [% IF NOT prefs.alwaysdisplayvals %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.alwaysdisplayvals %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS_DESC" %]
+	<select class="stdedit" name="pref_allmusicbrainzidversions" id="allmusicbrainzidversions">
+		<option [% IF NOT prefs.allmusicbrainzidversions %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.allmusicbrainzidversions %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
 [% END %]
 <br>
 

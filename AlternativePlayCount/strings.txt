@@ -73,6 +73,12 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC
 	EN	<b>Always</b> display APC values <b><i>or</i></b> display <b>only</b> APC values that are <b>different from the LMS default database values</b> and that are <b>not zero</b>.
 	FR	<b>Toujours</b> afficher les valeurs APC <b><i>ou</i></b> afficher <b>seulement</b> les valeurs d'APC qui sont <b>différentes des valeurs de la base de données LMS</b> et qui ne sont <b>pas à zéro</b>
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS
+	EN	Apply changes to <i>all</i> tracks<br>with the <i>same Musicbrainz ID</i>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS_DESC
+	EN	If you have different versions of the same track (e.g. flac and mp3 versions of the same album track or the same track in a regular album and a compilation), APC can apply changes to the play count, skip count and dynamic played/skipped value to <i>all</i> tracks with the <i>same Musicbrainz ID.</i><br>This does <b>not</b> apply to <i>auto-rating</i> because that's a setting of the <i>Ratings Light</i> plugin.<br><br><b>It only makes sense to enable this if you know that you have <i>multiple</i> tracks with the <i>same</i> Musicbrainz ID in your library.</b>
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY
 	EN	Post-Scan Delay
 	FR	Delai après scan
