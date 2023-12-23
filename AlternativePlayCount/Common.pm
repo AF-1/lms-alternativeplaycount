@@ -128,7 +128,7 @@ sub createBackup {
 sub cleanupBackups {
 	my $autodeletebackups = $prefs->get('autodeletebackups');
 	my $backupFilesMin = $prefs->get('backupfilesmin');
-	if (defined $autodeletebackups) {
+	if ($autodeletebackups) {
 		my $backupDir = $prefs->get('apcfolderpath');
 		return unless (-d $backupDir);
 		my $backupsdaystokeep = $prefs->get('backupsdaystokeep');

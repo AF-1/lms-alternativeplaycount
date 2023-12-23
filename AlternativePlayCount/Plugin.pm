@@ -825,7 +825,7 @@ sub _setAutoRatingValue {
 
 sub backupScheduler {
 	my $scheduledbackups = $prefs->get('scheduledbackups');
-	if (defined $scheduledbackups) {
+	if ($scheduledbackups) {
 		my $backuptime = $prefs->get('backuptime');
 		my $day = $prefs->get('backup_lastday');
 		if (!defined($day)) {
@@ -886,7 +886,7 @@ sub restoreFromBackup {
 	my $restorefile = $prefs->get('restorefile');
 
 	if ($restorefile) {
-		if (defined $clearallbeforerestore) {
+		if ($clearallbeforerestore) {
 			resetAPCDatabase(1);
 		}
 		initRestore();
