@@ -66,7 +66,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPA
 	FR	Choississez un emplacement (dossier <b>parent</b>) pour le dossier de <i>Nombre de Lectures Alternatif</i> où ce plugin stocke les sauvegardes (programmées).
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS
-	EN	Always display APC values
+	EN	Always display APC values<br>on <i>Song Info</i> page
 	FR	Afficher toujours les valeurs APC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC
@@ -280,6 +280,17 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_PURGEDEADTRACKS_PERSISTENT_INPROG
 	EN	removing dead tracks...
 	FR	suppression des morceaux morts...
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS
+	EN	Reset <i>LMS tracks_persistent</i> values<br>to APC values
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_DESC
+	EN	This will reset <i>play count</i> and <i>last played</i> values of tracks in the LMS <b>tracks_persistent</b> table to APC values.<br><br><b>Only use this if you're know what you're doing and if you have a backup of the LMS <i>persist.db</i> file.</b>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_BUTTON
+	EN	Reset LMS to APC values now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_INPROGRESS
+	EN	resetting LMS to APC values...
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE

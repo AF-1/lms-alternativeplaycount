@@ -95,6 +95,11 @@ sub handler {
 			$result = $class->SUPER::handler($client, $paramRef);
 		}
 		Plugins::AlternativePlayCount::Plugin::removeDeadTracks('tracks_persistent');
+	} elsif ($paramRef->{'resettrackspersistentvalues'}) {
+		if ($callHandler) {
+			$result = $class->SUPER::handler($client, $paramRef);
+		}
+		Plugins::AlternativePlayCount::Plugin::resetLMSvalues;
 	} elsif ($callHandler) {
 		$result = $class->SUPER::handler($client, $paramRef);
 	}

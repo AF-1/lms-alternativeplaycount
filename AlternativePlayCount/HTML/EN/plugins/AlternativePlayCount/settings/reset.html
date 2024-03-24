@@ -75,6 +75,11 @@
 	<span class='status' id='purgedeadtrackspersistentstatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_PURGEDEADTRACKS_PERSISTENT_INPROGRESS" | string %]</span>
 [% END %]
 <br>
+<br>
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_DESC" %]
+	<input style="margin-top:-1px;" name="resettrackspersistentvalues" type="submit" class="stdclick" onClick="inprogress('resettrackspersistentvaluesstatus');" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_BUTTON" | string %]">
+	<span class='status' id='resettrackspersistentvaluesstatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_INPROGRESS" | string %]</span>
 [% END %]
+<br>[% END %]
 
 [% PROCESS settings/footer.html %]

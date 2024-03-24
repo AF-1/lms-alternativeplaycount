@@ -110,6 +110,16 @@ sub initPlugin {
 		'use' => 1,
 	});
 
+	addTitleFormat('APC_PLAYCOUNT');
+	addTitleFormat('APC_SKIPCOUNT');
+	addTitleFormat('APC_DPSV');
+	Slim::Music::TitleFormatter::addFormat('APC_PLAYCOUNT',
+		sub { my $track = shift; getTitleFormat($track, 'playCount'); }, 1);
+	Slim::Music::TitleFormatter::addFormat('APC_SKIPCOUNT',
+		sub { my $track = shift; getTitleFormat($track, 'skipCount'); }, 1);
+	Slim::Music::TitleFormatter::addFormat('APC_DPSV',
+		sub { my $track = shift; getTitleFormat($track, 'dynPSval'); }, 1);
+
 	Slim::Control::Request::addDispatch(['alternativeplaycount','resetvaluechoice','_infoitem', '_urlmd5'], [0, 1, 1, \&resetValueChoiceJive]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount','resetvalue','_infoitem', '_urlmd5'], [0, 1, 1, \&resetValueJive]);
 
@@ -1600,6 +1610,68 @@ sub checkCustomSkipFilterType {
 }
 
 
+# title formats
+
+sub getTitleFormat {
+	my $track = shift;
+	my $titleFormatName = shift;
+	my $returnVal = 0;
+
+	# get local track if unblessed
+	if ($track && !blessed($track)) {
+		main::DEBUGLOG && $log->is_debug && $log->debug('Track is not blessed');
+		my $trackObj = Slim::Schema->find('Track', $track->{id});
+		if (blessed($trackObj)) {
+			$track = $trackObj;
+		} else {
+			my $trackURL = $track->{'url'};
+			main::DEBUGLOG && $log->is_debug && $log->debug('Slim::Schema->find found no blessed track object for id. Trying to retrieve track object with url: '.Data::Dump::dump($trackURL));
+			if (defined ($trackURL)) {
+				if (Slim::Music::Info::isRemoteURL($trackURL) == 1) {
+					$track = Slim::Schema->_retrieveTrack($trackURL);
+					main::DEBUGLOG && $log->is_debug && $log->debug('Track is remote. Retrieved trackObj = '.Data::Dump::dump($track));
+				} else {
+					$track = Slim::Schema->rs('Track')->single({'url' => $trackURL});
+					main::DEBUGLOG && $log->is_debug && $log->debug('Track is not remote. TrackObj for url = '.Data::Dump::dump($track));
+				}
+			} else {
+				return '';
+			}
+		}
+	}
+
+	if ($track) {
+		my $urlmd5 = $track->urlmd5;
+		my $dbh = Slim::Schema->dbh;
+
+		my $sql = "select ifnull(alternativeplaycount.$titleFormatName, 0) from alternativeplaycount where alternativeplaycount.urlmd5 = \"$urlmd5\"";
+		my $sth = $dbh->prepare($sql);
+		eval {
+			$sth->execute();
+			$returnVal = $sth->fetchrow || 0;
+			$sth->finish();
+		};
+		if ($@) {
+			$log->error("Database error: $DBI::errstr");
+		}
+		main::DEBUGLOG && $log->is_debug && $log->debug("Title format: $titleFormatName --- Value: $returnVal");
+	}
+	return $returnVal;
+}
+
+sub addTitleFormat {
+	my $titleformat = shift;
+	my $titleFormats = $serverPrefs->get('titleFormat');
+	foreach my $format (@{$titleFormats}) {
+		if ($titleformat eq $format) {
+			return;
+		}
+	}
+	push @{$titleFormats}, $titleformat;
+	$serverPrefs->set('titleFormat', $titleFormats);
+}
+
+
 
 sub quickSQLquery {
 	my $sqlstatement = shift;
@@ -1917,6 +1989,20 @@ sub removeDeadTracks {
 	}
 
 	main::DEBUGLOG && $log->is_debug && $log->debug('Finished removing dead tracks from DB.');
+}
+
+sub resetLMSvalues {
+	my $dbh = Slim::Schema->dbh;
+	main::DEBUGLOG && $log->is_debug && $log->debug('Resetting play count and date last played values of the LMS tracks_persistent table to APC values');
+
+	my $sqlstatement = "update tracks_persistent set playCount = (select alternativeplaycount.playCount from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5), lastPlayed = (select round(alternativeplaycount.lastPlayed,0) from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5);";
+	eval {$dbh->do($sqlstatement)};
+	if($@) {
+		$log->error("Database error: $DBI::errstr\n");
+		eval { rollback($dbh); };
+	}
+
+	main::DEBUGLOG && $log->is_debug && $log->debug('Finished resetting LMS to APC values.');
 }
 
 sub resetAPCDatabase {
