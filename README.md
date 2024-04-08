@@ -80,7 +80,6 @@ If have the <i>Ratings Light</i> plugin installed, APC can change the <i>rating 
 </p></details><br>
 
 <br><br><br>
-
 [^1]: If you want localized strings in your language, please read <a href="https://github.com/AF-1/sobras/wiki/Adding-localization-to-LMS-plugins"><b>this</b></a>.
 [^2]: The screenshots might not correspond to the current UI in every detail.
 [^3]: i.e. percentage of the total song duration
