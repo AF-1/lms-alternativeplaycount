@@ -16,13 +16,13 @@ As LMS and APC play counts diverge in the long term, you will benefit from the m
 <br><br><br>
 
 
-## Screenshots
+## Screenshots[^2]
 <img src="screenshots/apc.gif" width="100%">
 <br><br><br>
 
 
 ## Features
-- Set a time[^2] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
+- Set a time[^3] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
 - The **dynamic played/skipped value** (DPSV) reflects your **listening history/decisions of the *recent past*** and is independent of the absolute play count and skip count values. A track's DPSV increases if played and decreases if skipped (see FAQ for details). You can use it to create dynamic playlists with [Dynamic Playlist Creator](https://github.com/AF-1/lms-dynamicplaylistcreator) for [Dynamic Playlists](https://github.com/AF-1/lms-dynamicplaylists) or filter rules in [Custom Skip](https://github.com/AF-1/lms-customskip#custom-skip).
 - Let APC *automatically change the rating* of a track when it's marked as played or skipped (disabled by default).
 - *Separate database table* for APC values (play count, date last played, skip count, date last skipped, dynamic played/skipped value)
@@ -33,7 +33,6 @@ As LMS and APC play counts diverge in the long term, you will benefit from the m
 - Includes skip/filter rules for [**Custom Skip**](https://github.com/AF-1/lms-customskip#custom-skip).
 <br><br><br>
 
-[^2]: i.e. percentage of the total song duration
 
 ## Installation
 
@@ -83,3 +82,5 @@ If have the <i>Ratings Light</i> plugin installed, APC can change the <i>rating 
 <br><br><br>
 
 [^1]: If you want localized strings in your language, please read <a href="https://github.com/AF-1/sobras/wiki/Adding-localization-to-LMS-plugins"><b>this</b></a>.
+[^2]: The screenshots might not correspond to the current UI in every detail.
+[^3]: i.e. percentage of the total song duration
