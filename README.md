@@ -24,13 +24,22 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 ## Features
 
 * Set a time[^3] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
+
 * The **dynamic played/skipped value** (DPSV) reflects your **listening history/decisions of the *recent past*** and is independent of the absolute play count and skip count values. A track's DPSV increases if played and decreases if skipped (see FAQ for details). You can use it to create dynamic playlists with [Dynamic Playlist Creator](https://github.com/AF-1/lms-dynamicplaylistcreator) for [Dynamic Playlists](https://github.com/AF-1/lms-dynamicplaylists) or filter rules in [Custom Skip](https://github.com/AF-1/lms-customskip#custom-skip).
+
 * Let APC *automatically change the rating* of a track when it's marked as played or skipped (disabled by default).
+
 * *Separate database table* for APC values (play count, date last played, skip count, date last skipped, dynamic played/skipped value)
+
 * *Create* (scheduled) **backups** of your APC data and *restore* values from backup files.
+
 * Automatically undo a track's last (accidental) skip count increment if the track is played within a certain time span afterwards (see plugin settings).
+
 * **Reset** *play count*, *skip count* or *dynamic played/skipped value* (DPSV) for **individual** or **all** tracks (see FAQ).<br>
+
 * These plugins already make use of APC data: [**Dynamic Playlists**](https://github.com/AF-1/lms-dynamicplaylists), [**Dynamic Playlist Creator**](https://github.com/AF-1/lms-dynamicplaylistcreator), [**Virtual Library Creator**](https://github.com/AF-1/lms-virtuallibrarycreator), [**Custom Skip**](https://github.com/AF-1/lms-customskip), [**Context Stats**](https://github.com/AF-1/lms-contextstats) and [**Visual Statistics**](https://github.com/AF-1/lms-visualstatistics).
+
+**Some features are not enabled by default.** Please go to the plugin's settings page to enable them.
 
 <br><br><br>
 
