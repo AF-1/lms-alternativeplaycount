@@ -3,8 +3,8 @@ Alternative Play Count
 
 **Alternative Play Count**[^1] provides *alternative* **play count**s and **skip count**s that aim to reflect your true listening history.<br><br>
 If you *skip* tracks in a playlist, LMS still increases their *play* counts. With **Alternative Play Count** you set a time *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.<br><br>
-💡 Even though you can use APC data with any plugin and in any SQLite query, the ***Alternative Play Count* plugin was designed with [Dynamic Playlists](https://github.com/AF-1/lms-dynamicplaylists) and [Visual Statistics](https://github.com/AF-1/lms-visualstatistics) in mind**.<br><br>
-As LMS and APC play counts diverge in the long term, you will benefit from the more accurate quality of the data (e.g. in DPL mixes & VS charts).
+You can use APC data in any SQLite query or with other plugins to create/play smart playlists (dynamic playlists), virtual libraries or to skip specific tracks. See [**features**](https://github.com/AF-1/lms-alternativeplaycount#features) section for details.<br><br>
+💡 As LMS and APC play counts diverge in the long term, you will benefit from the more accurate quality of the data (e.g. in smart playlists & statistics).
 <br><br>
 [⬅️ **Back to the list of all plugins**](https://github.com/AF-1/)
 <br><br>
@@ -22,15 +22,16 @@ As LMS and APC play counts diverge in the long term, you will benefit from the m
 
 
 ## Features
-- Set a time[^3] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
-- The **dynamic played/skipped value** (DPSV) reflects your **listening history/decisions of the *recent past*** and is independent of the absolute play count and skip count values. A track's DPSV increases if played and decreases if skipped (see FAQ for details). You can use it to create dynamic playlists with [Dynamic Playlist Creator](https://github.com/AF-1/lms-dynamicplaylistcreator) for [Dynamic Playlists](https://github.com/AF-1/lms-dynamicplaylists) or filter rules in [Custom Skip](https://github.com/AF-1/lms-customskip#custom-skip).
-- Let APC *automatically change the rating* of a track when it's marked as played or skipped (disabled by default).
-- *Separate database table* for APC values (play count, date last played, skip count, date last skipped, dynamic played/skipped value)
-- *Create* (scheduled) **backups** of your APC data and *restore* values from backup files.
-- Automatically undo a track's last (accidental) skip count increment if the track is played within a certain time span afterwards (see plugin settings).
-- **Reset** *play count*, *skip count* or *dynamic played/skipped value* (DPSV) for **individual** or **all** tracks (see FAQ).
-- Use APC data with plugins like [**Dynamic Playlists**](https://github.com/AF-1/lms-dynamicplaylists#dynamic-playlists) or [**Visual Statistics**](https://github.com/AF-1/lms-visualstatistics#visual-statistics).
-- Includes skip/filter rules for [**Custom Skip**](https://github.com/AF-1/lms-customskip#custom-skip).
+
+* Set a time[^3] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
+* The **dynamic played/skipped value** (DPSV) reflects your **listening history/decisions of the *recent past*** and is independent of the absolute play count and skip count values. A track's DPSV increases if played and decreases if skipped (see FAQ for details). You can use it to create dynamic playlists with [Dynamic Playlist Creator](https://github.com/AF-1/lms-dynamicplaylistcreator) for [Dynamic Playlists](https://github.com/AF-1/lms-dynamicplaylists) or filter rules in [Custom Skip](https://github.com/AF-1/lms-customskip#custom-skip).
+* Let APC *automatically change the rating* of a track when it's marked as played or skipped (disabled by default).
+* *Separate database table* for APC values (play count, date last played, skip count, date last skipped, dynamic played/skipped value)
+* *Create* (scheduled) **backups** of your APC data and *restore* values from backup files.
+* Automatically undo a track's last (accidental) skip count increment if the track is played within a certain time span afterwards (see plugin settings).
+* **Reset** *play count*, *skip count* or *dynamic played/skipped value* (DPSV) for **individual** or **all** tracks (see FAQ).<br>
+* These plugins already make use of APC data: [**Dynamic Playlists**](https://github.com/AF-1/lms-dynamicplaylists), [**Dynamic Playlist Creator**](https://github.com/AF-1/lms-dynamicplaylistcreator), [**Virtual Library Creator**](https://github.com/AF-1/lms-virtuallibrarycreator), [**Custom Skip**](https://github.com/AF-1/lms-customskip), [**Context Stats**](https://github.com/AF-1/lms-contextstats) and [**Visual Statistics**](https://github.com/AF-1/lms-visualstatistics).
+
 <br><br><br>
 
 
