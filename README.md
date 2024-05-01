@@ -30,7 +30,7 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 
 * **Reset** *play count*, *skip count* or *dynamic played/skipped value* (DPSV) for **individual** or **all** tracks (see [FAQ](#faq)).<br>
 
-* These plugins already make use of APC data: [**Dynamic Playlists**](https://github.com/AF-1/lms-dynamicplaylists), [**Dynamic Playlist Creator**](https://github.com/AF-1/lms-dynamicplaylistcreator), [**Virtual Library Creator**](https://github.com/AF-1/lms-virtuallibrarycreator), [**Custom Skip**](https://github.com/AF-1/lms-customskip), [**Context Stats**](https://github.com/AF-1/lms-contextstats) and [**Visual Statistics**](https://github.com/AF-1/lms-visualstatistics).
+* These plugins already make use of APC data: [**Dynamic Playlists**](https://github.com/AF-1/#-dynamic-playlists), [**Dynamic Playlist Creator**](https://github.com/AF-1/#-dynamic-playlist-creator), [**Virtual Library Creator**](https://github.com/AF-1/#-virtual-library-creator), [**Custom Skip**](https://github.com/AF-1/#-custom-skip), [**Context Stats**](https://github.com/AF-1/#-context-stats) and [**Visual Statistics**](https://github.com/AF-1/#-visual-statistics).
 
 **Some features are not enabled by default.** Please go to the plugin's settings page to enable them.
 
