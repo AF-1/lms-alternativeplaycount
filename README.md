@@ -52,7 +52,7 @@ If you want to test a new patch that hasn't made it into a release version yet, 
 
 
 ### Initial values to start with
-The plugin will use the current LMS play counts as a starting point.<br>
+The plugin uses the current LMS play counts as a starting point.<br>
 If you want to start from scratch (no play counts) or use only higher LMS play count values to start your APC database, then you should change this in the APC settings right after installation.<br>
 APC play count and skip count values are used <i>once</i> to populate the DPSV column of the APC database when you <i>first</i> install the plugin. These are just initial values which you can <i>reset</i> at any time on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
 <br><br><br>
@@ -72,8 +72,8 @@ The <b>dynamic played/skipped value (DPSV)</b> is supposed to reflect your <i>re
 </p></details><br>
 
 <details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> for individual or all tracks?</b>«</summary><br><p>
-You can <b>reset play counts</b>, <b>skip counts</b> or <b>DPSV</b> for <b>individual</b> tracks by clicking on the corresponding item in a track's context menu (AKA song details page). Some web skins and controllers will list APC values in the >b>More info</b> submenu.<br>
-If you want to reset *all* skip counts, DPSV or the *complete* database, you can do so on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
+You can <b>reset play counts</b>, <b>skip counts</b> or <b>DPSV</b> for <b>individual</b> tracks by clicking on the corresponding item in a track's context menu (AKA song details page). Some web skins and controllers will list APC values in the <b>More info</b> submenu.<br>
+If you want to reset <i>all</i> skip counts, DPSV or the <i>complete</i> database, you can do so on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
 </p></details><br>
 
 <details><summary>»<b>When I create a backup, APC <i>does not write a backup file</i>.</b>«</summary><br><p>
@@ -83,7 +83,7 @@ So please make sure that <b>LMS has read/write permissions (755) for the <i>pare
 </p></details><br>
 
 <details><summary>»<b>How does <i>automatic rating</i> work?</b>«</summary><br><p>
-If have the <i>Ratings Light</i> plugin installed, APC can change the <i>rating value</i> of a track when it's marked as played or skipped. When a track has been played long enough to count as played, the rating value increases, just as it decreases if the track is skipped.<br><br><b>Dynamic rating</b><br>The closer the current track rating is to the middle of the scale (50), the greater the increase/decrease. Conversely, ratings close to 100 or 0, i.e. tracks that have been played or skipped very often, change less and will therefore have to be played or skipped more often to move away from the end of the scale. Also, skipping a track decreases its rating up to twice as much as playing it increases it (this is hard-coded and not a user setting). There's a setting that gives you some control over how the dynamic rating algorithm changes ratings and an optional baseline rating for tracks <i>never</i> played before according to the APC database.<br><br><b>Linear rating</b><br>Enable this if you prefer <b>constant/linear</b> rating changes. If a track is then marked as played or skipped, the rating value is always increased or decreased by a <b>constant</b> value that you can set in the plugin settings.
+If you have the <i>Ratings Light</i> plugin installed, APC can change the <i>rating value</i> of a track when it's marked as played or skipped. When a track has been played long enough to count as played, the rating value increases, just as it decreases if the track is skipped.<br><br><b>Dynamic rating</b><br>The closer the current track rating is to the middle of the scale (50), the greater the increase/decrease. Conversely, ratings close to 100 or 0, i.e. tracks that have been played or skipped very often, change less and will therefore have to be played or skipped more often to move away from the end of the scale. Also, skipping a track decreases its rating up to twice as much as playing it increases it (this is hard-coded and not a user setting). There's a setting that gives you some control over how the dynamic rating algorithm changes ratings and an optional baseline rating for tracks <i>never</i> played before according to the APC database.<br><br><b>Linear rating</b><br>Enable this if you prefer <b>constant/linear</b> rating changes. If a track is then marked as played or skipped, the rating value is always increased or decreased by a <b>constant</b> value that you can set in the plugin settings.
 </p></details><br>
 
 <br><br><br>
