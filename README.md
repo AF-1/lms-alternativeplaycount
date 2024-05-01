@@ -54,7 +54,7 @@ If you want to test a new patch that hasn't made it into a release version yet, 
 ### Initial values to start with
 The plugin will use the current LMS play counts as a starting point.<br>
 If you want to start from scratch (no play counts) or use only higher LMS play count values to start your APC database, then you should change this in the APC settings right after installation.<br>
-APC play count and skip count values are used <i>once</i> to populate the DPSV column of the APC database when you <i>first</i> install version 1.2 or higher. These are just initial values which you can <i>reset</i> at any time on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
+APC play count and skip count values are used <i>once</i> to populate the DPSV column of the APC database when you <i>first</i> install the plugin. These are just initial values which you can <i>reset</i> at any time on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
 <br><br><br>
 
 
