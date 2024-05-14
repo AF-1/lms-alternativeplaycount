@@ -414,6 +414,14 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_PARAM_NAME
 	EN	Skip if played in the last
 	FR	Sauter si joués dans les derniers
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDCOMPOSER_NAME
+	EN	Recently played composers (APC)
+	FR	Compositeurs joués récemment (APC)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDCOMPOSER_DESC
+	EN	Skip songs by composers that have been<br>recently played (according to the APC database)
+	FR	Sauter les morceaux par compositeurs qui ont été<br>récemment joués (d'après la base de données APC)
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYPLAYED_NAME
 	EN	Recently played songs (APC)
 	FR	Morceaux joués récemment (APC)

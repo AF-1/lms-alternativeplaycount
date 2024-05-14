@@ -173,6 +173,7 @@ sub initPrefs {
 	$prefs->set('status_creatingbackup', '0');
 	$prefs->set('status_restoringfrombackup', '0');
 	$prefs->set('status_resetapcdatabase', '0');
+	$prefs->set('isTSlegacyBackupFile', 0);
 
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 0, 'high' => 15}, 'undoskiptimespan');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 10}, 'autoratinglineardelta');
@@ -643,7 +644,7 @@ sub undoLastSkipCountIncrement {
 		my ($client, $track) = @_;
 		my $trackURLmd5 = $track->urlmd5 || md5_hex($track->url);
 		my $trackMBID = getTrackMBID($track) || '';
-		my $lastSkippedSQL = "select ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.urlmd5 = \"$trackURLmd5\"";
+		my $lastSkippedSQL = "select ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0) from alternativeplaycount where alternativeplaycount.urlmd5 = \"$trackURLmd5\"";
 		my ($skipCount, $lastSkipped) = quickSQLquery($lastSkippedSQL, 2);
 		my $songDuration = $track->secs;
 		my $playedThreshold_percent = ($prefs->get('playedthreshold_percent') || 20) / 100;
@@ -985,6 +986,7 @@ sub doneScanning {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Restore completed after '.$ended.' seconds.');
 	sleep(1.5); # if task is removed too soon from scheduler => undef val as sub ref error
 	Slim::Utils::Scheduler::remove_task(\&restoreScanFunction);
+	$prefs->set('isTSlegacyBackupFile', 0);
 	$prefs->set('status_restoringfrombackup', 0);
 }
 
@@ -997,6 +999,9 @@ sub handleStartElement {
 	}
 	if ($element eq 'track') {
 		$inTrack = 1;
+	}
+	if ($element eq 'TrackStat') {
+		$prefs->set('isTSlegacyBackupFile', 1);
 	}
 }
 
@@ -1011,6 +1016,7 @@ sub handleCharElement {
 sub handleEndElement {
 	my ($p, $element) = @_;
 	$inValue = 0;
+	my $isTSlegacyBackupFile = $prefs->get('isTSlegacyBackupFile');
 
 	if ($inTrack && $element eq 'track') {
 		$inTrack = 0;
@@ -1018,22 +1024,28 @@ sub handleEndElement {
 		my $curTrack = \%restoreitem;
 		my $trackURL = undef;
 		my $fullTrackURL = $curTrack->{'url'};
-		my $trackURLmd5 = $curTrack->{'urlmd5'};
-		my $isRemote = $curTrack->{'remote'};
-		my $relTrackURL = $curTrack->{'relurl'};
-		my $trackMBID = $curTrack->{'musicbrainzid'};
+		my $trackURLmd5 = undef;
+		my $backupTrackURLmd5 = $isTSlegacyBackupFile ? undef : $curTrack->{'urlmd5'};
+		my $isRemote = $isTSlegacyBackupFile ? undef : $curTrack->{'remote'};
+		my $relTrackURL = $isTSlegacyBackupFile ? undef : $curTrack->{'relurl'};
+		my $trackMBID = $isTSlegacyBackupFile ? $curTrack->{'musicbrainzId'} : $curTrack->{'musicbrainzid'};
 
 		# for local tracks only: check if FULL file url is valid
 		# Otherwise, try RELATIVE file URL with current media dirs
 		$fullTrackURL = Encode::decode('utf8', unescape($fullTrackURL));
 		$relTrackURL = Encode::decode('utf8', unescape($relTrackURL)) if $relTrackURL;
 
-		if ($isRemote == 0) {
+		if ($isRemote && $isRemote == 1) {
+			main::DEBUGLOG && $log->is_debug && $log->debug('is remote track. URL = '.Data::Dump::dump($fullTrackURL));
+			$trackURL = $fullTrackURL;
+			$trackURLmd5 = $backupTrackURLmd5;
+		} else {
 			main::DEBUGLOG && $log->is_debug && $log->debug('is local track. URL = '.Data::Dump::dump($fullTrackURL));
 			my $fullTrackPath = pathForItem($fullTrackURL);
 			if ($fullTrackPath && -f $fullTrackPath) {
-				#main::DEBUGLOG && $log->is_debug && $log->debug("found file at url \"$fullTrackPath\"");
+				main::DEBUGLOG && $log->is_debug && $log->debug("found file at url \"$fullTrackPath\"");
 				$trackURL = $fullTrackURL;
+				$trackURLmd5 = $backupTrackURLmd5 unless $isTSlegacyBackupFile;
 			} else {
 				main::DEBUGLOG && $log->is_debug && $log->debug("** Couldn't find file for FULL file url. Will try with RELATIVE file url and current LMS media folders.");
 				if (!$relTrackURL) {
@@ -1060,26 +1072,27 @@ sub handleEndElement {
 					}
 				}
 			}
-		} elsif ($isRemote == 1) {
-			main::DEBUGLOG && $log->is_debug && $log->debug('is remote track. URL = '.Data::Dump::dump($fullTrackURL));
-			$trackURL = $fullTrackURL;
-		} else {
-			main::DEBUGLOG && $log->is_debug && $log->debug("remote value unknown. Won't restore. URL = ".Data::Dump::dump($fullTrackURL));
-			return;
 		}
 
 		if (!$trackURL && !$trackURLmd5 && !$trackMBID) {
 			$log->warn("No valid urlmd5, url or musicbrainz id for this track. Can't restore values for file with restore URL = ".Data::Dump::dump($fullTrackURL));
 		} else {
 			$trackURLmd5 = md5_hex($trackURL) if (!$trackURLmd5 && $trackURL);
+			my $sqlstatement = "update alternativeplaycount ";
 
-			my $playCount = ($curTrack->{'playcount'} == 0 ? "null" : $curTrack->{'playcount'});
-			my $lastPlayed = ($curTrack->{'lastplayed'} == 0 ? "null" : $curTrack->{'lastplayed'});
-			my $skipCount = ($curTrack->{'skipcount'} == 0 ? "null" : $curTrack->{'skipcount'});
-			my $lastSkipped = ($curTrack->{'lastskipped'} == 0 ? "null" : $curTrack->{'lastskipped'});
-			my $dynPSval = ($curTrack->{'dynpsval'} == 0 ? "null" : $curTrack->{'dynpsval'});
+			if ($isTSlegacyBackupFile) {
+				my $playCount = (!$curTrack->{'playCount'} ? "null" : $curTrack->{'playCount'});
+				my $lastPlayed = (!$curTrack->{'lastPlayed'} ? "null" : $curTrack->{'lastPlayed'});
+				$sqlstatement .= "set playCount = $playCount, lastPlayed = $lastPlayed ";
+			} else {
+				my $playCount = ($curTrack->{'playcount'} == 0 ? "null" : $curTrack->{'playcount'});
+				my $lastPlayed = ($curTrack->{'lastplayed'} == 0 ? "null" : $curTrack->{'lastplayed'});
+				my $skipCount = ($curTrack->{'skipcount'} == 0 ? "null" : $curTrack->{'skipcount'});
+				my $lastSkipped = ($curTrack->{'lastskipped'} == 0 ? "null" : $curTrack->{'lastskipped'});
+				my $dynPSval = ($curTrack->{'dynpsval'} == 0 ? "null" : $curTrack->{'dynpsval'});
+				$sqlstatement .= "set playCount = $playCount, lastPlayed = $lastPlayed, skipCount = $skipCount, lastSkipped = $lastSkipped, dynPSval = $dynPSval";
+			}
 
-			my $sqlstatement = "update alternativeplaycount set playCount = $playCount, lastPlayed = $lastPlayed, skipCount = $skipCount, lastSkipped = $lastSkipped, dynPSval = $dynPSval";
 			if ($trackURLmd5) {
 				$sqlstatement .= " where urlmd5 = \"$trackURLmd5\"";
 			} elsif ($trackMBID) {
@@ -1090,7 +1103,7 @@ sub handleEndElement {
 		}
 		%restoreitem = ();
 	}
-	if ($element eq 'AlternativePlayCount') {
+	if ($element eq 'AlternativePlayCount' || $element eq 'TrackStat') {
 		doneScanning();
 		return 0;
 	}
@@ -1213,6 +1226,23 @@ sub getCustomSkipFilterTypes {
 	);
 	push @result, \%recentlyplayedartists;
 
+	my %recentlyplayedcomposers = (
+		'id' => 'alternativeplaycount_recentlyplayedcomposer',
+		'name' => string("PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDCOMPOSER_NAME"),
+		'filtercategory' => 'composers',
+		'description' => string("PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDCOMPOSER_DESC"),
+		'parameters' => [
+			{
+				'id' => 'time',
+				'type' => 'singlelist',
+				'name' => string("PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_PARAM_NAME"),
+				'data' => '300=5 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_MINS").',600=10 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_MINS").',900=15 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_MINS").',1800=30 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_MINS").',3600=1 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOUR").',7200=2 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOURS").',10800=3 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOURS").',21600=6 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOURS").',43200=12 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOURS").',86400=24 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_HOURS").',259200=3 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_DAYS").',604800=1 '.string("PLUGIN_CUSTOMSKIP3_LANGSTRINGS_TIME_WEEK"),
+				'value' => 600
+			}
+		]
+	);
+	push @result, \%recentlyplayedcomposers;
+
 	my %dpsvhigh = (
 		'id' => 'alternativeplaycount_dpsvhigh',
 		'name' => string("PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_DPSVHIGH_NAME"),
@@ -1268,9 +1298,7 @@ sub getCustomSkipFilterTypes {
 }
 
 sub checkCustomSkipFilterType {
-	my $client = shift;
-	my $filter = shift;
-	my $track = shift;
+	my ($client, $filter, $track, $lookaheadonly, $index) = @_;
 
 	my $currentTime = time();
 	my $parameters = $filter->{'parameter'};
@@ -1481,6 +1509,46 @@ sub checkCustomSkipFilterType {
 					$sth->finish();
 					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->url))) {
 						if (time() - $lastPlayed < $time) {
+							return 1;
+						}
+					}
+				}
+				last;
+			}
+		}
+	} elsif ($filter->{'id'} eq 'alternativeplaycount_recentlyplayedcomposer') {
+		for my $parameter (@{$parameters}) {
+			if ($parameter->{'id'} eq 'time') {
+				my $times = $parameter->{'value'};
+				my $time = $times->[0] if (defined($times) && scalar(@{$times}) > 0);
+				my $trackID = $track->id;
+
+				my $composerName;
+				my $dbh = Slim::Schema->dbh;
+				my $sthComposerName = $dbh->prepare("select contributors.namesearch from contributors join contributor_track on contributors.id = contributor_track.contributor join tracks on contributor_track.track = tracks.id where contributor_track. role = 2 and tracks.id = $trackID");
+				eval {
+					$sthComposerName->execute();
+					$composerName = $sthComposerName->fetchrow || '';
+				};
+				if ($@) {
+					$log->error("Error executing SQL: $@\n$DBI::errstr");
+				}
+				$sthComposerName->finish();
+
+				if ($composerName) {
+					my $lastPlayed;
+					my $sth = $dbh->prepare("select max(ifnull(alternativeplaycount.lastPlayed,0)) from tracks, alternativeplaycount, contributor_track, contributors where tracks.urlmd5 = alternativeplaycount.urlmd5 and tracks.id = contributor_track.track and contributor_track.contributor = contributors.id and contributors.namesearch = \"$composerName\" and contributor_track.role = 2");
+					eval {
+						$sth->execute();
+						$lastPlayed = $sth->fetchrow || 0;
+					};
+					if ($@) {
+						$log->error("Error executing SQL: $@\n$DBI::errstr");
+					}
+					$sth->finish();
+
+					if ($lastPlayed) {
+						if ((time() - $lastPlayed) < $time) {
 							return 1;
 						}
 					}
