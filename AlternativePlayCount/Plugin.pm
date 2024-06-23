@@ -768,8 +768,8 @@ sub _setAutoRatingValue {
 			$delta = $prefs->get('autoratinglineardelta');
 			main::DEBUGLOG && $log->is_debug && $log->debug('linear rating increase = '.$delta);
 		} else {
-			# use baseline rating for unplayed tracks?
-			if ($prefs->get('baselinerating') && defined($baselineRatingPlayCount) && $baselineRatingPlayCount == 0) {
+			# use baseline rating for unplayed and unrated tracks?
+			if ($prefs->get('baselinerating') && defined($baselineRatingPlayCount) && $baselineRatingPlayCount == 0 && $curRating == 0) {
 				$delta = $prefs->get('baselinerating');
 				main::DEBUGLOG && $log->is_debug && $log->debug('applying baseline rating of '.$delta.' to unplayed track');
 			} else {
