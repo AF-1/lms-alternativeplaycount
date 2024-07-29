@@ -33,12 +33,12 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_INFO
 	EN	Requires the <b>Ratings Light</b> plugin to work.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK_TEXT
-	EN	Click here to read the FAQ.
+	EN	Click here for more information (incl. FAQ).
 	FR	Cliquez ici pour lire la FAQ.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK
-	EN	https://github.com/AF-1/lms-alternativeplaycount#faq
-	FR	https://github.com/AF-1/lms-alternativeplaycount#faq
+	EN	https://github.com/AF-1/#-alternative-play-count
+	FR	https://github.com/AF-1/#-alternative-play-count
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTHRESHOLD_PERCENT
