@@ -42,7 +42,7 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 
 ## Requirements
 
-- LMS version >= **8**.0
+- LMS version >= 8.**2**
 - LMS database = **SQLite**
 <br><br><br>
 
