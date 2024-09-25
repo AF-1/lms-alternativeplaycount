@@ -473,7 +473,7 @@ sub _APCcommandCB {
 
 	my $clientID = $client->id();
 	main::DEBUGLOG && $log->is_debug && $log->debug('Received command "'.$request->getRequestString().'" from client "'.$clientID.'"');
-	my $track = $::VERSION lt '8.2' ? Slim::Player::Playlist::song($client) : Slim::Player::Playlist::track($client);
+	my $track = Slim::Player::Playlist::track($client);
 
 	if (defined $track) {
 		if (defined $track && !defined($track->url)) {
