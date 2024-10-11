@@ -3,7 +3,7 @@
 	<id>af18a10e-3810-ee03-55f4-87cca698a191</id>
 	<name>PLUGIN_ALTERNATIVEPLAYCOUNT</name>
 	<module>Plugins::AlternativePlayCount::Plugin</module>
-	<version>1.5.5</version>
+	<version>1.5.6</version>
 	<description>PLUGIN_ALTERNATIVEPLAYCOUNT_DESC</description>
 	<creator>AF</creator>
 	<importmodule>Plugins::AlternativePlayCount::Importer</importmodule>
@@ -13,7 +13,7 @@
 	<defaultState>enabled</defaultState>
 	<targetApplication>
 		<id>Lyrion Music Server</id>
-		<minVersion>8.0</minVersion>
+		<minVersion>8.2</minVersion>
 		<maxVersion>*</maxVersion>
 	</targetApplication>
 </extension>
