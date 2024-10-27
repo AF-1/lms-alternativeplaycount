@@ -76,6 +76,10 @@ The <b>dynamic played/skipped value (DPSV)</b> is supposed to reflect your <i>re
 <i>Example:</i> You've been listening to a great track (rated 5 stars) too many times and you started skipping it when it came up in a mix. It's still a great track, therefore the rating shouldn't change. If you create a dynamic playlist or a CustomSkip filter that exclude tracks with a DPSV of -80 or lower, eventually this track will no longer be played, either skipped by CustomSkip or filtered out in a dynamic playlist - without changing its rating.<br>A quick way to get the track back into the mix would be to reset the track's DPSV to zero by clicking on the DPSV value in the track's context menu.
 </p></details><br>
 
+<details><summary>»<b>I have <i>renamed / moved</i> some audio files. How can I preserve the APC data for these tracks (play/skip count, date last played/skipped, DPSV)?</b>«</summary><br><p>
+You can use backups. Go to the plugin's settings page (backup section) immediately before you rescan your library and confirm that <i>Backup before each library rescan</i> is <b>en</b>abled. Just to be safe on the safe side, create a manual backup as well.<br>With the rescan completed, go to the plugin's settings page and restore the APC data from the pre-scan backup. APC will try to restore data for moved/renamed tracks using (relative) path guessing and MusicBrainz IDs. Of course, there's no guarantee that it will restore 100% but that's as good as it gets.
+</p></details><br>
+
 <details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> for individual or all tracks?</b>«</summary><br><p>
 You can <b>reset play counts</b>, <b>skip counts</b> or <b>DPSV</b> for <b>individual</b> tracks by clicking on the corresponding item in a track's context menu (AKA song details page). Some web skins and controllers will list APC values in the <b>More info</b> submenu.<br>
 If you want to reset <i>all</i> skip counts, DPSV or the <i>complete</i> database, you can do so on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
