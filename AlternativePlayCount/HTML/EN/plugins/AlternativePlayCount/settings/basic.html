@@ -15,6 +15,14 @@
 [% END %]
 <br>
 
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CS3SKIPREQUESTS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CS3SKIPREQUESTS_DESC" %]
+	<select class="stdedit" name="pref_ignoreCS3skiprequests" id="ignoreCS3skiprequests">
+		<option [% IF NOT prefs.ignoreCS3skiprequests %]selected [% END %]value="0">[% 'YES' | getstring %]</option>
+		<option [% IF prefs.ignoreCS3skiprequests %]selected [% END %]value="1">[% 'NO' | getstring %]</option>
+	</select>
+[% END %]
+<br>
+
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH_DESC" %]
 	<input type="text" class="stdedit selectFolder" name="pref_apcparentfolderpath" id="apcparentfolderpath" value="[% prefs.apcparentfolderpath %]" size="40">
 [% END %]

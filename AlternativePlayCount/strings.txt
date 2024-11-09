@@ -57,6 +57,12 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_UNDOSKIPTIMESPAN_DESC
 	EN	If you have skipped a track (perhaps by mistake) and then decide - within the time span you set here - to play it after all, the skip counter is reduced by 1 to correct the accidental skip.<br>Set the time span to 0 to disable undoing skips.
 	FR	Si vous avez sauté un morceau (peut-être par erreur) et ensuite décidé - dans le temps définit ici - de le jouer, le compteur de saut sera réduit d'un pour corriger le saut accidentel.<br>Définisser la durée à 0 pour désactiver l'annulation des sauts.
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CS3SKIPREQUESTS
+	EN	Count skips requested by CustomSkip
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CS3SKIPREQUESTS_DESC
+	EN	Have APC ignore skips requested by the CustomSkip plugin. They will no longer increase a track's <i>skip count</i>. This way you can limit the skip count to skips that you have made yourself, manually.
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH
 	EN	Location of the<br>Alternative Play Count folder
 	FR	Emplacement du dossier Nombre de Lectures Alternatif

@@ -152,7 +152,8 @@ sub initPrefs {
 		backup_lastday => '',
 		backupsdaystokeep => 30,
 		backupfilesmin => 20,
-		postscanscheduledelay => 20
+		postscanscheduledelay => 20,
+		ignoreCS3skiprequests => 1,
 	});
 
 	createAPCfolder();
@@ -497,6 +498,14 @@ sub _APCcommandCB {
 		main::DEBUGLOG && $log->is_debug && $log->debug('Current track on client "'.$clientID.'" is '.$currentTrackURL.' with urlmd5 = '.$currentTrackURLmd5.' and Musicbrainz ID = '.Data::Dump::dump($currentTrackMBID));
 		main::DEBUGLOG && $log->is_debug && $log->debug('Previous track on client "'.$clientID.'" is '.Data::Dump::dump($previousTrackURL).' with urlmd5 = '.Data::Dump::dump($previousTrackURLmd5).' and Musicbrainz ID = '.Data::Dump::dump($previousTrackMBID));
 
+ 		# skip requested by CustomSkip3 ?
+		if ($prefs->get('ignoreCS3skiprequests') && $request->getRequestString() && $request->getRequestString() =~ 'playlist deleteitem' && $request->source && $request->source =~ 'PLUGIN_CUSTOMSKIP3') {
+			if ($request->getParamsCopy()->{'lastCustomSkippedTrackURLmd5'}) {
+				main::DEBUGLOG && $log->is_debug && $log->debug("skip requested by CustomSkip3 plugin for track: ".$previousTrackURL);
+				$client->pluginData('lastCustomSkippedTrackURLmd5' => $request->getParamsCopy()->{'lastCustomSkippedTrackURLmd5'});
+			}
+		}
+
 		## newsong
 		if ($request->isCommand([['playlist'],['newsong']])) {
 			main::DEBUGLOG && $log->is_debug && $log->debug('Received "newsong" cb.');
@@ -506,8 +515,16 @@ sub _APCcommandCB {
 			# check current track url against previous track url because jumping inside a track also triggers newsong event
 			if (!defined($previousTrackURL) || ($currentTrackURL ne $previousTrackURL)) {
 				# if previous song wasn't marked as played, mark as skipped
+				main::DEBUGLOG && $log->is_debug && $log->debug('previousTrackURL = '.Data::Dump::dump($previousTrackURL));
+				main::DEBUGLOG && $log->is_debug && $log->debug('previousTrackURLmd5 = '.Data::Dump::dump($previousTrackURLmd5).' -- lastCustomSkippedTrackURLmd5 = '.Data::Dump::dump($client->pluginData('lastCustomSkippedTrackURLmd5')));
+
 				if (defined($previousTrackURL) && (!defined($client->pluginData('markedAsPlayed')) || $client->pluginData('markedAsPlayed') ne $previousTrackURL)) {
-					markAsSkipped($client, $previousTrackURL, $previousTrackURLmd5, $previousTrackMBID);
+					if ($prefs->get('ignoreCS3skiprequests') && $client->pluginData('lastCustomSkippedTrackURLmd5') && $client->pluginData('lastCustomSkippedTrackURLmd5') eq $previousTrackURLmd5) {
+						main::INFOLOG && $log->is_info && $log->info("skip requested by CustomSkip3 - don't mark this track as skipped in db: ".$previousTrackURL);
+						$client->pluginData('lastCustomSkippedTrackURLmd5' => undef);
+					} else {
+						markAsSkipped($client, $previousTrackURL, $previousTrackURLmd5, $previousTrackMBID);					
+					}
 				}
 
 				$client->pluginData('markedAsPlayed' => undef);
@@ -546,6 +563,7 @@ sub _APCcommandCB {
 			$client->pluginData('currentTrackURL' => undef);
 			$client->pluginData('currentTrackURLmd5' => undef);
 			$client->pluginData('currentTrackMBID' => undef);
+			$client->pluginData('lastCustomSkippedTrackURL' => undef);
 		}
 	}
 }
@@ -615,20 +633,21 @@ sub markAsPlayed {
 }
 
 sub markAsSkipped {
-	my ($client, $trackURL, $trackURLmd5, $previousTrackMBID) = @_;
+	my ($client, $trackURL, $trackURLmd5, $trackMBID) = @_;
 	main::INFOLOG && $log->is_info && $log->info('Marking track with url "'.$trackURL.'" as skipped. urlmd5 = '.Data::Dump::dump($trackURLmd5));
 	$trackURLmd5 = md5_hex($trackURL) if !$trackURLmd5;
+
 	my $lastSkipped = time();
 
 	my $sqlstatement = "update alternativeplaycount set skipCount = ifnull(skipCount, 0) + 1, lastSkipped = $lastSkipped";
-	if ($prefs->get('allmusicbrainzidversions') && $previousTrackMBID) {
-		main::DEBUGLOG && $log->is_debug && $log->debug('Updating APC skip count for ALL tracks with Musicbrainz ID = '.Data::Dump::dump($previousTrackMBID));
-		$sqlstatement .= " where musicbrainz_id = \"$previousTrackMBID\"";
+	if ($prefs->get('allmusicbrainzidversions') && $trackMBID) {
+		main::DEBUGLOG && $log->is_debug && $log->debug('Updating APC skip count for ALL tracks with Musicbrainz ID = '.Data::Dump::dump($trackMBID));
+		$sqlstatement .= " where musicbrainz_id = \"$trackMBID\"";
 	} else {
 		$sqlstatement .= " where urlmd5 = \"$trackURLmd5\"";
 	}
 	executeSQLstat($sqlstatement);
-	_setDynamicPlayedSkippedValue($trackURL, $trackURLmd5, $previousTrackMBID, 2);
+	_setDynamicPlayedSkippedValue($trackURL, $trackURLmd5, $trackMBID, 2);
 
 	if ($prefs->get('autorating')) {
 		my $track = Slim::Schema->search('Track', {'urlmd5' => $trackURLmd5 })->first();
