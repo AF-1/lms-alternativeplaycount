@@ -32,6 +32,8 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 
 * Automatically undo a track's last (accidental) skip count increment if the track is played within a certain time span afterwards (see plugin settings).
 
+* Option to ignore, i.e. not count skips requested by the [Custom Skip](https://github.com/AF-1/#-custom-skip) plugin
+
 * **Reset** *play count*, *skip count* or *dynamic played/skipped value* (DPSV) for **individual** or **all** tracks (see [FAQ](#faq)).<br>
 
 * These plugins already make use of APC data: [**Dynamic Playlists**](https://github.com/AF-1/#-dynamic-playlists), [**Dynamic Playlist Creator**](https://github.com/AF-1/#-dynamic-playlist-creator), [**Virtual Library Creator**](https://github.com/AF-1/#-virtual-library-creator), [**Custom Skip**](https://github.com/AF-1/#-custom-skip), [**Context Stats**](https://github.com/AF-1/#-context-stats) and [**Visual Statistics**](https://github.com/AF-1/#-visual-statistics).
