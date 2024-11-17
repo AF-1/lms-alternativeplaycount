@@ -98,13 +98,6 @@ sub handler {
 		} else {
 			Plugins::AlternativePlayCount::Plugin::restoreFromBackup();
 		}
-	} elsif ($paramRef->{'pref_scheduledbackups'}) {
-		if ($callHandler) {
-			$paramRef->{'saveSettings'} = 1;
-
-			$result = $class->SUPER::handler($client, $paramRef);
-		}
-		Plugins::AlternativePlayCount::Plugin::backupScheduler();
 	} elsif ($callHandler) {
 		$result = $class->SUPER::handler($client, $paramRef);
 	}

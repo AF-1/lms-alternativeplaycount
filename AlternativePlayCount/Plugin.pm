@@ -130,7 +130,7 @@ sub initPlugin {
 sub postinitPlugin {
 	unless (!Slim::Schema::hasLibrary() || Slim::Music::Import->stillScanning) {
 		initDatabase();
-		backupScheduler();
+		Slim::Utils::Timers::setTimer(undef, time() + 2, \&backupScheduler);
 	}
 	$ratingslight_enabled = Slim::Utils::PluginManager->isEnabled('Plugins::RatingsLight::Plugin');
 	main::DEBUGLOG && $log->is_debug && $log->debug('Plugin "Ratings Light" is enabled') if $ratingslight_enabled;
@@ -191,6 +191,11 @@ sub initPrefs {
 				'skipCount' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCSKIPCOUNT'),
 				'lastSkipped' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTSKIPPED'),
 				'dynPSval' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCDYNPSVAL') );
+
+	$prefs->setChange(sub {
+			main::DEBUGLOG && $log->is_debug && $log->debug('Pref for scheduled backups changed. Resetting or killing timer.');
+			backupScheduler();
+		}, 'scheduledbackups', 'backuptime');
 }
 
 sub trackInfoHandler {
@@ -498,7 +503,7 @@ sub _APCcommandCB {
 		main::DEBUGLOG && $log->is_debug && $log->debug('Current track on client "'.$clientID.'" is '.$currentTrackURL.' with urlmd5 = '.$currentTrackURLmd5.' and Musicbrainz ID = '.Data::Dump::dump($currentTrackMBID));
 		main::DEBUGLOG && $log->is_debug && $log->debug('Previous track on client "'.$clientID.'" is '.Data::Dump::dump($previousTrackURL).' with urlmd5 = '.Data::Dump::dump($previousTrackURLmd5).' and Musicbrainz ID = '.Data::Dump::dump($previousTrackMBID));
 
- 		# skip requested by CustomSkip3 ?
+		# skip requested by CustomSkip3 ?
 		if ($prefs->get('ignoreCS3skiprequests') && $request->getRequestString() && $request->getRequestString() =~ 'playlist deleteitem' && $request->source && $request->source =~ 'PLUGIN_CUSTOMSKIP3') {
 			if ($request->getParamsCopy()->{'lastCustomSkippedTrackURLmd5'}) {
 				main::DEBUGLOG && $log->is_debug && $log->debug("skip requested by CustomSkip3 plugin for track: ".$previousTrackURL);
@@ -523,7 +528,7 @@ sub _APCcommandCB {
 						main::INFOLOG && $log->is_info && $log->info("skip requested by CustomSkip3 - don't mark this track as skipped in db: ".$previousTrackURL);
 						$client->pluginData('lastCustomSkippedTrackURLmd5' => undef);
 					} else {
-						markAsSkipped($client, $previousTrackURL, $previousTrackURLmd5, $previousTrackMBID);					
+						markAsSkipped($client, $previousTrackURL, $previousTrackURLmd5, $previousTrackMBID);
 					}
 				}
 
@@ -854,13 +859,19 @@ sub _setAutoRatingValue {
 ## backup, restore
 
 sub backupScheduler {
-	my $scheduledbackups = $prefs->get('scheduledbackups');
-	if ($scheduledbackups) {
+	main::DEBUGLOG && $log->is_debug && $log->debug('Checking backup scheduler');
+
+	main::DEBUGLOG && $log->is_debug && $log->debug('Killing all backup timers');
+	Slim::Utils::Timers::killTimers(undef, \&backupScheduler);
+
+	if ($prefs->get('scheduledbackups')) {
 		my $backuptime = $prefs->get('backuptime');
 		my $day = $prefs->get('backup_lastday');
 		if (!defined($day)) {
 			$day = '';
 		}
+		main::DEBUGLOG && $log->is_debug && $log->debug('backup time = '.Data::Dump::dump($backuptime));
+		main::DEBUGLOG && $log->is_debug && $log->debug('last backup day = '.Data::Dump::dump($day));
 
 		if (defined($backuptime) && $backuptime ne '') {
 			my $time = 0;
@@ -874,26 +885,29 @@ sub backupScheduler {
 				}
 			}iegsx;
 			my ($sec,$min,$hour,$mday,$mon,$year) = localtime(time);
+			main::DEBUGLOG && $log->is_debug && $log->debug('local time = '.Data::Dump::dump(padnum($hour).':'.padnum($min).':'.padnum($sec).' -- '.padnum($mday).'.'.padnum($mon).'.'));
 
 			my $currenttime = $hour * 60 * 60 + $min * 60;
 
-			if (($day ne $mday) && $currenttime>$time) {
+			if (($day ne $mday) && $currenttime > $time) {
+				main::DEBUGLOG && $log->is_debug && $log->debug('Starting scheduled backup');
 				eval {
-					createBackup();
+					Slim::Utils::Scheduler::add_task(\&createBackup);
 				};
 				if ($@) {
 					$log->error("Scheduled backup failed: $@");
 				}
 				$prefs->set('backup_lastday',$mday);
 			} else {
-				my $timesleft = $time-$currenttime;
+				my $timeleft = $time - $currenttime;
 				if ($day eq $mday) {
-					$timesleft = $timesleft + 60*60*24;
+					$timeleft = $timeleft + 60 * 60 * 24;
 				}
-				main::DEBUGLOG && $log->is_debug && $log->debug(parse_duration($timesleft)." ($timesleft seconds) left until next scheduled backup");
+				main::DEBUGLOG && $log->is_debug && $log->debug(parse_duration($timeleft)." ($timeleft seconds) left until next scheduled backup time. The actual backup is created no later than 30 minutes after the set backup time.");
 			}
+
+			Slim::Utils::Timers::setTimer(undef, time() + 1800, \&backupScheduler);
 		}
-		Slim::Utils::Timers::setTimer(0, time() + 3600, \&backupScheduler);
 	}
 }
 
@@ -2087,6 +2101,11 @@ sub getTrackMBID {
 	my $trackMBID = $track->musicbrainz_id;
 	$trackMBID = undef if (defined $trackMBID && $trackMBID !~ /.*-.*/);
 	return $trackMBID;
+}
+
+sub padnum {
+	use integer;
+	sprintf("%02d", $_[0]);
 }
 
 *escape = \&URI::Escape::uri_escape_utf8;
