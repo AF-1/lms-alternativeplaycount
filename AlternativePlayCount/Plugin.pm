@@ -1017,8 +1017,7 @@ sub doneScanning {
 	$opened = 0;
 	close(BACKUPFILE);
 
-	my $ended = time() - $restorestarted;
-	main::INFOLOG && $log->is_info && $log->info('Restore completed after '.$ended.' seconds. Restored '.$restoreCount.($restoreCount == 1 ? ' track.' : ' tracks.').' Restore count listed here may be slightly higher (e.g. +1) than the correct number stated in the backup file.');
+	main::INFOLOG && $log->is_info && $log->info('Restore completed after '.(time() - $restorestarted).' seconds. Restored '.$restoreCount.($restoreCount == 1 ? ' track.' : ' tracks.').' Restore count listed here may be slightly higher (e.g. +1) than the correct number stated in the backup file.');
 	sleep(1.5); # if task is removed too soon from scheduler => undef val as sub ref error
 	Slim::Utils::Scheduler::remove_task(\&restoreScanFunction);
 	$prefs->set('isTSlegacyBackupFile', 0);
