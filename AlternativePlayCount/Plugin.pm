@@ -56,7 +56,7 @@ my $serverPrefs = preferences('server');
 my $prefs = preferences('plugin.alternativeplaycount');
 
 my ($ratingslight_enabled, %restoreitem, $currentKey, $inTrack, $inValue, $backupParser, $backupParserNB, $restorestarted, %itemNames);
-my $opened = 0;
+my ($opened, $restoreCount) = 0;
 
 sub initPlugin {
 	my $class = shift;
@@ -926,6 +926,7 @@ sub restoreFromBackup {
 	}
 
 	$prefs->set('status_restoringfrombackup', 1);
+	$restoreCount = 0;
 	$restorestarted = time();
 	my $restorefile = $prefs->get('restorefile');
 
@@ -933,6 +934,7 @@ sub restoreFromBackup {
 		if ($clearallbeforerestore) {
 			resetAPCDatabase(1);
 		}
+		main::INFOLOG && $log->is_info && $log->info('Starting restore from backup file');
 		initRestore();
 		Slim::Utils::Scheduler::add_task(\&restoreScanFunction);
 	} else {
@@ -1016,7 +1018,7 @@ sub doneScanning {
 	close(BACKUPFILE);
 
 	my $ended = time() - $restorestarted;
-	main::DEBUGLOG && $log->is_debug && $log->debug('Restore completed after '.$ended.' seconds.');
+	main::INFOLOG && $log->is_info && $log->info('Restore completed after '.$ended.' seconds. Restored '.$restoreCount.($restoreCount == 1 ? ' track.' : ' tracks.').' Restore count listed here may be slightly higher (e.g. +1) than the correct number stated in the backup file.');
 	sleep(1.5); # if task is removed too soon from scheduler => undef val as sub ref error
 	Slim::Utils::Scheduler::remove_task(\&restoreScanFunction);
 	$prefs->set('isTSlegacyBackupFile', 0);
@@ -1035,6 +1037,7 @@ sub handleStartElement {
 	}
 	if ($element eq 'TrackStat') {
 		$prefs->set('isTSlegacyBackupFile', 1);
+		main::DEBUGLOG && $log->is_debug && $log->debug('Is TS legacy backup file');
 	}
 }
 
@@ -1117,6 +1120,7 @@ sub handleEndElement {
 				my $playCount = (!$curTrack->{'playCount'} ? "null" : $curTrack->{'playCount'});
 				my $lastPlayed = (!$curTrack->{'lastPlayed'} ? "null" : $curTrack->{'lastPlayed'});
 				$sqlstatement .= "set playCount = $playCount, lastPlayed = $lastPlayed ";
+				main::DEBUGLOG && $log->is_debug && $log->debug("Setting these values for track: playCount = $playCount, lastPlayed = $lastPlayed\n");
 			} else {
 				my $playCount = ($curTrack->{'playcount'} == 0 ? "null" : $curTrack->{'playcount'});
 				my $lastPlayed = ($curTrack->{'lastplayed'} == 0 ? "null" : $curTrack->{'lastplayed'});
@@ -1124,6 +1128,7 @@ sub handleEndElement {
 				my $lastSkipped = ($curTrack->{'lastskipped'} == 0 ? "null" : $curTrack->{'lastskipped'});
 				my $dynPSval = ($curTrack->{'dynpsval'} == 0 ? "null" : $curTrack->{'dynpsval'});
 				$sqlstatement .= "set playCount = $playCount, lastPlayed = $lastPlayed, skipCount = $skipCount, lastSkipped = $lastSkipped, dynPSval = $dynPSval";
+				main::DEBUGLOG && $log->is_debug && $log->debug("Setting these values for track: playCount = $playCount, lastPlayed = $lastPlayed, skipCount = $skipCount, lastSkipped = $lastSkipped, dynPSval = $dynPSval\n");
 			}
 
 			if ($trackURLmd5) {
@@ -1133,6 +1138,7 @@ sub handleEndElement {
 				$sqlstatement .= " where musicbrainz_id = \"$trackMBID\"";
 			}
 			executeSQLstat($sqlstatement);
+			$restoreCount++;
 		}
 		%restoreitem = ();
 	}

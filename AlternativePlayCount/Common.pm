@@ -88,7 +88,7 @@ sub createBackup {
 		main::DEBUGLOG && $log->is_debug && $log->debug('Found '.$trackcount.($trackcount == 1 ? ' track' : ' tracks').' with values in the APC database');
 
 		print $output "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
-		print $output "<!-- Backup of APC Database Values -->\n";
+		print $output "<!-- Backup of APC database values for ".$trackcount.($trackcount == 1 ? " track" : " tracks")." -->\n";
 		print $output "<!-- ".$backuptimestamp." -->\n";
 		print $output "<AlternativePlayCount>\n";
 		for my $APCTrack (@APCTracks) {
@@ -112,15 +112,13 @@ sub createBackup {
 			print $output "\t<track>\n\t\t<url>".$BACKUPtrackURL."</url>\n\t\t<urlmd5>".$BACKUPtrackURLmd5."</urlmd5>\n\t\t<relurl>".$BACKUPrelFilePath."</relurl>\n\t\t<playcount>".$BACKUPplayCount."</playcount>\n\t\t<lastplayed>".$BACKUPlastPlayed."</lastplayed>\n\t\t<skipcount>".$BACKUPskipCount."</skipcount>\n\t\t<lastskipped>".$BACKUPlastSkipped."</lastskipped>\n\t\t<dynpsval>".$BACKUPdynPSval."</dynpsval>\n\t\t<remote>".$BACKUPremote."</remote>\n\t\t<musicbrainzid>".$BACKUPtrackMBID."</musicbrainzid>\n\t</track>\n";
 		}
 		print $output "</AlternativePlayCount>\n";
-
-		print $output "<!-- This backup contains ".$trackcount.($trackcount == 1 ? " track" : " tracks")." -->\n";
 		close $output;
 		my $ended = time() - $started;
 		main::DEBUGLOG && $log->is_debug && $log->debug('Backup completed after '.$ended.' seconds.');
 
 		cleanupBackups();
 	} else {
-		main::DEBUGLOG && $log->is_debug && $log->debug('Info: no tracks in APC database');
+		main::INFOLOG && $log->is_info && $log->info('No tracks with play/skip counts in APC database');
 	}
 	$prefs->set('status_creatingbackup', 0);
 }
