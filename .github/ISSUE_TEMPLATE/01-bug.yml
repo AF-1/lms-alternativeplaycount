@@ -104,7 +104,7 @@ body:
     required: true
 - type: checkboxes
   attributes:
-    label: Please check whether the problem can be reproduced with <i>other</i> web skins / controllers.
+    label: Please check whether the problem can be reproduced with other web skins / controllers.
     options:
     - label: I have checked this
       required: true
