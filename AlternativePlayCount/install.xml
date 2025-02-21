@@ -3,7 +3,7 @@
 	<id>af18a10e-3810-ee03-55f4-87cca698a191</id>
 	<name>PLUGIN_ALTERNATIVEPLAYCOUNT</name>
 	<module>Plugins::AlternativePlayCount::Plugin</module>
-	<version>1.6.0</version>
+	<version>1.6.1</version>
 	<description>PLUGIN_ALTERNATIVEPLAYCOUNT_DESC</description>
 	<creator>AF</creator>
 	<importmodule>Plugins::AlternativePlayCount::Importer</importmodule>

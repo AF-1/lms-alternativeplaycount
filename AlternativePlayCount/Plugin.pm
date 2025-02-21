@@ -122,6 +122,7 @@ sub initPlugin {
 
 	Slim::Control::Request::addDispatch(['alternativeplaycount','resetvaluechoice','_infoitem', '_urlmd5'], [0, 1, 1, \&resetValueChoiceJive]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount','resetvalue','_infoitem', '_urlmd5'], [0, 1, 1, \&resetValueJive]);
+	Slim::Control::Request::addDispatch(['alternativeplaycount','skipwithoutcount','_trackid'], [1, 1, 1, \&_skipWithoutCount]);
 
 	Slim::Control::Request::subscribe(\&_setRefreshCBTimer, [['rescan'], ['done']]);
 	Slim::Control::Request::subscribe(\&_APCcommandCB,[['mode', 'play', 'stop', 'pause', 'playlist']]);
@@ -524,7 +525,12 @@ sub _APCcommandCB {
 				main::DEBUGLOG && $log->is_debug && $log->debug('previousTrackURLmd5 = '.Data::Dump::dump($previousTrackURLmd5).' -- lastCustomSkippedTrackURLmd5 = '.Data::Dump::dump($client->pluginData('lastCustomSkippedTrackURLmd5')));
 
 				if (defined($previousTrackURL) && (!defined($client->pluginData('markedAsPlayed')) || $client->pluginData('markedAsPlayed') ne $previousTrackURL)) {
-					if ($prefs->get('ignoreCS3skiprequests') && $client->pluginData('lastCustomSkippedTrackURLmd5') && $client->pluginData('lastCustomSkippedTrackURLmd5') eq $previousTrackURLmd5) {
+					# DFS request to ignore skip count
+					if ($client->pluginData('skipWithoutCountTrackURLmd5') && $client->pluginData('skipWithoutCountTrackURLmd5') eq $previousTrackURLmd5) {
+						main::INFOLOG && $log->is_info && $log->info("skip requested by DarkFlat - don't mark this track as skipped in db: ".$previousTrackURL);
+						$client->pluginData('skipWithoutCountTrackURLmd5' => undef);
+					# CS request to ignore skip count
+					} elsif ($prefs->get('ignoreCS3skiprequests') && $client->pluginData('lastCustomSkippedTrackURLmd5') && $client->pluginData('lastCustomSkippedTrackURLmd5') eq $previousTrackURLmd5) {
 						main::INFOLOG && $log->is_info && $log->info("skip requested by CustomSkip3 - don't mark this track as skipped in db: ".$previousTrackURL);
 						$client->pluginData('lastCustomSkippedTrackURLmd5' => undef);
 					} else {
@@ -568,7 +574,8 @@ sub _APCcommandCB {
 			$client->pluginData('currentTrackURL' => undef);
 			$client->pluginData('currentTrackURLmd5' => undef);
 			$client->pluginData('currentTrackMBID' => undef);
-			$client->pluginData('lastCustomSkippedTrackURL' => undef);
+			$client->pluginData('lastCustomSkippedTrackURLmd5' => undef);
+			$client->pluginData('skipWithoutCountTrackURLmd5' => undef);
 		}
 	}
 }
@@ -853,6 +860,34 @@ sub _setAutoRatingValue {
 	main::INFOLOG && $log->is_info && $log->info($logActionPrefix.' rating value from '.$curRating.' to '.$newRating.' for track with url: '.$track->url."\n\n");
 
 	Slim::Control::Request::executeRequest($client, ['ratingslight', 'setratingpercent', 'track_id:'.$track->id, $newRating]);
+}
+
+sub _skipWithoutCount {
+	my $request = shift;
+	my $client = $request->client();
+
+	if (!$request->isQuery([['alternativeplaycount'],['skipwithoutcount']])) {
+		$log->warn('incorrect command');
+		$request->setStatusBadDispatch();
+		return;
+	}
+	if (!defined $client) {
+		$log->warn('client required!');
+		$request->setStatusNeedsClient();
+		return;
+	}
+	my $trackID = $request->getParam('_trackid');
+	if (!$trackID) {
+		$log->warn('track ID required!');
+		return;
+	}
+
+	my $track = Slim::Schema->find('Track', $trackID);
+	$client->pluginData('skipWithoutCountTrackURLmd5' => $track->urlmd5);
+
+	Slim::Control::Request::executeRequest($client, ['playlist', 'index', '+1']);
+
+	$request->setStatusDone();
 }
 
 
