@@ -1,0 +1,35 @@
+[% pagetitle = 'PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE' | string; pagetitle = pagetitle _ " " _ name %]
+[% pwd_list = [ pagetitle ] %]
+[% PROCESS pageheader.html %]
+<style>
+@charset "UTF-8";
+.wrapper {padding: 5px;}
+a {text-decoration: none;}
+.rltitlebold{font-weight:bold;}
+.filler {height: 3px;}
+</style>
+<br>
+	<div class="wrapper">
+		<a href="[% webroot %]plugins/AlternativePlayCount/resetvalues?objecttype=[% objecttype %]&amp;objectid=[% objectid %]&amp;infoitem=[% infoitem %][% IF urlmd5 %]&amp;urlmd5=[% urlmd5 %][% END %]&amp;action=1&amp;player=[% playerURI %]" [% IF browserTarget %]target="[% browserTarget %]"[% END %]>
+			[% "PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE" | string %] <span class="rltitlebold">[% name %]</span> [% suffix %]
+		</a>
+	</div>
+
+[% IF resetdone %]
+<script type="text/javascript">
+	[% IF objecttype == "track" %]
+		setTimeout(location.href = "[% webroot %]songinfo.html?item=[% objectid %]&amp;player=[% playerURI %]", 500);
+	[% ELSIF objecttype == "artist" %]
+		setTimeout(location.href = "[% webroot %]clixmlbrowser/clicmd=browselibrary+items&linktitle=BROWSE_BY_ARTIST&mode=artists/?player=[% playerURI %]", 500);
+	[% ELSIF objecttype == "album" %]
+		setTimeout(location.href = "[% webroot %]clixmlbrowser/clicmd=browselibrary+items&linktitle=BROWSE_BY_ALBUM&mode=albums/?player=[% playerURI %]", 500);
+	[% ELSIF objecttype == "genre" %]
+		setTimeout(location.href = "[% webroot %]clixmlbrowser/clicmd=browselibrary+items&linktitle=BROWSE_BY_GENRE&mode=genres/?player=[% playerURI %]", 500);
+	[% ELSIF objecttype == "playlist" %]
+		setTimeout(location.href = "[% webroot %]clixmlbrowser/clicmd=browselibrary+items&linktitle=SAVED_PLAYLISTS&mode=playlists/?player=[% playerURI %]", 500);
+	[% ELSIF objecttype == "year" || objecttype == "decade" %]
+		setTimeout(location.href = "[% webroot %]clixmlbrowser/clicmd=browselibrary+items&linktitle=BROWSE_BY_YEAR&mode=years/?player=[% playerURI %]", 500);
+	[% END %]
+</script>
+[% END %]
+[% PROCESS pagefooter.html %]

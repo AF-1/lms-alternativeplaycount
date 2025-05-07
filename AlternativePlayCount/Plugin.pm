@@ -75,34 +75,36 @@ sub initPlugin {
 		Plugins::AlternativePlayCount::Settings::Reset->new($class);
 		Plugins::AlternativePlayCount::Settings::Autorating->new($class);
 
-		Slim::Web::Pages->addPageFunction('resetvalue', \&resetValueWeb);
+		Slim::Web::Pages->addPageFunction('resetvalues', \&resetValuesWeb);
 	}
 
-	Slim::Menu::TrackInfo->registerInfoProvider(apcplaycount => (
-		parent => 'moreinfo', isa => 'bottom',
-		func => sub { return trackInfoHandler('playCount', @_); }
+	Slim::Menu::TrackInfo->registerInfoProvider(zzzz_apcplaycount => (
+		isa => 'bottom',
+		func => sub { return trackInfoHandler('track', 'playCount', @_); }
 	));
-	Slim::Menu::TrackInfo->registerInfoProvider(apclastplayed => (
-		parent => 'moreinfo',
-		after => 'apcplaycount',
-		before => 'apcskipcount',
-		func => sub { return trackInfoHandler('lastPlayed', @_); }
+	Slim::Menu::TrackInfo->registerInfoProvider(zzzz_apclastplayed => (
+		after => 'zzzz_apcplaycount',
+		before => 'zzzz_apcskipcount',
+		func => sub { return trackInfoHandler('track', 'lastPlayed', @_); }
 	));
-	Slim::Menu::TrackInfo->registerInfoProvider(apcskipcount => (
-		parent => 'moreinfo',
-		after => 'apcplaycount',
-		func => sub { return trackInfoHandler('skipCount', @_); }
+	Slim::Menu::TrackInfo->registerInfoProvider(zzzz_apcskipcount => (
+		after => 'zzzz_apcplaycount',
+		func => sub { return trackInfoHandler('track', 'skipCount', @_); }
 	));
-	Slim::Menu::TrackInfo->registerInfoProvider(apclastskipped => (
-		parent => 'moreinfo',
-		after => 'apcskipcount',
-		func => sub { return trackInfoHandler('lastSkipped', @_); }
+	Slim::Menu::TrackInfo->registerInfoProvider(zzzz_apclastskipped => (
+		after => 'zzzz_apcskipcount',
+		func => sub { return trackInfoHandler('track', 'lastSkipped', @_); }
 	));
-	Slim::Menu::TrackInfo->registerInfoProvider(apcdynpsval => (
-		parent => 'moreinfo',
-		after => 'apclastskipped',
-		func => sub { return trackInfoHandler('dynPSval', @_); }
+	Slim::Menu::TrackInfo->registerInfoProvider(zzzz_apcdynpsval => (
+		after => 'zzzz_apclastskipped',
+		func => sub { return trackInfoHandler('track', 'dynPSval', @_); }
 	));
+	Slim::Menu::TrackInfo->registerInfoProvider(zzzz_apcresettrackvals => (
+		after => 'zzzz_apcdynpsval',
+		func => sub { return trackInfoHandler('track', 'all', @_); }
+	));
+
+	registerBatchResetContextMenus();
 
 	Slim::Music::Import->addImporter('Plugins::AlternativePlayCount::Importer', {
 		'type' => 'post',
@@ -120,8 +122,8 @@ sub initPlugin {
 	Slim::Music::TitleFormatter::addFormat('APC_DPSV',
 		sub { my $track = shift; getTitleFormat($track, 'dynPSval'); }, 1);
 
-	Slim::Control::Request::addDispatch(['alternativeplaycount','resetvaluechoice','_infoitem', '_urlmd5'], [0, 1, 1, \&resetValueChoiceJive]);
-	Slim::Control::Request::addDispatch(['alternativeplaycount','resetvalue','_infoitem', '_urlmd5'], [0, 1, 1, \&resetValueJive]);
+	Slim::Control::Request::addDispatch(['alternativeplaycount','resetvalueschoice'], [0, 1, 1, \&resetValuesChoiceJive]);
+	Slim::Control::Request::addDispatch(['alternativeplaycount','resetvalues'], [0, 1, 1, \&resetValuesJive]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount','skipwithoutcount','_trackid'], [1, 1, 1, \&_skipWithoutCount]);
 
 	Slim::Control::Request::subscribe(\&_setRefreshCBTimer, [['rescan'], ['done']]);
@@ -191,7 +193,8 @@ sub initPrefs {
 				'lastPlayed' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTPLAYED'),
 				'skipCount' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCSKIPCOUNT'),
 				'lastSkipped' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTSKIPPED'),
-				'dynPSval' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCDYNPSVAL') );
+				'dynPSval' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCDYNPSVAL'),
+				'all' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE_ALLVALS') );
 
 	$prefs->setChange(sub {
 			main::DEBUGLOG && $log->is_debug && $log->debug('Pref for scheduled backups changed. Resetting or killing timer.');
@@ -200,7 +203,7 @@ sub initPrefs {
 }
 
 sub trackInfoHandler {
-	my ($infoItem, $client, $url, $track, $remoteMeta, $tags, $filter) = @_;
+	my ($objectType, $infoItem, $client, $url, $track, $remoteMeta, $tags, $filter) = @_;
 
 	# check if remote track is part of online library
 	if ((Slim::Music::Info::isRemoteURL($url) == 1) && (!defined($track->extid))) {
@@ -284,15 +287,26 @@ sub trackInfoHandler {
 
 	my $displayText = $itemNames{$infoItem}.': '.$returnVal;
 
+	if ($infoItem eq 'all') {
+		return if $apcPlayCount == 0 && $apcSkipCount == 0 && $dynPSval == 0;
+		$displayText = string('PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE').' '.$itemNames{$infoItem}.' '.string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_RESETFORTHIS').' '.lc(string(uc($objectType)));
+	}
+
 	if ($tags->{menuMode}) {
 		my $jive = {};
 		my $actions = {
 			go => {
 				player => 0,
-				cmd => ['alternativeplaycount', 'resetvaluechoice', $infoItem, $urlmd5],
+				cmd => ['alternativeplaycount', 'resetvalueschoice'],
+				params => {
+					'objecttype' => $objectType,
+					'objectid' => $track->id,
+					'infoitem' => $infoItem,
+					'urlmd5' => $urlmd5,
+				},
 			},
 		};
-		if ($infoItem eq 'lastPlayed' || $infoItem eq 'lastSkipped') {
+		if ($infoItem eq 'lastPlayed' || $infoItem eq 'lastSkipped' || ($infoItem eq 'playCount' && $apcPlayCount == 0) || ($infoItem eq 'skipCount' && $apcSkipCount == 0)) {
 			return {
 				type => 'text',
 				name => $displayText,
@@ -305,70 +319,239 @@ sub trackInfoHandler {
 			name => $displayText,
 			jive => $jive,
 		};
+
 	} else {
+
 		my $item = {
 			type => 'text',
 			name => $displayText,
-			trackid => $track->id,
-			urlmd5 => $urlmd5,
+			objectid => $track->id,
+			objecttype => $objectType,
 			infoitem => $infoItem,
+			urlmd5 => $urlmd5,
 		};
-		unless ($infoItem eq 'lastPlayed' || $infoItem eq 'lastSkipped') {
+		unless ($infoItem eq 'lastPlayed' || $infoItem eq 'lastSkipped' || ($infoItem eq 'playCount' && $apcPlayCount == 0) || ($infoItem eq 'skipCount' && $apcSkipCount == 0)) {
 			$item->{'web'} = {
 				'type' => 'htmltemplate',
-				'value' => 'plugins/AlternativePlayCount/html/displayapcvalue.html',
+				'value' => 'plugins/AlternativePlayCount/html/displayapcvalues.html',
 			};
 		}
 
 		delete $item->{type};
 		$item->{name} = $displayText;
 
-		if ($infoItem eq 'lastPlayed' || $infoItem eq 'lastSkipped') {
+		if ($infoItem eq 'lastPlayed' || $infoItem eq 'lastSkipped' || ($infoItem eq 'playCount' && $apcPlayCount == 0) || ($infoItem eq 'skipCount' && $apcSkipCount == 0)) {
 			$item->{type} = 'text';
 			return $item;
 		} else {
 			$item->{url} = \&resetValChoiceVFD;
-			$item->{passthrough} = [$infoItem, $urlmd5];
+			$item->{passthrough} = [$objectType, $track->id, $infoItem, $urlmd5];
 		}
 
 		my @items = ();
-		my $choiceText = string('PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE').' '.$itemNames{$infoItem}.' '.string('PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE_TRACK');
+		my $choiceText = string('PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE').' '.$itemNames{$infoItem}.' '.string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_RESETFORTHIS').' '.lc(string(uc($objectType)));
 		push(@items, {
 			name => $choiceText,
 			url => \&resetValVFD,
-			passthrough => [$infoItem, $urlmd5],
+			passthrough => [$objectType, $track->id, $infoItem, $urlmd5],
 		});
 		$item->{items} = \@items;
 		return $item;
 	}
 }
 
-sub resetValueWeb {
-	my ($client, $params, $callback, $httpClient, $response) = @_;
+## reset value(s)
 
-	my $urlmd5 = $params->{urlmd5};
-	my $infoItem = $params->{infoitem};
-	my $trackID = $params->{trackid};
-	my $action = $params->{action};
-	$params->{name} = $itemNames{$infoItem};
-	$params->{trackid} = $trackID;
-	$params->{infoitem} = $infoItem;
-	$params->{urlmd5} = $urlmd5;
-	main::DEBUGLOG && $log->is_debug && $log->debug('name = '.$itemNames{$infoItem}.' ## infoItem = '.$infoItem.' ## urlmd5 = '.$urlmd5.' ## trackID = '.$trackID);
+sub registerBatchResetContextMenus {
+	Slim::Menu::AlbumInfo->registerInfoProvider(zzzz_apcplaycountalbumbatchreset => (
+		after => 'bottom',
+		func => sub { return objectInfoHandler('album', 'playCount', @_); }
+	));
+	Slim::Menu::AlbumInfo->registerInfoProvider(zzzz_apcskipcountalbumbatchreset => (
+		after => 'zzzz_apcplaycountalbumbatchreset',
+		func => sub { return objectInfoHandler('album', 'skipCount', @_); }
+	));
+	Slim::Menu::AlbumInfo->registerInfoProvider(zzzz_apcdynpsvalalbumbatchreset => (
+		after => 'zzzz_apcskipcountalbumbatchreset',
+		func => sub { return objectInfoHandler('album', 'dynPSval', @_); }
+	));
+	Slim::Menu::AlbumInfo->registerInfoProvider(zzzz_apccompletealbumbatchreset => (
+		after => 'zzzz_apcdynpsvalalbumbatchreset',
+		func => sub { return objectInfoHandler('album', 'all', @_); }
+	));
 
-	if ($action) {
-		resetValue($infoItem, $urlmd5);
-		$params->{resetdone} = 1;
-		main::INFOLOG && $log->is_info && $log->info('Reset '.$itemNames{$infoItem}.' for trackID '.$trackID);
-	}
-	return Slim::Web::HTTP::filltemplatefile('plugins/AlternativePlayCount/html/resetvalue.html', $params);
+	Slim::Menu::ArtistInfo->registerInfoProvider(zzzz_apcplaycountartistbatchreset => (
+		after => 'bottom',
+		func => sub { return objectInfoHandler('artist', 'playCount', @_); }
+	));
+	Slim::Menu::ArtistInfo->registerInfoProvider(zzzz_apcskipcountartistbatchreset => (
+		after => 'zzzz_apcplaycountartistbatchreset',
+		func => sub { return objectInfoHandler('artist', 'skipCount', @_); }
+	));
+	Slim::Menu::ArtistInfo->registerInfoProvider(zzzz_apcdynpsvalartistbatchreset => (
+		after => 'zzzz_apcskipcountartistbatchreset',
+		func => sub { return objectInfoHandler('artist', 'dynPSval', @_); }
+	));
+	Slim::Menu::ArtistInfo->registerInfoProvider(zzzz_apccompleteartistbatchreset => (
+		after => 'zzzz_apcdynpsvalartistbatchreset',
+		func => sub { return objectInfoHandler('artist', 'all', @_); }
+	));
+
+	Slim::Menu::GenreInfo->registerInfoProvider(zzzz_apcplaycountgenrebatchreset => (
+		after => 'bottom',
+		func => sub { return objectInfoHandler('genre', 'playCount', @_); }
+	));
+	Slim::Menu::GenreInfo->registerInfoProvider(zzzz_apcskipcountgenrebatchreset => (
+		after => 'zzzz_apcplaycountgenrebatchreset',
+		func => sub { return objectInfoHandler('genre', 'skipCount', @_); }
+	));
+	Slim::Menu::GenreInfo->registerInfoProvider(zzzz_apcdynpsvalgenrebatchreset => (
+		after => 'zzzz_apcskipcountgenrebatchreset',
+		func => sub { return objectInfoHandler('genre', 'dynPSval', @_); }
+	));
+	Slim::Menu::GenreInfo->registerInfoProvider(zzzz_apccompletegenrebatchreset => (
+		after => 'zzzz_apcdynpsvalgenrebatchreset',
+		func => sub { return objectInfoHandler('genre', 'all', @_); }
+	));
+
+	Slim::Menu::PlaylistInfo->registerInfoProvider(zzzz_apcplaycountplaylistbatchreset => (
+		after => 'bottom',
+		func => sub { return objectInfoHandler('playlist', 'playCount', @_); }
+	));
+	Slim::Menu::PlaylistInfo->registerInfoProvider(zzzz_apcskipcountplaylistbatchreset => (
+		after => 'zzzz_apcplaycountplaylistbatchreset',
+		func => sub { return objectInfoHandler('playlist', 'skipCount', @_); }
+	));
+	Slim::Menu::PlaylistInfo->registerInfoProvider(zzzz_apcdynpsvalplaylistbatchreset => (
+		after => 'zzzz_apcskipcountplaylistbatchreset',
+		func => sub { return objectInfoHandler('playlist', 'dynPSval', @_); }
+	));
+	Slim::Menu::PlaylistInfo->registerInfoProvider(zzzz_apccompleteplaylistbatchreset => (
+		after => 'zzzz_apcdynpsvalplaylistbatchreset',
+		func => sub { return objectInfoHandler('playlist', 'all', @_); }
+	));
+
+	Slim::Menu::YearInfo->registerInfoProvider(zzzz_apcplaycountyearbatchreset => (
+		after => 'bottom',
+		func => sub { return objectInfoHandler('year', 'playCount', @_); }
+	));
+	Slim::Menu::YearInfo->registerInfoProvider(zzzz_apcskipcountyearbatchreset => (
+		after => 'zzzz_apcplaycountyearbatchreset',
+		func => sub { return objectInfoHandler('year', 'skipCount', @_); }
+	));
+	Slim::Menu::YearInfo->registerInfoProvider(zzzz_apcdynpsvalyearbatchreset => (
+		after => 'zzzz_apcskipcountyearbatchreset',
+		func => sub { return objectInfoHandler('year', 'dynPSval', @_); }
+	));
+	Slim::Menu::YearInfo->registerInfoProvider(zzzz_apccompleteyearbatchreset => (
+		after => 'zzzz_apcdynpsvalyearbatchreset',
+		func => sub { return objectInfoHandler('year', 'all', @_); }
+	));
+	Slim::Menu::YearInfo->registerInfoProvider(zzzz_apcplaycountdecadebatchreset => (
+		after => 'zzzz_apcdynpsvalyearbatchreset',
+		func => sub { return objectInfoHandler('decade', 'playCount', @_); }
+	));
+	Slim::Menu::YearInfo->registerInfoProvider(zzzz_apcskipcountdecadebatchreset => (
+		after => 'zzzz_apcplaycountdecadebatchreset',
+		func => sub { return objectInfoHandler('decade', 'skipCount', @_); }
+	));
+	Slim::Menu::YearInfo->registerInfoProvider(zzzz_apcdynpsvaldecadebatchreset => (
+		after => 'zzzz_apcskipcountdecadebatchreset',
+		func => sub { return objectInfoHandler('decade', 'dynPSval', @_); }
+	));
+	Slim::Menu::YearInfo->registerInfoProvider(zzzz_apccompletedecadebatchreset => (
+		after => 'zzzz_apcdynpsvaldecadebatchreset',
+		func => sub { return objectInfoHandler('decade', 'all', @_); }
+	));
 }
 
-sub resetValueChoiceJive {
+sub objectInfoHandler { # reset values for artists, albums, genres, years, decades, playlists
+	my ($objectType, $infoItem, $client, $url, $obj, $remoteMeta, $tags) = @_;
+	$tags ||= {};
+	main::DEBUGLOG && $log->is_debug && $log->debug('objectType = '.$objectType.' ## infoItem = '.$infoItem.' ## url = '.Data::Dump::dump($url));
+
+	if (Slim::Music::Import->stillScanning) {
+		$log->warn('Warning: not available until library scan is completed');
+		return;
+	}
+
+	my $objectID = ($objectType eq 'year' || $objectType eq 'decade') ? $obj : $obj->id;
+	main::DEBUGLOG && $log->is_debug && $log->debug('objectID = '.Data::Dump::dump($objectID).' ## objectName = '.(($objectType eq 'year' || $objectType eq 'decade') ? Data::Dump::dump($obj) : Data::Dump::dump($obj->name)));
+
+	my $menuItemSuffix;
+	if ($objectType eq 'decade') {
+		$objectID = floor($obj/10) * 10 + 0;
+		$menuItemSuffix = string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_RESETFOR').' '.$objectID.'s';
+	} else {
+		$menuItemSuffix = string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_RESETFORTHIS').' '.lc(string(uc($objectType)));
+	}
+	my $menuItemTitle = string('PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE').' '.$itemNames{$infoItem}.' '.$menuItemSuffix;
+
+	if ($tags->{menuMode}) {
+		return {
+			type => 'redirect',
+			name => $menuItemTitle,
+			jive => {
+				actions => {
+					go => {
+						player => 0,
+						cmd => ['alternativeplaycount', 'resetvalueschoice'],
+						params => {
+							'objecttype' => $objectType,
+							'objectid' => $objectID,
+							'infoitem' => $infoItem,
+						},
+					},
+				}
+			},
+			favorites => 0,
+		};
+	} else {
+		my $item = {
+			type => 'text',
+			name => $menuItemTitle,
+			objecttype => $objectType,
+			objectid => $objectID,
+			infoitem => $infoItem,
+			web => {
+				'type' => 'htmltemplate',
+				'value' => 'plugins/AlternativePlayCount/html/batchreset.html'
+			},
+		};
+
+		return $item;
+	}
+}
+
+sub resetValuesWeb {
+	my ($client, $params, $callback, $httpClient, $response) = @_;
+
+	my $objectType = $params->{objecttype};
+	my $objectID = $params->{objectid};
+	my $infoItem = $params->{infoitem};
+	my $action = $params->{action};
+	my $urlmd5 = $params->{urlmd5};
+	$params->{name} = $itemNames{$infoItem};
+	$params->{objectid} = $objectID;
+	$params->{objecttype} = $objectType;
+	$params->{infoitem} = $infoItem;
+	$params->{suffix} = string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_RESETFORTHIS').' '.($objectType eq 'decade' ? string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DECADE') : lc(string(uc($objectType))));
+	$params->{urlmd5} = $urlmd5;
+	main::DEBUGLOG && $log->is_debug && $log->debug('name = '.$itemNames{$infoItem}.' ## objectType = '.$objectType.' ## objectID = '.$objectID.' ## urlmd5 = '.Data::Dump::dump($urlmd5));
+
+	if ($action) {
+		resetValues($objectType, $objectID, $infoItem, $urlmd5);
+		$params->{resetdone} = 1;
+		main::INFOLOG && $log->is_info && $log->info('Going to reset '.$itemNames{$infoItem}." for $objectType with ID: ".$objectID);
+	}
+	return Slim::Web::HTTP::filltemplatefile('plugins/AlternativePlayCount/html/resetvalues.html', $params);
+}
+
+sub resetValuesChoiceJive {
 	my $request = shift;
 	my $client = $request->client();
 
-	if (!$request->isQuery([['alternativeplaycount'],['resetvaluechoice']])) {
+	if (!$request->isQuery([['alternativeplaycount'],['resetvalueschoice']])) {
 		$log->warn('incorrect command');
 		$request->setStatusBadDispatch();
 		return;
@@ -378,22 +561,38 @@ sub resetValueChoiceJive {
 		$request->setStatusNeedsClient();
 		return;
 	}
-	my $infoItem = $request->getParam('_infoitem');
-	my $urlmd5 = $request->getParam('_urlmd5');
-	main::DEBUGLOG && $log->is_debug && $log->debug('infoItem = '.$infoItem.' ## urlmd5 = '.$urlmd5);
+	my $objectType = $request->getParam('objecttype');
+	my $objectID = $request->getParam('objectid');
+	my $infoItem = $request->getParam('infoitem');
+	my $urlmd5 = $request->getParam('urlmd5');
+	main::DEBUGLOG && $log->is_debug && $log->debug('objecttype = '.$objectType.' ## infoItem = '.$infoItem.' ## objectid = '.$objectID.' ## urlmd5 = '.Data::Dump::dump($urlmd5));
 
 	my $action = {
 		'do' => {
 			'player' => 0,
-			'cmd' => ['alternativeplaycount', 'resetvalue', $infoItem, $urlmd5],
+			'cmd' => ['alternativeplaycount', 'resetvalues'],
+			params => {
+				'objecttype' => $objectType,
+				'objectid' => $objectID,
+				'infoitem' => $infoItem,
+				'urlmd5' => $urlmd5,
+			},
 		},
 		'play' => {
 			'player' => 0,
-			'cmd' => ['alternativeplaycount', 'resetvalue', $infoItem, $urlmd5],
+			'cmd' => ['alternativeplaycount', 'resetvalues'],
+			params => {
+				'objecttype' => $objectType,
+				'objectid' => $objectID,
+				'infoitem' => $infoItem,
+				'urlmd5' => $urlmd5,
+			},
 		},
 	};
+
 	my $windowTitle = string('PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE').' '.$itemNames{$infoItem};
-	my $displayText = $windowTitle.' '.string('PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE_TRACK');
+	my $displayText = $windowTitle.' '.string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_RESETFORTHIS').' '.($objectType eq 'decade' ? string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DECADE') : lc(string(uc($objectType))));
+
 	$request->addResultLoop('item_loop', 0, 'text', $displayText);
 	$request->addResultLoop('item_loop', 0, 'type', 'redirect');
 	$request->addResultLoop('item_loop', 0, 'actions', $action);
@@ -405,11 +604,11 @@ sub resetValueChoiceJive {
 	$request->setStatusDone();
 }
 
-sub resetValueJive {
+sub resetValuesJive {
 	my $request = shift;
 	my $client = $request->client();
 
-	if (!$request->isQuery([['alternativeplaycount'],['resetvalue']])) {
+	if (!$request->isQuery([['alternativeplaycount'],['resetvalues']])) {
 		$log->warn('incorrect command');
 		$request->setStatusBadDispatch();
 		return;
@@ -419,21 +618,23 @@ sub resetValueJive {
 		$request->setStatusNeedsClient();
 		return;
 	}
-	my $infoItem = $request->getParam('_infoitem');
-	my $urlmd5 = $request->getParam('_urlmd5');
-	main::DEBUGLOG && $log->is_debug && $log->debug('infoItem = '.$infoItem.' ## urlmd5 = '.$urlmd5);
+	my $objectType = $request->getParam('objecttype');
+	my $infoItem = $request->getParam('infoitem');
+	my $objectID = $request->getParam('objectid');
+	my $urlmd5 = $request->getParam('urlmd5');
+	main::DEBUGLOG && $log->is_debug && $log->debug('objecttype = '.$objectType.' ## infoItem = '.$infoItem.' ## objectid = '.$objectID.' ## urlmd5 = '.Data::Dump::dump($urlmd5));
 
-	resetValue($infoItem, $urlmd5);
+	resetValues($objectType, $objectID, $infoItem, $urlmd5);
 
 	$request->setStatusDone();
 }
 
 sub resetValVFD {
-	my ($client, $callback, $params, $infoItem, $urlmd5) = @_;
+	my ($client, $callback, $params, $objectType, $objectID, $infoItem, $urlmd5) = @_;
 	main::DEBUGLOG && $log->is_debug && $log->debug('infoItem = '.$infoItem);
 	main::DEBUGLOG && $log->is_debug && $log->debug('urlmd5 = '.$urlmd5);
 
-	resetValue($infoItem, $urlmd5);
+	resetValues($objectType, $objectID, $infoItem, $urlmd5);
 	my $cbtext = string('PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_CB');
 	$callback->([{
 		type => 'text',
@@ -443,23 +644,48 @@ sub resetValVFD {
 	}]);
 }
 
-sub resetValue {
-	my ($infoItem, $urlmd5) = @_;
-	return if (!$infoItem || !$urlmd5);
+sub resetValues {
+	my ($objectType, $objectID, $infoItem, $urlmd5) = @_;
+	main::DEBUGLOG && $log->is_debug && $log->debug('objectType = '.Data::Dump::dump($objectType).' ## objectID = '.Data::Dump::dump($objectID).' ## infoItem = '.Data::Dump::dump($infoItem).' ## url = '.Data::Dump::dump($urlmd5));
+	return if (!$objectType || !$objectID || !$infoItem);
 
 	my $sqlstatement;
 	if ($infoItem eq 'playCount') {
-		$sqlstatement = "update alternativeplaycount set playCount = null, lastPlayed = null where urlmd5 = \"$urlmd5\"";
+		$sqlstatement = "update alternativeplaycount set playCount = null, lastPlayed = null";
 	} elsif ($infoItem eq 'skipCount') {
-		$sqlstatement = "update alternativeplaycount set skipCount = null, lastSkipped = null where urlmd5 = \"$urlmd5\"";
+		$sqlstatement = "update alternativeplaycount set skipCount = null, lastSkipped = null";
 	} elsif ($infoItem eq 'dynPSval') {
-		$sqlstatement = "update alternativeplaycount set dynPSval = null where urlmd5 = \"$urlmd5\"";
+		$sqlstatement = "update alternativeplaycount set dynPSval = null";
+	} elsif ($infoItem eq 'all') {
+		$sqlstatement = "update alternativeplaycount set playCount = null, lastPlayed = null, skipCount = null, lastSkipped = null, dynPSval = null";
+	}
+
+	if ($objectType eq 'track') {
+		if (!$urlmd5) {
+			my $track = Slim::Schema->find('Track', $objectID);
+			$urlmd5 = $track->urlmd5;
+		}
+		$sqlstatement .= " where urlmd5 = \"$urlmd5\"";
+
+	} elsif ($objectType eq 'album') {
+		$sqlstatement .= " where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.album = $objectID)";
+	} elsif ($objectType eq 'artist') {
+		$sqlstatement .= " where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 join contributor_track on contributor_track.track = tracks.id where contributor_track.role in (1,5,6) and contributor_track.contributor = $objectID)";
+	} elsif ($objectType eq 'genre') {
+		$sqlstatement .= " where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 join genre_track on genre_track.track = tracks.id where genre_track.genre = $objectID)";
+	} elsif ($objectType eq 'playlist') {
+		$sqlstatement .= " where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 join playlist_track on playlist_track.track = tracks.url where playlist_track.playlist = $objectID)";
+	} elsif ($objectType eq 'year') {
+		$sqlstatement .= " where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where ifnull(tracks.year, 0) = $objectID)";
+	} elsif ($objectType eq 'decade') {
+		$sqlstatement .= " where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where ifnull(tracks.year, 0) >= $objectID and ifnull(tracks.year, 0) <= ($objectID + 9))";
 	}
 
 	return if (!$sqlstatement);
 	executeSQLstat($sqlstatement);
-	main::DEBUGLOG && $log->is_debug && $log->debug("Finished resetting value for \"$infoItem\"");
+	main::DEBUGLOG && $log->is_debug && $log->debug("Finished resetting $infoItem for $objectType with ID: ".$objectID);
 }
+
 
 
 ## mark as played or skipped
