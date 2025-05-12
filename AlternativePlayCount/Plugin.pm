@@ -2234,17 +2234,21 @@ update alternativeplaycount set dynPSval = case when (dynPSval == 1 and ifnull(s
 	$prefs->set('status_resetapcdatabase', 0);
 }
 
-sub resetDPSV {
-	my $sqlstatement = "update alternativeplaycount set dynPSval = null where ifnull(dynPSval, 0) != 0";
-	executeSQLstat($sqlstatement);
-	main::DEBUGLOG && $log->is_debug && $log->debug('Finished resetting DPSV column');
-	populateDPSV();
-}
+sub resetColValues {
+	my $type = shift;
+	return if !$type;
 
-sub resetSkipCounts {
-	my $sqlstatement = "update alternativeplaycount set skipCount = null, lastSkipped = null where ifnull(skipCount, 0) != 0";
+	my $sqlstatement = "update alternativeplaycount ";
+	if ($type eq 'playcount') {
+		$sqlstatement .= "set playCount = null, lastPlayed = null where ifnull(playCount, 0) != 0";
+	} elsif ($type eq 'skipcount') {
+		$sqlstatement .= "set skipCount = null, lastSkipped = null where ifnull(skipCount, 0) != 0";
+	} elsif ($type eq 'dpsv') {
+		$sqlstatement .= "set dynPSval = null where ifnull(dynPSval, 0) != 0";
+	}
 	executeSQLstat($sqlstatement);
-	main::DEBUGLOG && $log->is_debug && $log->debug('Finished resetting skip counts');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Finished resetting $type column');
+	populateDPSV() if $type eq 'dpsv';
 }
 
 sub refreshDatabase {
@@ -2280,18 +2284,17 @@ sub refreshDatabase {
 }
 
 sub removeDeadTracks {
-	my $database = shift || 'alternativeplaycount';
 	my $dbh = Slim::Schema->dbh;
-	main::DEBUGLOG && $log->is_debug && $log->debug('Removing dead tracks from APC database that no longer exist in LMS database');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Removing dead tracks from APC database table that no longer exist in LMS database');
 
-	my $sqlstatement = "delete from $database where urlmd5 not in (select urlmd5 from tracks where tracks.urlmd5 = $database.urlmd5)";
+	my $sqlstatement = "delete from alternativeplaycount where urlmd5 not in (select urlmd5 from tracks where tracks.urlmd5 = alternativeplaycount.urlmd5)";
 	eval {$dbh->do($sqlstatement)};
 	if($@) {
 		$log->error("Database error: $DBI::errstr\n");
 		eval { rollback($dbh); };
 	}
 
-	main::DEBUGLOG && $log->is_debug && $log->debug('Finished removing dead tracks from DB.');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Finished removing dead tracks from APC database table.');
 }
 
 sub resetLMSvalues {

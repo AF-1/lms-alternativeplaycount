@@ -177,6 +177,38 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET
 	EN	Reset
 	FR	Réinitialiser
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_PLAYCOUNT
+	EN	Reset all APC play count values
+	FR	Réinitaliser les nombres de lecture APC
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_PLAYCOUNT_DESC
+	EN	This will <b>reset</b> all APC <b>play count</b> values. It will <b>not</b> reset the <i>complete</i> APC database.
+	FR	Cela <b>réinitialisera</b> tous les <b>nombres de lecture</b>. Cela ne réinitialisera <b>pas</b> la base de données APC <i>complète</i>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_PLAYCOUNT_BUTTON
+	EN	Reset play count values now
+	FR	Réinitaliser les nombres de lecture maintenant
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_PLAYCOUNT_INPROGRESS
+	EN	resetting play count values...
+	FR	réinitialisation des nombres de lecture...
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT
+	EN	Reset skip count values
+	FR	Réinitaliser les sauts
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_DESC
+	EN	This will <b>reset</b> all <b>skip count</b> values. It will <b>not</b> reset the <i>complete</i> APC database.
+	FR	Cela <b>réinitialisera</b> tous les <b>sauts</b>. Cela ne réinitialisera <b>pas</b> la base de données APC <i>complète</i>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_BUTTON
+	EN	Reset skip count values now
+	FR	Réinitaliser les sauts maintenant
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_INPROGRESS
+	EN	resetting skip count values...
+	FR	réinitialisation des sauts...
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV
 	EN	Reset dynamic played/skipped values (DPSV)
 	FR	Réinitialise les valeurs dynamiques joués/sautés (DPSV)
@@ -213,21 +245,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS_RATINGS
 	EN	Use track ratings
 	FR	Utiliser les notes
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT
-	EN	Reset skip counts
-	FR	Réinitaliser les sauts
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_DESC
-	EN	This will <b>reset</b> all <b>skip counts</b>. It will <b>not</b> reset the <i>complete</i> APC database.
-	FR	Cela <b>réinitialisera</b> tous les <b>sauts</b>. Cela ne réinitialisera <b>pas</b> la base de données APC <i>complète</i>
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_BUTTON
-	EN	Reset skip counts now
-	FR	Réinitaliser les sauts maintenant
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_INPROGRESS
-	EN	resetting skip counts...
-	FR	réinitialisation des sauts...
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_APCDATABASE
 	EN	Reset <i>complete</i> Alternative Play Count database
@@ -270,27 +288,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_MINPLAYCOUNT_DESC
 	FR	Contrairement à <i>Nombre de Lectures Alternatif</i>, LMS augmente aussi le nombre de lectures des morceaux <b>sautés</b>.<br>Quand APC remplit sa base de données <i>vide</i> avec les nombre de lectures courants de la base LMS, vous pouvez limiter la copie des nombres de lectures aux grandes valeurs et sauter les valeurs basses qui peuvent avoir été causées par des sauts de morceaux.
 
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_PURGEDEADTRACKS_PERSISTENT
-	EN	Remove dead tracks from<br>LMS tracks_persistent table
-	FR	Supprimer les morceaux morts <br>de la table LMS tracks_persistent
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_PURGEDEADTRACKS_PERSISTENT_DESC
-	EN	This will remove all (dead) tracks from the LMS <b>tracks_persistent</b> table whose file URL has no match in the current LMS <b>tracks</b> table.<br><br><b>Only use this if you're know what you're doing and if you have a backup of the LMS <i>persist.db</i> file.</b>
-	FR	Ceci va supprimer tous les morceaux (morts) de la table <b>tracks_persistent</b> de LMS dont l'URL ne correspond pas avec la table <b>tracks</b> courante de LMS.<br><br><b>Utiliser ceci seulement si vous savez ce que vous faites et si vous avez une sauvegarde du fichier <i>persist.db</i> de LMS.</b>
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_PURGEDEADTRACKS_PERSISTENT_BUTTON
-	EN	Remove dead tracks now
-	FR	Supprimer les morceaux morts maintenant
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_PURGEDEADTRACKS_PERSISTENT_INPROGRESS
-	EN	removing dead tracks...
-	FR	suppression des morceaux morts...
-
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS
 	EN	Reset <i>LMS tracks_persistent</i> values<br>to APC values
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_DESC
-	EN	This will reset <i>play count</i> and <i>last played</i> values of tracks in the LMS <b>tracks_persistent</b> table to APC values.<br><br><b>Only use this if you're know what you're doing and if you have a backup of the LMS <i>persist.db</i> file.</b>
+	EN	This will reset <i>play count</i> and <i>last played</i> values of tracks in the LMS <b>tracks_persistent</b> table to APC values.<br><br><b>Do not use this unless you're know what you're doing and you have a backup of the LMS <i>persist.db</i> file.</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_BUTTON
 	EN	Reset LMS to APC values now

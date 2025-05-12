@@ -80,21 +80,17 @@ sub handler {
 			$result = $class->SUPER::handler($client, $paramRef);
 		}
 		Plugins::AlternativePlayCount::Plugin::resetAPCDatabase();
-	} elsif ($paramRef->{'resetdpsv'}) {
+	} elsif ($paramRef->{'resetplaycount'} || $paramRef->{'resetskipcount'} || $paramRef->{'resetdpsv'}) {
 		if ($callHandler) {
 			$result = $class->SUPER::handler($client, $paramRef);
 		}
-		Plugins::AlternativePlayCount::Plugin::resetDPSV();
-	} elsif ($paramRef->{'resetskipcount'}) {
-		if ($callHandler) {
-			$result = $class->SUPER::handler($client, $paramRef);
+		if ($paramRef->{'resetplaycount'}) {
+			Plugins::AlternativePlayCount::Plugin::resetColValues('playcount');
+		} elsif ($paramRef->{'resetskipcount'}) {
+			Plugins::AlternativePlayCount::Plugin::resetColValues('skipcount');
+		} else {
+			Plugins::AlternativePlayCount::Plugin::resetColValues('dpsv');
 		}
-		Plugins::AlternativePlayCount::Plugin::resetSkipCounts();
-	} elsif ($paramRef->{'purgedeadtrackspersistent'}) {
-		if ($callHandler) {
-			$result = $class->SUPER::handler($client, $paramRef);
-		}
-		Plugins::AlternativePlayCount::Plugin::removeDeadTracks('tracks_persistent');
 	} elsif ($paramRef->{'resettrackspersistentvalues'}) {
 		if ($callHandler) {
 			$result = $class->SUPER::handler($client, $paramRef);
@@ -104,12 +100,6 @@ sub handler {
 		$result = $class->SUPER::handler($client, $paramRef);
 	}
 	return $result;
-}
-
-sub beforeRender {
-	my ($class, $paramRef) = @_;
-	my $advMode = $prefs->get('advmode');
-	$paramRef->{'advmode'} = 1 if $advMode;
 }
 
 1;
