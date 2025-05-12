@@ -34,7 +34,7 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 
 * Option to ignore, i.e. not count skips requested by the [Custom Skip](https://github.com/AF-1/#-custom-skip) plugin
 
-* **Reset** *play count*, *skip count* or *dynamic played/skipped value* (DPSV) for **individual** or **all** tracks (see [FAQ](#faq)).<br>
+* **Reset** *play count*, *skip count* or *dynamic played/skipped value* (DPSV) for single tracks, for a selected artist, album, genre, year, decade or playlist (context menu) or for **all** tracks (see [FAQ](#faq)).<br>
 
 * These plugins already make use of APC data: [**Dynamic Playlists**](https://github.com/AF-1/#-dynamic-playlists), [**Dynamic Playlist Creator**](https://github.com/AF-1/#-dynamic-playlist-creator), [**Virtual Library Creator**](https://github.com/AF-1/#-virtual-library-creator), [**Custom Skip**](https://github.com/AF-1/#-custom-skip), [**Context Stats**](https://github.com/AF-1/#-context-stats) and [**Visual Statistics**](https://github.com/AF-1/#-visual-statistics).
 
@@ -82,9 +82,9 @@ The <b>dynamic played/skipped value (DPSV)</b> is supposed to reflect your <i>re
 You can use backups. Go to the plugin's settings page (backup section) immediately before you rescan your library and confirm that <i>Backup before each library rescan</i> is <b>en</b>abled. Just to be safe on the safe side, create a manual backup as well.<br>With the rescan completed, go to the plugin's settings page and restore the APC data from the pre-scan backup. APC will try to restore data for moved/renamed tracks using (relative) path guessing and MusicBrainz IDs. Of course, there's no guarantee that it will restore 100% but that's as good as it gets.
 </p></details><br>
 
-<details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> for individual or all tracks?</b>«</summary><br><p>
-You can <b>reset play counts</b>, <b>skip counts</b> or <b>DPSV</b> for <b>individual</b> tracks by clicking on the corresponding item in a track's context menu (AKA song details page). Some web skins and controllers will list APC values in the <b>More info</b> submenu.<br>
-If you want to reset <i>all</i> skip counts, DPSV or the <i>complete</i> database, you can do so on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
+<details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> values?</b>«</summary><br><p>
+You can <b>reset play count</b>, <b>skip count</b> and / or <b>DPSV</b> values for a single track or for a selected artist, album, genre, year, decade or static playlist by clicking on the corresponding item in the <b>context menu</b>.<br>
+If you want to reset <i>all</i>APC play count, skip count or DPSV values or even the <i>complete</i> database, you can do so on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
 </p></details><br>
 
 <details><summary>»<b>When I create a backup, APC <i>does not write a backup file</i>.</b>«</summary><br><p>
