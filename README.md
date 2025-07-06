@@ -1,7 +1,7 @@
 Alternative Play Count
 ====
 
-**Alternative Play Count**[^1] provides *alternative* **play count**s and **skip count**s that aim to reflect your true listening history.<br><br>
+**Alternative Play Count** provides *alternative* **play count**s and **skip count**s that aim to reflect your true listening history.<br><br>
 If you *skip* tracks in a playlist, LMS still increases their *play* counts. With **Alternative Play Count** you set a time *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.<br><br>
 You can use APC data in any SQLite query or with other plugins to create/play smart playlists (dynamic playlists), virtual libraries or to skip specific tracks. See [**features**](#features) section for details.<br><br>
 💡 As LMS and APC play counts diverge in the long term, you will benefit from the more accurate quality of the data (e.g. in smart playlists & statistics).
@@ -13,14 +13,14 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 <br><br>
 
 
-## Screenshots[^2]
+## Screenshots[^1]
 <img src="screenshots/apc.gif" width="100%">
 <br><br><br>
 
 
 ## Features
 
-* Set a time[^3] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
+* Set a time[^2] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
 
 * The **dynamic played/skipped value** (DPSV) reflects your **listening history/decisions of the *recent past*** and is independent of the absolute play count and skip count values. A track's DPSV increases if played and decreases if skipped (see [FAQ](#faq) for details). You can use it to create smart playlists (dynamic playlists), virtual libraries or skip filter rules.
 
@@ -102,7 +102,8 @@ So please make sure that <b>LMS has read/write permissions (755) for the <i>pare
 If you have the <i>Ratings Light</i> plugin installed, APC can change the <i>rating value</i> of a track when it's marked as played or skipped. When a track has been played long enough to count as played, the rating value increases, just as it decreases if the track is skipped.<br><br><b>Dynamic rating</b><br>The closer the current track rating is to the middle of the scale (50), the greater the increase/decrease. Conversely, ratings close to 100 or 0, i.e. tracks that have been played or skipped very often, change less and will therefore have to be played or skipped more often to move away from the end of the scale. Also, skipping a track decreases its rating up to twice as much as playing it increases it (this is hard-coded and not a user setting). There's a setting that gives you some control over how the dynamic rating algorithm changes ratings and an optional baseline rating for tracks <i>never</i> played before according to the APC database.<br><br><b>Linear rating</b><br>Enable this if you prefer <b>constant/linear</b> rating changes. If a track is then marked as played or skipped, the rating value is always increased or decreased by a <b>constant</b> value that you can set in the plugin settings.
 </p></details><br>
 
+<details><summary>»<b>Can this plugin be <i>displayed in my language</i>?</b>«</summary><br><p>If you want localized strings in your language, please read <a href="https://github.com/AF-1/sobras/wiki/Adding-localization-to-LMS-plugins"><b>this</b></a>.</p></details><br>
+
 <br><br><br>
-[^1]: If you want localized strings in your language, please read <a href="https://github.com/AF-1/sobras/wiki/Adding-localization-to-LMS-plugins"><b>this</b></a>.
-[^2]: The screenshots might not correspond to the UI of the latest release in every detail.
-[^3]: i.e. percentage of the total song duration
+[^1]: The screenshots might not correspond to the UI of the latest release in every detail.
+[^2]: i.e. percentage of the total song duration
