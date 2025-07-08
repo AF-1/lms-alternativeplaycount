@@ -21,7 +21,7 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 
 ## Screenshots[^1]
 <img src="screenshots/apc.gif" width="100%">
-<br><br><br>
+<br><br>
 
 
 ## Features
@@ -45,8 +45,7 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 * These plugins already make use of APC data: [**Dynamic Playlists**](https://github.com/AF-1/#-dynamic-playlists), [**Dynamic Playlist Creator**](https://github.com/AF-1/#-dynamic-playlist-creator), [**Virtual Library Creator**](https://github.com/AF-1/#-virtual-library-creator), [**Custom Skip**](https://github.com/AF-1/#-custom-skip), [**Context Stats**](https://github.com/AF-1/#-context-stats) and [**Visual Statistics**](https://github.com/AF-1/#-visual-statistics).
 
 **Some features are not enabled by default.** Please go to the plugin's settings page to enable them.
-
-<br><br><br>
+<br><br>
 
 
 ## Installation
