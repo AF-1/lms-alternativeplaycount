@@ -51,7 +51,7 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 
 ## Installation
 
-**Alternative Play Count** is available from the LMS plugin library: **LMS > Settings > Manage Plugins**.<br>
+**Alternative Play Count** is available from the LMS plugin library: `LMS > Settings > Manage Plugins`.<br>
 
 If you want to test a new patch that hasn't made it into a release version yet, you'll have to [install the plugin manually](https://github.com/AF-1/sobras/wiki/Manual-installation-of-LMS-plugins).
 <br><br>
