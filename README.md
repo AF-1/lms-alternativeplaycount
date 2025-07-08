@@ -9,7 +9,7 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 > [!TIP]
 > As LMS and APC play counts diverge in the long term, you will benefit from the more accurate quality of the data (e.g. in smart playlists & statistics).
 
-<br><br>
+<br>
 
 [⬅️ **Back to the list of all plugins**](https://github.com/AF-1/)
 <br><br>
