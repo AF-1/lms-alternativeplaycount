@@ -5,10 +5,13 @@ Alternative Play Count
 **Alternative Play Count** provides *alternative* **play count**s and **skip count**s that aim to reflect your true listening history.<br><br>
 If you *skip* tracks in a playlist, LMS still increases their *play* counts. With **Alternative Play Count** you set a time *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.<br><br>
 You can use APC data in any SQLite query or with other plugins to create/play smart playlists (dynamic playlists), virtual libraries or to skip specific tracks. See [**features**](#features) section for details.<br><br>
-💡 As LMS and APC play counts diverge in the long term, you will benefit from the more accurate quality of the data (e.g. in smart playlists & statistics).
+> [!TIP]
+> As LMS and APC play counts diverge in the long term, you will benefit from the more accurate quality of the data (e.g. in smart playlists & statistics).
 <br><br>
+
 [⬅️ **Back to the list of all plugins**](https://github.com/AF-1/)
 <br><br>
+
 **Use the** &nbsp; <img src="screenshots/menuicon.png" width="30"> &nbsp;**icon** (top right) to **jump directly to a specific section.**
 
 <br><br>
