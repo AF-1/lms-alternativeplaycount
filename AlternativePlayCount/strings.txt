@@ -37,8 +37,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK_TEXT
 	FR	Cliquez ici pour lire la FAQ.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK
-	EN	https://github.com/AF-1/#-alternative-play-count
-	FR	https://github.com/AF-1/#-alternative-play-count
+	EN	https://github.com/AF-1
+	FR	https://github.com/AF-1
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYEDTHRESHOLD_PERCENT
