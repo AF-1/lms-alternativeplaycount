@@ -89,13 +89,13 @@ You can use backups. Go to the plugin's settings page (backup section) immediate
 
 <details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> values?</b>«</summary><br><p>
 You can <b>reset play count</b>, <b>skip count</b> and / or <b>DPSV</b> values for a single track or for a selected artist, album, genre, year, decade or static playlist by clicking on the corresponding item in the <b>context menu</b>.<br><br>
-If you want to reset <ins><b>all</b></ins> APC play count, skip count or DPSV values or even the <i>complete</i> database, you can do so on this page: `LMS Settings > Advanced > Alternative Play Count > Reset`.
+If you want to reset <ins><b>all</b></ins> APC play count, skip count or DPSV values or even the <i>complete</i> database, you can do so on this page: <i>LMS Settings > Advanced > Alternative Play Count > Reset</i>.
 </p></details><br>
 
 <details><summary>»<b>When I create a backup, APC <i>does not write a backup file</i>.</b>«</summary><br><p>
-The <i>AlternativePlayCount</i> folder is where APC stores its backup files. On every LMS (re)start, APC checks if there's a folder called <i>AlternativePlayCount</i> in the parent folder. The default <b>parent</b> folder is the <i>LMS preferences folder</i> but you can change that in APC's preferences. If it doesn't find the folder `AlternativePlayCount` inside the specified parent folder, it will try to create it.<br><br>
-The most likely cause is that APC can't create the folder because LMS doesn't have read/write permissions for the parent folder (or the `AlternativePlayCount` folder). There may be matching error messages in the server log.<br><br>
-So please make sure that <b>LMS has read/write permissions (755) for the <i>parent</i> folder - and the `AlternativePlayCount` folder</b> (if it exists but cannot be accessed).
+The <i>AlternativePlayCount</i> folder is where APC stores its backup files. On every LMS (re)start, APC checks if there's a folder called <i>AlternativePlayCount</i> in the parent folder. The default <b>parent</b> folder is the <i>LMS preferences folder</i> but you can change that in APC's preferences. If it doesn't find the folder <i>AlternativePlayCount</i> inside the specified parent folder, it will try to create it.<br><br>
+The most likely cause is that APC can't create the folder because LMS doesn't have read/write permissions for the parent folder (or the <i>AlternativePlayCount</i> folder). There may be matching error messages in the server log.<br><br>
+So please make sure that <b>LMS has read/write permissions (755) for the <i>parent</i> folder - and the <i>AlternativePlayCount</i> folder</b> (if it exists but cannot be accessed).
 </p></details><br>
 
 <details><summary>»<b>How does <i>automatic rating</i> work?</b>«</summary><br><p>
