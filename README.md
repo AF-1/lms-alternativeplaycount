@@ -89,7 +89,7 @@ You can use backups. Go to the plugin's settings page (backup section) immediate
 
 <details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> values?</b>«</summary><br><p>
 You can <b>reset play count</b>, <b>skip count</b> and / or <b>DPSV</b> values for a single track or for a selected artist, album, genre, year, decade or static playlist by clicking on the corresponding item in the <b>context menu</b>.<br>
-If you want to reset <i>all</i>APC play count, skip count or DPSV values or even the <i>complete</i> database, you can do so on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
+If you want to reset <ins>all</ins> APC play count, skip count or DPSV values or even the <i>complete</i> database, you can do so on this page: <i>LMS Settings</i> > <i>Advanced</i> > <i>Alternative Play Count</i> > <i>Reset</i>.
 </p></details><br>
 
 <details><summary>»<b>When I create a backup, APC <i>does not write a backup file</i>.</b>«</summary><br><p>
