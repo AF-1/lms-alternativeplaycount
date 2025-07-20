@@ -19,11 +19,6 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 <br><br>
 
 
-## Screenshots[^1]
-<img src="screenshots/apc.gif" width="100%">
-<br><br>
-
-
 ## Features
 
 * Set a time[^2] *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.
@@ -46,6 +41,11 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 
 **Some features are not enabled by default.** Please go to the plugin's settings page to enable them.
 
+<br><br>
+
+
+## Screenshots[^1]
+<img src="screenshots/apc.gif" width="100%">
 <br><br>
 
 
