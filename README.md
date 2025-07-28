@@ -2,8 +2,8 @@ Alternative Play Count
 ====
 ![Min. LMS Version](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2FAF-1%2Fsobras%2Fmain%2Frepos%2Flms%2Fpublic.xml&query=%2F%2F*%5Blocal-name()%3D'plugin'%20and%20%40name%3D'AlternativePlayCount'%5D%2F%40minTarget&prefix=v&label=Min.%20LMS%20Version%20Required&color=darkgreen)<br>
 
-**Alternative Play Count** provides *alternative* **play count**s and **skip count**s that aim to **reflect your *true* listening history**.<br><br>
-If you *skip* tracks in a playlist, LMS still increases their *play* counts. With **Alternative Play Count** you set a time *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.<br><br>
+<img src="AlternativePlayCount/HTML/EN/plugins/AlternativePlayCount/html/images/apc_icon.png" align="right" width="90px">**Alternative Play Count** provides *alternative* **play count**s and **skip count**s that aim to **reflect your *true* listening history**.<br><br>
+If you *skip* tracks in a playlist, LMS still increases their *play* counts. With **Alternative Play Count** you set a time *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.<br clear="right"><br>
 You can use APC data in any SQLite query or with other plugins to create/play smart playlists (dynamic playlists), virtual libraries or to skip specific tracks. See [**features**](#features) section for details.<br>
 
 > [!TIP]
