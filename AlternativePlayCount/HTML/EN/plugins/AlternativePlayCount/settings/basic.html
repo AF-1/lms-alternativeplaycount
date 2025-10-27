@@ -36,6 +36,14 @@
 [% END %]
 <br>
 
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_HIDESKIPDPSVTRACKINFO" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_HIDESKIPDPSVTRACKINFO_DESC" %]
+	<select class="stdedit" name="pref_hideskipdpsvtrackinfo" id="hideskipdpsvtrackinfo">
+		<option [% IF NOT prefs.hideskipdpsvtrackinfo %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.hideskipdpsvtrackinfo %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
+[% END %]
+<br>
+
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS_DESC" %]
 	<select class="stdedit" name="pref_allmusicbrainzidversions" id="allmusicbrainzidversions">
 		<option [% IF NOT prefs.allmusicbrainzidversions %]selected [% END %]value="0">[% 'NO' | getstring %]</option>

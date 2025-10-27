@@ -79,6 +79,12 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC
 	EN	<b>Always</b> display APC values <b><i>or</i></b> display <b>only</b> APC values that are <b>different from the LMS default database values</b> and that are <b>not zero</b>.
 	FR	<b>Toujours</b> afficher les valeurs APC <b><i>ou</i></b> afficher <b>seulement</b> les valeurs d'APC qui sont <b>différentes des valeurs de la base de données LMS</b> et qui ne sont <b>pas à zéro</b>
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_HIDESKIPDPSVTRACKINFO
+	EN	Hide APC values for skips and DPSV <br>on <i>Song Info</i> page
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_HIDESKIPDPSVTRACKINFO_DESC
+	EN	Hide APC skip values and dynamic played/skipped values <br>on <i>Song Info</i> page. This does not affect values in the database.
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS
 	EN	Apply changes to <i>all</i> tracks<br>with the <i>same Musicbrainz ID</i>
 

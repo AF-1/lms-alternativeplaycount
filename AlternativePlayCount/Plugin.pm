@@ -84,7 +84,6 @@ sub initPlugin {
 	));
 	Slim::Menu::TrackInfo->registerInfoProvider(zzzz_apclastplayed => (
 		after => 'zzzz_apcplaycount',
-		before => 'zzzz_apcskipcount',
 		func => sub { return trackInfoHandler('track', 'lastPlayed', @_); }
 	));
 	Slim::Menu::TrackInfo->registerInfoProvider(zzzz_apcskipcount => (
@@ -263,6 +262,8 @@ sub trackInfoHandler {
 	}
 
 	if ($infoItem eq 'skipCount') {
+		return if $prefs->get('hideskipdpsvtrackinfo');
+
 		# Don't display APC skip count if value is zero
 		unless ($alwaysDisplayVals) {
 			return if $apcSkipCount == 0;
@@ -271,6 +272,7 @@ sub trackInfoHandler {
 	}
 
 	if ($infoItem eq 'lastSkipped') {
+		return if $prefs->get('hideskipdpsvtrackinfo');
 		unless ($alwaysDisplayVals) {
 			return if $apcLastSkipped == 0;
 		}
@@ -282,6 +284,7 @@ sub trackInfoHandler {
 	}
 
 	if ($infoItem eq 'dynPSval') {
+		return if $prefs->get('hideskipdpsvtrackinfo');
 		$returnVal = $dynPSval;
 	}
 
