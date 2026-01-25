@@ -33,6 +33,10 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 
 * Automatically undo a track's last (accidental) skip count increment if the track is played within a certain time span afterwards (see plugin settings).
 
+* Record **play history** for each player in a completely separate <i>external</i> database file, i.e. which track from the LMS database was played when on which player.
+
+* Automatically increase *negative* DPSV values of tracks over time so that they **re**appear at some point in dynamic playlist mixes with a minimum DPSV limit, for example.
+
 * Option to ignore, i.e. not count skips triggered by the [Custom Skip](https://github.com/AF-1/#-custom-skip) plugin
 
 * **Reset** *play count*, *skip count* or *dynamic played/skipped value* (DPSV) for single tracks, for a selected artist, album, genre, year, decade or playlist (context menu) or for **all** tracks (see [FAQ](#faq)).<br>
@@ -85,6 +89,13 @@ The <b>dynamic played/skipped value (DPSV)</b> is supposed to reflect your <i>re
 
 <details><summary>»<b>I have <i>renamed / moved</i> some audio files. How can I preserve the APC data for these tracks (play/skip count, date last played/skipped, DPSV)?</b>«</summary><br><p>
 You can use backups. Go to the plugin's settings page (backup section) immediately before you rescan your library and confirm that <i>Backup before each library rescan</i> is <b>en</b>abled. Just to be safe on the safe side, create a manual backup as well.<br>With the rescan completed, go to the plugin's settings page and restore the APC data from the pre-scan backup. APC will try to restore data for moved/renamed tracks using (relative) path guessing and MusicBrainz IDs. Of course, there's no guarantee that it will restore 100% but that's as good as it gets.
+</p></details><br>
+
+<details><summary>»<b>How can I <i>query</i> APC's <i>play history</i>?</b>«</summary><br><p>
+The APC play history for all players is stored in a separate database file called <i>apc_external.db</i> and should be located in the same folder as your <i>persist.db</i> database file.<br><br>
+If you have your own plugin, you can use APC methods to get a track's play history (on all players) or the play history for a particular player. Examples:<br>
+Plugins::AlternativePlayCount::Storage->getPlayHistoryForTrack('abc123...', 50)  ➡️ gets you the latest 50 play history entries for the track with the url md5 'abc123...'.<br>
+Plugins::AlternativePlayCount::Storage->getPlayHistoryForClient('aa:bb:cc:dd:ee:ff', 50)  ➡️ gets you the latest 50 play history entries for the player with the client id 'aa:bb:cc:dd:ee:ff'.<br>
 </p></details><br>
 
 <details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> values?</b>«</summary><br><p>
