@@ -52,6 +52,50 @@
 [% END %]
 <br>
 
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_DESC" %]
+<table size="100">
+	<tr>
+		<th style="text-align:center;"><b>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVALS" | string %]</b></th>
+		<th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+		<th style="text-align:center;padding-left:8px;"><b>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_VALUE" | string %]</b></th>
+	</tr>
+	<tr>
+		<th style="height:4px;" colspan="3"></th>
+	</tr>
+	<tr>
+		<td>
+			<select name="pref_autoincdpsv_interval" id="autoincdpsv_interval">
+				[% myoptions = {
+					'0' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_DISABLED',
+					'604800' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_1WEEK',
+					'1209600' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_2WEEKS',
+					'1814400' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_3WEEKS',
+					'2419200' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_4WEEKS',
+					'4838400' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_2MONTHS',
+					'7257600' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_3MONTHS',
+					'14515200' => 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_6MONTHS'
+				} %]
+				[% FOREACH option IN myoptions.keys.nsort %]
+					<option [% IF prefs.autoincdpsv_interval == option %]selected='selected' [% END %]value="[% option %]">[% myoptions.$option | string %]</option>
+				[%- END -%]
+			</select>
+		</td>
+		<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+		<td>
+			<input type="text" class="stdedit sliderInput_1_10_1" name="pref_autoincdpsv_value" id="autoincdpsv_value" value="[% prefs.autoincdpsv_value %]" size="2">
+		</td>
+	</tr>
+	</table>
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYHISTORY" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYHISTORY_DESC" %]
+	<select class="stdedit" name="pref_playhistory" id="playhistory">
+		<option [% IF NOT prefs.playhistory %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.playhistory %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
+[% END %]
+<br>
+
 <span class="advmode">
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY_DESC" %]
 	<input type="text" class="stdedit sliderInput_5_180_5" name="pref_postscanscheduledelay" id="postscanscheduledelay" value="[% prefs.postscanscheduledelay %]" size="2"> seconds

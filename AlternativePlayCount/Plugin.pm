@@ -41,7 +41,6 @@ use File::stat;
 use FindBin qw($Bin);
 use POSIX qw(strftime floor ceil);
 use Scalar::Util qw(blessed);
-use Time::HiRes qw(time);
 use XML::Parser;
 
 use Plugins::AlternativePlayCount::Common ':all';
@@ -133,9 +132,12 @@ sub postinitPlugin {
 	unless (!Slim::Schema::hasLibrary() || Slim::Music::Import->stillScanning) {
 		initDatabase();
 		Slim::Utils::Timers::setTimer(undef, time() + 2, \&backupScheduler);
+		Slim::Utils::Timers::setTimer(undef, time() + 10, \&autoIncDpsvScheduler) if $prefs->get('autoincdpsv_interval');
 	}
 	$ratingslight_enabled = Slim::Utils::PluginManager->isEnabled('Plugins::RatingsLight::Plugin');
 	main::DEBUGLOG && $log->is_debug && $log->debug('Plugin "Ratings Light" is enabled') if $ratingslight_enabled;
+
+	initPlayHistoryDB() if $prefs->get('playHistory');
 }
 
 sub initPrefs {
@@ -156,6 +158,7 @@ sub initPrefs {
 		backupfilesmin => 20,
 		postscanscheduledelay => 20,
 		ignoreCS3skiprequests => 1,
+		autoincdpsv_value => 1
 	});
 
 	createAPCfolder();
@@ -185,6 +188,7 @@ sub initPrefs {
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 365}, 'backupsdaystokeep');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 90}, 'playedthreshold_percent');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 50}, 'dbpoplmsminplaycount');
+	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 10}, 'autoincdpsv_value');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 5, 'high' => 600}, 'postscanscheduledelay');
 	$prefs->setValidate('file', 'restorefile');
 
@@ -199,6 +203,26 @@ sub initPrefs {
 			main::DEBUGLOG && $log->is_debug && $log->debug('Pref for scheduled backups changed. Resetting or killing timer.');
 			backupScheduler();
 		}, 'scheduledbackups', 'backuptime');
+
+	$prefs->setChange(sub {
+			if ($prefs->get('autoincdpsv_interval')) {
+				main::DEBUGLOG && $log->is_debug && $log->debug('Pref for autoincdpsv_interval changed. Init autoIncDpsvScheduler.');
+				Slim::Utils::Timers::setTimer(undef, time() + 5, \&autoIncDpsvScheduler)
+			} else {
+				main::DEBUGLOG && $log->is_debug && $log->debug('Pref for autoincdpsv_interval changed. Kill autoIncDpsvScheduler.');
+				Slim::Utils::Timers::killTimers(undef, \&autoIncDpsvScheduler);
+			}
+		}, 'autoincdpsv_interval');
+
+	$prefs->setChange(sub {
+			if ($prefs->get('playhistory')) {
+				main::DEBUGLOG && $log->is_debug && $log->debug('Pref for playhistory changed. Init DB.');
+				initPlayHistoryDB();
+			} else {
+				main::DEBUGLOG && $log->is_debug && $log->debug('Pref for playhistory changed. Close DB.');
+				Plugins::AlternativePlayCount::Storage->shutdown();
+			}
+		}, 'playhistory');
 }
 
 sub trackInfoHandler {
@@ -362,6 +386,7 @@ sub trackInfoHandler {
 		return $item;
 	}
 }
+
 
 ## reset value(s)
 
@@ -690,7 +715,6 @@ sub resetValues {
 }
 
 
-
 ## mark as played or skipped
 
 sub _APCcommandCB {
@@ -849,6 +873,18 @@ sub markAsPlayed {
 	main::INFOLOG && $log->is_info && $log->info('Marking track with url "'.$trackURL.'" as played. urlmd5 = '.Data::Dump::dump($trackURLmd5));
 	$client->pluginData('markedAsPlayed' => $trackURL);
 	my $lastPlayed = time();
+
+	if ($prefs->get('playHistory')) {
+		Plugins::AlternativePlayCount::Storage->addPlayEntry({
+			url => $trackURL,
+			urlmd5 => $trackURLmd5,
+			musicbrainz_id => $trackMBID,
+			played => $lastPlayed,
+			rating => $track->rating,
+			remote => 0,
+			client_id => $client->id
+		});
+	}
 
 	# get previous APC play count for auto-rating baseline rating
 	my $baselineRatingPlayCount;
@@ -1980,6 +2016,32 @@ sub checkCustomSkipFilterType {
 }
 
 
+# auto-increase DPSV
+
+sub autoIncDpsvScheduler {
+	main::DEBUGLOG && $log->is_debug && $log->debug('Checking autoIncDPSV scheduler');
+	Slim::Utils::Timers::killTimers(undef, \&autoIncDpsvScheduler);
+
+	if ($prefs->get('autoincdpsv_interval')) {
+		my $interval = $prefs->get('autoincdpsv_interval') + 0;
+		my $lastInc = $prefs->get('lastautoincdpsv') + 0;
+		main::DEBUGLOG && $log->is_debug && $log->debug('interval = '.Data::Dump::dump($interval).' -- lastInc = '.Data::Dump::dump($lastInc));
+
+		if (!$lastInc || (time() - $lastInc) >= $interval) {
+			main::DEBUGLOG && $log->is_debug && $log->debug('Increasing negative DPSV values now.');
+
+			my $incVal = $prefs->get('autoincdpsv_value');
+			executeSQLstat("update alternativeplaycount set dynPSval = min(ifnull(dynPSval, 0) + $incVal, 0) where ifnull(dynPSval, 0) < 0");
+
+			$prefs->set('lastautoincdpsv', time());
+		} else {
+			main::DEBUGLOG && $log->is_debug && $log->debug('Approx. '.parse_duration($lastInc + $interval - time()).' until next auto-increase of negative DPSV values.');
+		}
+		Slim::Utils::Timers::setTimer(undef, time() + 21600, \&autoIncDpsvScheduler);
+	}
+}
+
+
 # title formats
 
 sub getTitleFormat {
@@ -2335,6 +2397,11 @@ sub _setRefreshCBTimer {
 	Slim::Utils::Timers::killOneTimer(undef, \&delayedPostScanRefresh);
 	main::DEBUGLOG && $log->is_debug && $log->debug('Scheduling a delayed post-scan refresh');
 	Slim::Utils::Timers::setTimer(undef, time() + $prefs->get('postscanscheduledelay'), \&delayedPostScanRefresh);
+}
+
+sub initPlayHistoryDB {
+	require Plugins::AlternativePlayCount::Storage;
+	Plugins::AlternativePlayCount::Storage->init();
 }
 
 sub delayedPostScanRefresh {

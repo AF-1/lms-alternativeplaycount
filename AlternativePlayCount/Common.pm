@@ -217,7 +217,15 @@ sub getMusicDirs {
 
 sub parse_duration {
 	use integer;
-	sprintf("%02dh:%02dm", $_[0]/3600, $_[0]/60%60);
+	my $s = sprintf("%s%s%s%s%s",
+		$_[0]/2592000 ? sprintf("%dmo ", $_[0]/2592000) : '',
+		$_[0]/604800%4 ? sprintf("%dw ", $_[0]/604800%4) : '',
+		$_[0]/86400%7 ? sprintf("%dd ", $_[0]/86400%7) : '',
+		$_[0]/3600%24 ? sprintf("%dh ", $_[0]/3600%24) : '',
+		$_[0]/60%60 ? sprintf("%dmin", $_[0]/60%60) : ''
+	);
+	$s =~ s/^\s+|\s+$//g; # trim whitespace
+	return $s || '0 min';
 }
 
 sub isTimeOrEmpty {

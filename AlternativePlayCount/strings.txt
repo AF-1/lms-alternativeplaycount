@@ -91,6 +91,48 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS_DESC
 	EN	If you have different versions of the same track (e.g. flac and mp3 versions of the same album track or the same track in a regular album and a compilation), APC can apply changes to the play count, skip count and dynamic played/skipped value to <i>all</i> tracks with the <i>same Musicbrainz ID.</i><br>This does <b>not</b> apply to <i>auto-rating</i> because that's a setting of the <i>Ratings Light</i> plugin.<br><br><b>It only makes sense to enable this if you know that you have <i>multiple</i> tracks with the <i>same</i> Musicbrainz ID in your library.</b>
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYHISTORY
+	EN	Record <i>play history</i> for players
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYHISTORY_DESC
+	EN	The plugin records for each player in an <i>external</i> database file which track from the LMS database was played when and with which rating. This data can be easily queried by calling APC plugin functions (see FAQ).
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV
+	EN	Automatically increase<br>negative DPSV values
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_DESC
+	EN	Automatically increase <i>negative</i> DPSV values of tracks over time so that they reappear at some point in dynamic playlist mixes with a minimum DPSV limit, for example.<br><br>Select how often (<b>intervals</b>) and by what <b>value</b> you want negative DPSV values to be automatically increased.<br><br>APC only checks every 6 hours whether the process needs to be triggered. It has a low priority, so the intervals should be considered approximate times.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVALS
+	EN	Intervals
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_DISABLED
+	EN	Disabled
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_1WEEK
+	EN	1 week
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_2WEEKS
+	EN	2 weeks
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_3WEEKS
+	EN	3 weeks
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_4WEEKS
+	EN	4 weeks
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_2MONTHS
+	EN	2 months
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_3MONTHS
+	EN	3 months
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_6MONTHS
+	EN	6 months
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_VALUE
+	EN	Value
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY
 	EN	Post-Scan Delay
 	FR	Delai après scan

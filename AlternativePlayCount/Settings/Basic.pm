@@ -64,7 +64,7 @@ sub pages {
 }
 
 sub prefs {
-	return ($prefs, qw(apcparentfolderpath playedthreshold_percent undoskiptimespan ignoreCS3skiprequests alwaysdisplayvals hideskipdpsvtrackinfo allmusicbrainzidversions postscanscheduledelay));
+	return ($prefs, qw(apcparentfolderpath playedthreshold_percent undoskiptimespan ignoreCS3skiprequests alwaysdisplayvals hideskipdpsvtrackinfo allmusicbrainzidversions playhistory autoincdpsv_interval autoincdpsv_value postscanscheduledelay));
 }
 
 sub handler {
