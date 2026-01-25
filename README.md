@@ -99,7 +99,8 @@ If you have your own plugin, you can use APC methods to get a track's play histo
  - to get the latest 50 play history entries for a track with the url md5 'abc123...' on all players:<br>
     `Plugins::AlternativePlayCount::Storage->getPlayHistoryForTrack('abc123...', 50)`<br>
 
- - to get the latest 50 play history entries for the player with the client id:<br> 'aa:bb:cc:dd:ee:ff'.<br>Plugins::AlternativePlayCount::Storage->getPlayHistoryForClient('aa:bb:cc:dd:ee:ff', 50)
+ - to get the latest 50 play history entries for the player with the client id 'aa:bb:cc:dd:ee:ff':<br>
+	`Plugins::AlternativePlayCount::Storage->getPlayHistoryForClient('aa:bb:cc:dd:ee:ff', 50)`<br>
 </p></details><br>
 
 <details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> values?</b>«</summary><br><p>
