@@ -96,8 +96,8 @@ The APC play history for all players is stored in a separate database file calle
 
 If you have your own plugin, you can use APC methods to get a track's play history or the play history for a particular player. Examples:<br>
 
- - to get the latest 50 play history entries for a track with the url md5 'abc123...':<br>
-    Plugins::AlternativePlayCount::Storage->getPlayHistoryForTrack('abc123...', 50)  ➡️ gets you the latest 50 play history entries for the track with the url md5 'abc123...'.<br>
+ - to get the latest 50 play history entries for a track with the url md5 'abc123...' on all players:<br>
+    Plugins::AlternativePlayCount::Storage->getPlayHistoryForTrack('abc123...', 50)<br>
 
  - to get the latest 50 play history entries for the player with the client id:<br> 'aa:bb:cc:dd:ee:ff'.<br>Plugins::AlternativePlayCount::Storage->getPlayHistoryForClient('aa:bb:cc:dd:ee:ff', 50)
 </p></details><br>
