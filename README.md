@@ -93,9 +93,13 @@ You can use backups. Go to the plugin's settings page (backup section) immediate
 
 <details><summary>»<b>How can I <i>query</i> APC's <i>play history</i>?</b>«</summary><br><p>
 The APC play history for all players is stored in a separate database file called <i>apc_external.db</i> and should be located in the same folder as your <i>persist.db</i> database file.<br><br>
-If you have your own plugin, you can use APC methods to get a track's play history (on all players) or the play history for a particular player. Examples:<br>
-Plugins::AlternativePlayCount::Storage->getPlayHistoryForTrack('abc123...', 50)  ➡️ gets you the latest 50 play history entries for the track with the url md5 'abc123...'.<br>
-Plugins::AlternativePlayCount::Storage->getPlayHistoryForClient('aa:bb:cc:dd:ee:ff', 50)  ➡️ gets you the latest 50 play history entries for the player with the client id 'aa:bb:cc:dd:ee:ff'.<br>
+
+If you have your own plugin, you can use APC methods to get a track's play history or the play history for a particular player. Examples:<br>
+
+ - to get the latest 50 play history entries for a track with the url md5 'abc123...':<br>
+    Plugins::AlternativePlayCount::Storage->getPlayHistoryForTrack('abc123...', 50)  ➡️ gets you the latest 50 play history entries for the track with the url md5 'abc123...'.<br>
+
+ - to get the latest 50 play history entries for the player with the client id:<br> 'aa:bb:cc:dd:ee:ff'.<br>Plugins::AlternativePlayCount::Storage->getPlayHistoryForClient('aa:bb:cc:dd:ee:ff', 50)
 </p></details><br>
 
 <details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> values?</b>«</summary><br><p>
