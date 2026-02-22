@@ -131,8 +131,6 @@ sub initPlugin {
 sub postinitPlugin {
 	unless (!Slim::Schema::hasLibrary() || Slim::Music::Import->stillScanning) {
 		initDatabase();
-		Slim::Utils::Timers::setTimer(undef, time() + 2, \&backupScheduler);
-		Slim::Utils::Timers::setTimer(undef, time() + 10, \&autoIncDpsvScheduler) if $prefs->get('autoincdpsv_interval');
 	}
 	$ratingslight_enabled = Slim::Utils::PluginManager->isEnabled('Plugins::RatingsLight::Plugin');
 	main::DEBUGLOG && $log->is_debug && $log->debug('Plugin "Ratings Light" is enabled') if $ratingslight_enabled;
@@ -2169,7 +2167,7 @@ sub initDatabase {
 			}
 		}
 	};
-	if($@) {
+	if ($@) {
 		$log->error("Database error: $DBI::errstr\n");
 	}
 	$sth->finish();
@@ -2330,7 +2328,7 @@ sub refreshDatabase {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Add new tracks to the APC table.');
 	my $newTracksSql = "INSERT INTO alternativeplaycount (url, urlmd5, remote, musicbrainz_id) select tracks.url, tracks.urlmd5, tracks.remote, tracks.musicbrainz_id from tracks left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio = 1 and tracks.content_type != \"cpl\" and tracks.content_type != \"src\" and tracks.content_type != \"ssp\" and tracks.content_type != \"dir\" and tracks.content_type is not null and alternativeplaycount.urlmd5 is null;";
 	eval {$dbh->do($newTracksSql)};
-	if($@) {
+	if ($@) {
 		$log->error("Database error: $DBI::errstr\n");
 		eval { rollback($dbh); };
 	}
@@ -2339,14 +2337,21 @@ sub refreshDatabase {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Refreshing Musicbrainz IDs.');
 	my $refreshMBIDsSql = "update alternativeplaycount set musicbrainz_id = (select tracks.musicbrainz_id from tracks where tracks.urlmd5 = alternativeplaycount.urlmd5 and tracks.audio = 1 and tracks.content_type != \"ssp\");";
 	eval {$dbh->do($refreshMBIDsSql)};
-	if($@) {
+	if ($@) {
 		$log->error("Database error: $DBI::errstr\n");
 		eval { rollback($dbh); };
 	}
 
 	$dbh->do("analyze alternativeplaycount;");
 	main::DEBUGLOG && $log->is_debug && $log->debug('DB refresh complete.');
+	setTimers();
 }
+
+sub setTimers {
+	Slim::Utils::Timers::setTimer(undef, time() + 2, \&autoIncDpsvScheduler) if $prefs->get('autoincdpsv_interval');
+	Slim::Utils::Timers::setTimer(undef, time() + 10, \&backupScheduler);
+}
+
 
 sub removeDeadTracks {
 	my $dbh = Slim::Schema->dbh;
