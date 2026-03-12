@@ -1,0 +1,209 @@
+<style>
+@charset "UTF-8";
+.selectorMarker,.mouseOver{cursor:default !important;}
+.categoryheader{font-weight:600;font-size:120%;}
+.ucfirst{text-transform:capitalize;}
+.upper{text-transform:uppercase;}
+.aphwrapper {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+}
+.cover {
+	flex: 0 0 50px;
+}
+.cover img { height: 50px; }
+.textwrapper {
+	padding-left: 20px;
+	vertical-align: center;
+}
+.firstline {
+	font-size: [% IF systemSkin != 'Classic' %]12[% ELSE %]11[% END %]px;
+}
+.secondline {
+	margin-top: 4px;
+	display: inline-block;
+	font-size: [% IF systemSkin != 'Classic' %]11[% ELSE %]10[% END %]px;
+}
+.thirdline {
+	display: block;
+	margin-top: 3px;
+	font-size: [% IF systemSkin != 'Classic' %]10[% ELSE %]9[% END %]px;
+}
+.underline-on-hover:hover {text-decoration: underline;}
+.container {
+	margin: 0 0 0 1rem;
+}
+[% IF systemSkin == "material" || systemSkin == "DarkDefault" || systemSkin == "DarkLogic" %]
+.info-circle {stroke: rgb(240, 240, 240);}
+[% ELSE %]
+.info-circle {stroke: rgb(0, 0, 0);}
+[% END %]
+.libinfo {
+	margin: 0;
+	position: absolute;
+	width: 18px;
+	height: 18px;
+	padding-left: 16px;
+}
+.circular-loader {
+	visibility: hidden;
+	position: absolute;
+	top: 0;
+	left: 0;
+	margin-left:8px;
+}
+.circular-loader-rotate {
+	visibility: visible;
+	-webkit-animation: rotate 2s linear infinite;
+			animation: rotate 2s linear infinite;
+	-webkit-transform-origin: center center;
+		-ms-transform-origin: center center;
+	transform-origin: center center;
+	position: absolute;
+	top: 0;
+	left: 0;
+	margin-left:8px;
+}
+.loader-path {
+	position: fixed;
+	stroke-dasharray: 150,200;
+	stroke-dashoffset: -10;
+	-webkit-animation: dash 1.5s ease-in-out infinite, color 6s ease-in-out infinite;
+			animation: dash 1.5s ease-in-out infinite, color 6s ease-in-out infinite;
+	stroke-linecap: round;
+}
+@-webkit-keyframes rotate {
+	100% {
+	-webkit-transform: rotate(360deg);
+			transform: rotate(360deg);
+	}
+}
+@keyframes rotate {
+	100% {
+	-webkit-transform: rotate(360deg);
+			transform: rotate(360deg);
+	}
+}
+@-webkit-keyframes dash {
+	0% { stroke-dasharray: 1,200; stroke-dashoffset: 0; }
+	50% { stroke-dasharray: 89,200; stroke-dashoffset: -35; }
+	100% { stroke-dasharray: 89,200; stroke-dashoffset: -95; }
+}
+@keyframes dash {
+	0% { stroke-dasharray: 1,200; stroke-dashoffset: 0; }
+	50% { stroke-dasharray: 89,200; stroke-dashoffset: -35; }
+	100% { stroke-dasharray: 89,200; stroke-dashoffset: -95; }
+}
+</style>
+
+[%- pagetitle = 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM' | string -%]
+
+[%- pwd_list = BLOCK -%]/
+	[%- IF objecttype == 'track' || objecttype == 'album' || objecttype == 'artist' -%]
+	<a href="[% thishost %]/clixmlbrowser/clicmd=[% objecttype %]info+items&[% objecttype %]_id=[% objectid %]&linktitle=Information%20([% objectname | uri %])/?player=[% playerURI %]">
+		Information ([% objectname | html %])
+	</a> [% IF systemSkin == 'Classic' %]/[% ELSE %]>[% END %]
+	[%- END -%]
+	[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM' | string %]
+[% END -%]
+[% PROCESS pageheader.html %]
+
+<script type="text/javascript">
+	function refreshpage(clientid) {
+		let timestamp = Date.now();
+		let thisurl = "[% webroot %]plugins/AlternativePlayCount/playhistory?objecttype=[% objecttype %]&objectid=[% objectid %]&objectname=" + encodeURIComponent('[% objectname %]') + "&urlmd5=[% urlmd5 %]&clientid=" + clientid + "&player=[% playerURI %]&v=" + timestamp;
+		document.getElementById("infocircle").classList.add("loader-path");
+		document.getElementById("circularloader").classList.add("circular-loader-rotate");
+		window.location.replace(thisurl);
+	}
+</script>
+
+<br>
+<div class="container">
+	<span class="categoryheader">
+		[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM' | string %]
+		[%- IF objecttype && objecttype != 'all' && objectname %] -
+			[% IF objecttype == 'track' %][% 'TRACK' | string %][% ELSIF objecttype == 'album' %][% 'ALBUM' | string %][% ELSIF objecttype == 'artist' %][% 'ARTIST' | string %][% END %]:
+			[% objectname | html %]
+		[% END %]
+	</span><br><br>
+	<div>
+		<select onChange="refreshpage(this.value);" id="clientselect">
+			[% FOREACH entry IN clientlist %]
+				<option value="[% entry.id %]" [% IF entry.id == selectedclient %]selected='selected'[% END %]>[% entry.name | html %]</option>
+			[% END %]
+		</select>
+		<span class="libinfo">
+			<svg width="100%" height="100%" id="circularloader" class="circular-loader info-circle" viewBox="0 0 32 32">
+				<circle id="infocircle" cx="16" cy="16" r="15" fill="none" stroke-width="2" />
+			</svg>
+		</span>
+	</div>
+</div>
+<br><br>
+
+[%- IF historyitems %]
+	[%- WRAPPER contentcontainer %]
+		[% odd = 1 %]
+		[%- FOREACH item IN historyitems %]
+			[% BLOCK controls %]
+				[% IF item.trackid %]
+				[% WRAPPER addlink noTarget=1 -%]
+					onclick="SqueezeJS.Controller.urlRequest('/anyurl?p0=playlistcontrol&p1=cmd:add&p2=track_id:[% item.trackid %]&player=[% playerURI %]', 1);"
+				[% END %]
+				[% IF systemSkin != 'Classic' %]
+				[% WRAPPER insertlink noTarget=1 -%]
+					onclick="SqueezeJS.Controller.urlRequest('/anyurl?p0=playlistcontrol&p1=cmd:insert&p2=track_id:[% item.trackid %]&player=[% playerURI %]', 1);"
+				[% END %]
+				[% END %]
+				[% WRAPPER playlink noTarget=1 -%]
+					onclick="SqueezeJS.Controller.urlRequest('/anyurl?p0=playlistcontrol&p1=cmd:load&p2=track_id:[% item.trackid %]&player=[% playerURI %]', 1);"
+				[% END %]
+				[% IF systemSkin != 'Classic' %]
+				[% WRAPPER morelink noTarget=1 -%]
+					href="[% webroot %]clixmlbrowser/clicmd=trackinfo+items&track_id=[% item.trackid %]&useContextMenu=1&player=[% playerURI %]"
+				[% END %]
+				[% END %]
+				[% END %]
+			[% END %]
+			[%- WRAPPER contentitem controls='controls' %]
+			<span class="aphwrapper">
+				[% IF systemSkin != 'Classic' %]
+				<span class="flexitem cover">
+					[% IF item.trackid %]
+					<a class="underline-on-hover" href="[% webroot %]songinfo.html?item=[% item.trackid %]&amp;player=[% playerURI %]">
+					[% END %]
+					<img [% IF item.artworkid %]src="/music/[% item.artworkid %]/cover_50x50_o" srcset="/music/[% item.artworkid %]/cover_100x100_o 2x"[% ELSE %]src="[% webroot %]plugins/AlternativePlayCount/html/images/coverplaceholder[% IF !item.trackid %]_invalid[% END %].png"[% END %] onload="resize(this, 50)">
+					[% IF item.trackid %]</a>[% END %]
+				</span>
+				[% END %]
+				<span class="flexitem textwrapper">
+					[% IF item.trackid %]
+					<a class="firstline underline-on-hover" href="[% webroot %]songinfo.html?item=[% item.trackid %]&amp;player=[% playerURI %]">[% item.tracktitle %]</a>
+					[% ELSE %]
+					<span class="firstline">[% item.tracktitle %]</span>
+					[% END %]
+					[% IF item.trackid %]
+					<br>
+					<span class="secondline">
+						[% IF item.artistid %]<a class="underline-on-hover" href="[% webroot %]clixmlbrowser/clicmd=browselibrary+items&mode=albums&artist_id=[% item.artistid %]&player=[% playerURI %]&linktitle=[% stringARTIST %]%20([% item.artistname | uri %])/">[% item.artistname %]</a>[% ELSIF item.artistname %][% item.artistname %][% END %]
+						[% IF item.albumid %] &#x2022; <a class="underline-on-hover" href="[% webroot %]clixmlbrowser/clicmd=browselibrary+items&mode=tracks&album_id=[% item.albumid %]&linktitle=[% stringALBUM %]%20([% item.albumtitle | uri %])&player=[% playerURI %]/">[% item.albumtitle %]</a>[% END %]
+					</span>
+					[% END %]
+					<span class="thirdline">
+						[% item.played_formatted %] &#x2022; [% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_RATINGATPLAY' | string %]: [% item.rating_at_play %]
+						[%- IF !selectedclient %] &#x2022; [% item.playername %][% END %]
+					</span>
+				</span>
+			</span>
+			[% END %]
+		[% odd = (not odd) %]
+		[%- END %]
+	[%- END %]
+[%- ELSE %]
+<div class="container">
+	[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NOENTRIES' | string %]
+</div>
+[%- END %]
+[% PROCESS pagefooter.html %]

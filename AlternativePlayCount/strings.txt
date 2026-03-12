@@ -32,6 +32,9 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_INFO
 	EN	Requires the <b>Ratings Light</b> plugin to work.
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY
+	EN	Play History
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK_TEXT
 	EN	Click here for more information (incl. FAQ).
 	FR	Cliquez ici pour lire la FAQ.
@@ -90,12 +93,6 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS_DESC
 	EN	If you have different versions of the same track (e.g. flac and mp3 versions of the same album track or the same track in a regular album and a compilation), APC can apply changes to the play count, skip count and dynamic played/skipped value to <i>all</i> tracks with the <i>same Musicbrainz ID.</i><br>This does <b>not</b> apply to <i>auto-rating</i> because that's a setting of the <i>Ratings Light</i> plugin.<br><br><b>It only makes sense to enable this if you know that you have <i>multiple</i> tracks with the <i>same</i> Musicbrainz ID in your library.</b>
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYHISTORY
-	EN	Record <i>play history</i> for players
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYHISTORY_DESC
-	EN	The plugin records for each player in an <i>external</i> database file which track from the LMS database was played when and with which rating. This data can be easily queried by calling APC plugin functions (see FAQ).
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV
 	EN	Automatically increase<br>negative DPSV values
@@ -452,6 +449,108 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_RESETFORTHIS
 PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_CB
 	EN	Reset successful.
 	FR	Réinitialisation réussie.
+
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_ENABLED
+	EN	Record play history for players
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_ENABLED_DESC
+	EN	The plugin records for each player in an <i>external</i> database file which track from the LMS database was played when (incl. its rating value at the time).<br><br><b>Please note:</b> The external database file is <i>not</i> part of the APC backup.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CONTEXTMENU
+	EN	Show play history in <i>context</i> menus
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CONTEXTMENU_DESC
+	EN	Show a play history list in the context menu of tracks, albums and artists. Changes take effect after restarting LMS.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_HOMEMENU
+	EN	Show play history in LMS <i>home</i> menu
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_HOMEMENU_DESC
+	EN	Add a play history entry to the LMS home menu (My Music) showing the play history of <i>all</i> tracks. Changes take effect after restarting LMS.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXITEMS
+	EN	Maximum number of items in play history lists
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXITEMS_DESC
+	EN	Sets the maximum number of entries displayed in play history lists (context menus and home menu).
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_JIVEEXTRALINELENGTH
+	EN	Max. line length for play history<br>entries (jivelite, Material)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_JIVEEXTRALINELENGTH_DESC
+	EN	Set the maximum character length of the line that displays artist name and album title for play history entries.<br>Applies only to <b>jivelite</b> players and Material.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR
+	EN	Rating character
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_DESC
+	EN	Character used to display current ratings in the play history.<br><br><b>*** IMPORTANT, please read ***</b><br><br>SB <b>Touch</b>, SB <b>Radio</b>, <b>piCorePlayer</b>, <b>Squeezeplay</b> and other players running jivelite <b>do not support displaying the unicode blackstar character out of the box</b>.<br>This character is not part of their <i>default</i> font. If you want to display this character on these devices you'll have to <b>replace the default font</b> on these devices with a font that contains this character or simply install the <a href="https://github.com/AF-1" target="_blank" rel="noopener noreferrer"><i>Dark Flat Skin</i></a> applet.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_TEXT
+	EN	* (text)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_STAR
+	EN	★ (Unicode)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM
+	EN	APC Play History
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM_ALBUM
+	EN	Play History (tracks of this album)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM_ARTIST
+	EN	Play History (tracks by this artist)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_ALLPLAYERS
+	EN	All players
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NOENTRIES
+	EN	No play history entries found
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNNAMEDPLAYER
+	EN	Unnamed player
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER
+	EN	Unknown player
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_RATINGATPLAY
+	EN	Rtg. at play
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_PLAYNOW
+	EN	Play now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_PLAYNEXT
+	EN	Play next
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_APPEND
+	EN	Append to queue
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MOREINFO
+	EN	More information
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_TRACK_INVALID
+	EN	Track not available in current library
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWINVALIDTRACKS
+	EN	Show tracks not in current library
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWINVALIDTRACKS_DESC
+	EN	Show play history entries for tracks that are no longer in the current library. These tracks cannot be played.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP
+	EN	Clean up play history
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_DESC
+	EN	Remove all play history entries for tracks that are no longer in the current library.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_BUTTON
+	EN	Clean up now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_INPROGRESS
+	EN	cleaning up APC play history...
+
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_NAME

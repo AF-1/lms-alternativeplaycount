@@ -18,7 +18,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-package Plugins::AlternativePlayCount::Settings::Basic;
+package Plugins::AlternativePlayCount::Settings::PlayHistory;
 
 use strict;
 use warnings;
@@ -39,24 +39,24 @@ my $plugin;
 sub new {
 	my $class = shift;
 	$plugin = shift;
-	$class->SUPER::new($plugin,1);
+	$class->SUPER::new($plugin);
 }
 
 sub name {
-	return Slim::Web::HTTP::CSRF->protectName('PLUGIN_ALTERNATIVEPLAYCOUNT');
+	return Slim::Web::HTTP::CSRF->protectName('PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY');
 }
 
 sub page {
-	return Slim::Web::HTTP::CSRF->protectURI('plugins/AlternativePlayCount/settings/basic.html');
+	return Slim::Web::HTTP::CSRF->protectURI('plugins/AlternativePlayCount/settings/playhistory.html');
 }
 
 sub currentPage {
-	return Slim::Utils::Strings::string('PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS');
+	return name();
 }
 
 sub pages {
 	my %page = (
-		'name' => Slim::Utils::Strings::string('PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS'),
+		'name' => name(),
 		'page' => page(),
 	);
 	my @pages = (\%page);
@@ -64,18 +64,26 @@ sub pages {
 }
 
 sub prefs {
-	return ($prefs, qw(apcparentfolderpath playedthreshold_percent undoskiptimespan ignoreCS3skiprequests alwaysdisplayvals hideskipdpsvtrackinfo allmusicbrainzidversions autoincdpsv_interval autoincdpsv_value postscanscheduledelay));
+	return ($prefs, qw(playhistory playhistory_contextmenu playhistory_homemenu playhistory_maxitems playhistory_jiveextralinelength displayratingchar playhistory_showinvalidtracks));
 }
 
 sub handler {
 	my ($class, $client, $paramRef) = @_;
-	return $class->SUPER::handler($client, $paramRef);
-}
-
-sub beforeRender {
-	my ($class, $paramRef) = @_;
-	my $advMode = $prefs->get('advmode');
-	$paramRef->{'advmode'} = 1 if $advMode;
+	my $result = undef;
+	my $callHandler = 1;
+	if ($paramRef->{'saveSettings'}) {
+		$result = $class->SUPER::handler($client, $paramRef);
+		$callHandler = 0;
+	}
+	if ($paramRef->{'playhistorycleanup'}) {
+		if ($callHandler) {
+			$result = $class->SUPER::handler($client, $paramRef);
+		}
+		Plugins::AlternativePlayCount::Plugin::purgeInvalidPlayHistory();
+	} elsif ($callHandler) {
+		$result = $class->SUPER::handler($client, $paramRef);
+	}
+	return $result;
 }
 
 1;

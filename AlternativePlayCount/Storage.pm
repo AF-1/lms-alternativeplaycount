@@ -27,6 +27,7 @@ use utf8;
 use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 use Slim::Utils::SQLiteHelper;
+use Scalar::Util qw(looks_like_number);
 use DBI;
 use File::Spec::Functions qw(catdir catfile);
 
@@ -35,6 +36,7 @@ my $prefs = preferences('plugin.alternativeplaycount');
 
 my $dbh;
 my $initialized = 0;
+my $libraryAttached = 0;
 
 sub init {
 	my $class = shift;
@@ -67,6 +69,23 @@ sub init {
 	$dbh->do("PRAGMA synchronous = NORMAL");
 	$dbh->do("PRAGMA temp_store = MEMORY");
 	$dbh->do("PRAGMA cache_size = 10000");
+
+	# attach LMS library.db for album/artist JOIN queries (for menus)
+	if ($prefs->get('playhistory_contextmenu') || $prefs->get('playhistory_homemenu')) {
+		my $lmsDbFile = Slim::Utils::SQLiteHelper->dbFile('library');
+		$lmsDbFile .= '.db' unless $lmsDbFile =~ /\.db$/i;
+		if ($lmsDbFile && -f $lmsDbFile) {
+			eval {
+				$dbh->do("ATTACH DATABASE ? AS library", undef, $lmsDbFile);
+				$libraryAttached = 1;
+			};
+			if ($@) {
+				$log->warn("Could not attach library.db: $@");
+			}
+		} else {
+			$log->warn("library.db not found, album/artist play history will not be available");
+		}
+	}
 
 	# create table and indices
 	$class->createTables();
@@ -133,6 +152,7 @@ sub dbh {
 	return $dbh if $initialized;
 
 	$log->warn('Database not initialized, attempting to initialize now');
+	__PACKAGE__->shutdown() if $dbh; # close any stale connection first
 	__PACKAGE__->init();
 
 	return $dbh;
@@ -170,77 +190,118 @@ sub addPlayEntry {
 	return 1;
 }
 
-sub getPlayHistoryForTrack {
-	my ($class, $urlmd5, $limit) = @_;
+sub getPlayHistory {
+	my ($class, $params) = @_;
 
 	return [] unless $dbh && $initialized;
 
-	$limit ||= 100;
+	my $type = $params->{type} // 'all'; # 'track', 'album', 'artist', or 'all'
+	my $id = $params->{id}; # urlmd5 (track), album id, or contributor id
+	my $client_id = $params->{client_id}; # optional client filter
+	my $limit = $params->{limit} || 100;
+
+	my @bind;
+	my $whereClause = '';
+
+	if ($type eq 'track' && $id) {
+		# match by urlmd5, with MBID fallback for tracks whose URL may have changed
+		$whereClause = qq{
+			WHERE (ph.urlmd5 = ?
+			OR (ph.musicbrainz_id IS NOT NULL AND ph.musicbrainz_id != ''
+				AND ph.musicbrainz_id = (
+					SELECT t.musicbrainz_id FROM library.tracks t WHERE t.urlmd5 = ? LIMIT 1
+				)
+			))
+		};
+		push @bind, $id, $id;
+
+	} elsif ($type eq 'album' && $id && $libraryAttached) {
+		# join with library.tracks on album id, urlmd5 or MBID match
+		$whereClause = qq{
+			JOIN library.tracks lt
+				ON (ph.urlmd5 = lt.urlmd5
+					OR (ph.musicbrainz_id IS NOT NULL AND ph.musicbrainz_id != ''
+						AND ph.musicbrainz_id = lt.musicbrainz_id))
+			WHERE lt.album = ?
+		};
+		push @bind, $id;
+
+	} elsif ($type eq 'artist' && $id && $libraryAttached) {
+		# join with library.tracks + contributor_track on contributor id, urlmd5 or MBID match
+		$whereClause = qq{
+			JOIN library.tracks lt
+				ON (ph.urlmd5 = lt.urlmd5
+					OR (ph.musicbrainz_id IS NOT NULL AND ph.musicbrainz_id != ''
+						AND ph.musicbrainz_id = lt.musicbrainz_id))
+			JOIN library.contributor_track ct ON ct.track = lt.id
+			WHERE ct.contributor = ?
+		};
+		push @bind, $id;
+	}
+	# type 'all' or fallback: no WHERE clause, returns entire play history
+
+	# optional client filter
+	if ($client_id) {
+		$whereClause .= ($whereClause =~ /WHERE/i ? ' AND' : ' WHERE');
+		$whereClause .= ' ph.client_id = ?';
+		push @bind, $client_id;
+	}
+
+	push @bind, $limit;
 
 	my $sql = qq{
-		SELECT id, url, urlmd5, musicbrainz_id, played, rating, remote, client_id
-		FROM play_history
-		WHERE urlmd5 = ?
-		ORDER BY played DESC
+		SELECT DISTINCT ph.id, ph.url, ph.urlmd5, ph.musicbrainz_id,
+			ph.played, ph.rating, ph.remote, ph.client_id
+		FROM play_history ph
+		$whereClause
+		ORDER BY ph.played DESC
 		LIMIT ?
 	};
 
 	my $history = [];
-
 	eval {
-		my $sth = $dbh->prepare_cached($sql);
-		$sth->execute($urlmd5, $limit);
-
+		my $sth = $dbh->prepare($sql);
+		$sth->execute(@bind);
 		while (my $row = $sth->fetchrow_hashref()) {
 			push @$history, $row;
 		}
 		$sth->finish();
 	};
-
 	if ($@) {
-		$log->error("Failed to get play history: $@");
+		$log->error("getPlayHistory failed (type=$type): $@");
 		return [];
 	}
+
+	main::DEBUGLOG && $log->is_debug && $log->debug("getPlayHistory: type=$type, id=".($id//'none').", client=".($client_id//'any').", returned ".scalar(@$history)." rows");
 	return $history;
 }
 
-sub getPlayHistoryForClient {
-	my ($class, $client_id, $limit) = @_;
-
+sub getDistinctClients {
+	my $class = shift;
 	return [] unless $dbh && $initialized;
-	$limit ||= 100;
 
-	my $sql = qq{
-		SELECT id, url, urlmd5, musicbrainz_id, played, rating, remote, client_id
-		FROM play_history
-		WHERE client_id = ?
-		ORDER BY played ASC
-		LIMIT ?
-	};
-
-	my $history = [];
-
+	my $clients = [];
 	eval {
-		my $sth = $dbh->prepare_cached($sql);
-		$sth->execute($client_id, $limit);
-
-		while (my $row = $sth->fetchrow_hashref()) {
-			push @$history, $row;
+		my $sth = $dbh->prepare_cached('SELECT DISTINCT client_id FROM play_history WHERE client_id IS NOT NULL AND client_id != ""');
+		$sth->execute();
+		while (my ($id) = $sth->fetchrow_array()) {
+			push @$clients, $id;
 		}
 		$sth->finish();
 	};
-
 	if ($@) {
-		$log->error("Failed to get play history for client: $@");
+		$log->error("getDistinctClients failed: $@");
 		return [];
 	}
-	return $history;
+	return $clients;
 }
 
 sub shutdown {
 	my $class = shift;
 
 	if ($dbh) {
+		eval { $dbh->do("DETACH DATABASE library") } if $libraryAttached;
+		$libraryAttached = 0;
 		main::DEBUGLOG && $log->is_debug && $log->debug('Closing APC external database connection');
 		$dbh->disconnect();
 		$dbh = undef;

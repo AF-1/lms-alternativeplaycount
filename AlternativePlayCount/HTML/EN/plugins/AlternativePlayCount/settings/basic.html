@@ -88,14 +88,6 @@
 	</table>
 [% END %]
 
-[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYHISTORY" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_PLAYHISTORY_DESC" %]
-	<select class="stdedit" name="pref_playhistory" id="playhistory">
-		<option [% IF NOT prefs.playhistory %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
-		<option [% IF prefs.playhistory %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
-	</select>
-[% END %]
-<br>
-
 <span class="advmode">
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY_DESC" %]
 	<input type="text" class="stdedit sliderInput_5_180_5" name="pref_postscanscheduledelay" id="postscanscheduledelay" value="[% prefs.postscanscheduledelay %]" size="2"> seconds

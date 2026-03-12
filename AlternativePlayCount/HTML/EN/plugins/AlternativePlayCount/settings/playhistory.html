@@ -1,0 +1,72 @@
+<script TYPE="text/javascript">
+	function inprogress(elementid) {
+		document.getElementById(elementid).className = "inprogress";
+	}
+</script>
+
+<style>
+@-webkit-keyframes Pulse{from{color:#630030;-webkit-text-shadow:0 0 2px transparent}50%{color:#e33100;-webkit-text-shadow:0 0 5px #e33100}to{color:#630030;-webkit-text-shadow:0 0 2px transparent}}@keyframes Pulse{from{color:#630030;text-shadow:0 0 2px transparent}50%{color:#e33100;text-shadow:0 0 5px #e33100}to{color:#630030;text-shadow:0 0 2px transparent}}.inprogress{padding-left:15px;-webkit-animation-name:Pulse;animation-name:Pulse;-webkit-animation-duration:2s;animation-duration:2s;-webkit-animation-iteration-count:infinite;animation-iteration-count:infinite}.status{visibility:hidden;}
+</style>
+
+[% page = "PLUGIN_ALTERNATIVEPLAYCOUNT" %]
+[% PROCESS settings/header.html %]
+
+[% PROCESS plugins/AlternativePlayCount/settings/subpage_chooser.html %]
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_ENABLED" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_ENABLED_DESC" %]
+	<select class="stdedit" name="pref_playhistory" id="playhistory">
+		<option [% IF NOT prefs.playhistory %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.playhistory %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CONTEXTMENU" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CONTEXTMENU_DESC" %]
+	<select class="stdedit" name="pref_playhistory_contextmenu" id="playhistory_contextmenu">
+		<option [% IF NOT prefs.playhistory_contextmenu %]selected [% END %]value="0">[% 'DISABLED' | getstring %]</option>
+		<option [% IF prefs.playhistory_contextmenu %]selected [% END %]value="1">[% 'ENABLED' | getstring %]</option>
+	</select>
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_HOMEMENU" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_HOMEMENU_DESC" %]
+	<select class="stdedit" name="pref_playhistory_homemenu" id="playhistory_homemenu">
+		<option [% IF NOT prefs.playhistory_homemenu %]selected [% END %]value="0">[% 'DISABLED' | getstring %]</option>
+		<option [% IF prefs.playhistory_homemenu %]selected [% END %]value="1">[% 'ENABLED' | getstring %]</option>
+	</select>
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXITEMS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXITEMS_DESC" %]
+	<input type="text" class="stdedit sliderInput_5_500_5" name="pref_playhistory_maxitems" id="playhistory_maxitems" value="[% prefs.playhistory_maxitems %]" size="2">
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_JIVEEXTRALINELENGTH" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_JIVEEXTRALINELENGTH_DESC" %]
+	<input type="text" class="stdedit sliderInput_65_150_1" name="pref_playhistory_jiveextralinelength" id="playhistory_jiveextralinelength" value="[% prefs.playhistory_jiveextralinelength %]" size="2">
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_DESC" %]
+	<select name="pref_displayratingchar" id="displayratingchar">
+		<option [% IF NOT prefs.displayratingchar %]selected='selected' [% END %]value="0">[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_TEXT' | string %]</option>
+		<option [% IF prefs.displayratingchar %]selected='selected' [% END %]value="1">[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_STAR' | string %]</option>
+	</select>
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWINVALIDTRACKS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWINVALIDTRACKS_DESC" %]
+	<select class="stdedit" name="pref_playhistory_showinvalidtracks" id="playhistory_showinvalidtracks">
+		<option [% IF NOT prefs.playhistory_showinvalidtracks %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.playhistory_showinvalidtracks %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
+[% END %]
+<br><hr><br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_DESC" %]
+	<input style="margin-top:-1px;" name="playhistorycleanup" type="submit" class="stdclick" onClick="inprogress('playhistorycleanupstatus');" value="[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_BUTTON' | string %]">
+	<span class='status' id='playhistorycleanupstatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_INPROGRESS" | string %]</span>
+[% END %]
+<br>
+
+[% PROCESS settings/footer.html %]
