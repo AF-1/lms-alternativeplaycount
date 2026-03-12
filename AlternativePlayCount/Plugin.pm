@@ -177,7 +177,8 @@ sub initPrefs {
 		playHistory => 1,
 		playhistory_contextmenu => 1,
 		playhistory_homemenu => 1,
-		playhistory_maxitems => 200,
+		playhistory_maxdisplayitems => 200,
+		playhistory_maxdbentries => 10,
 		playhistory_jiveextralinelength => 82,
 		displayratingchar => 0,
 		playhistory_showinvalidtracks => 1,
@@ -212,7 +213,8 @@ sub initPrefs {
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 50}, 'dbpoplmsminplaycount');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 10}, 'autoincdpsv_value');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 5, 'high' => 600}, 'postscanscheduledelay');
-	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 1000}, 'playhistory_maxitems');
+	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 1000}, 'playhistory_maxdisplayitems');
+	$prefs->setValidate({'validator' => 'intlimit', 'low' => 0, 'high' => 50000}, 'playhistory_maxdbentries');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 65, 'high' => 150}, 'playhistory_jiveextralinelength');
 	$prefs->setValidate('file', 'restorefile');
 
@@ -2169,7 +2171,7 @@ sub playHistoryWeb {
 	my $type = $params->{objecttype};
 	my $objectID = $params->{objectid};
 	my $clientID = $params->{clientid} // '';
-	my $limit = $prefs->get('playhistory_maxitems') || 200;
+	my $limit = $prefs->get('playhistory_maxdisplayitems') || 200;
 
 	# build client list for dropdown: id => name
 	my $clientList = _getPlayHistoryClients();
@@ -2335,7 +2337,7 @@ sub _jivePlayHistoryItems {
 	my $objectID = _getRequestParamVal($request, 'objectid', 1);
 
 	my $materialCaller = 1 if (defined($request->{'_connectionid'}) && $request->{'_connectionid'} =~ 'Slim::Web::HTTP::ClientConn' && defined($request->{'_source'}) && $request->{'_source'} eq 'JSONRPC');
-	my $limit = $prefs->get('playhistory_maxitems') || 200;
+	my $limit = $prefs->get('playhistory_maxdisplayitems') || 200;
 
 	require Plugins::AlternativePlayCount::Storage;
 	my $history = Plugins::AlternativePlayCount::Storage->getPlayHistory({
@@ -2632,6 +2634,7 @@ sub _getPlayHistoryClients {
 
 sub purgeInvalidPlayHistory {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Purging invalid play history entries');
+	return unless $prefs->get('playhistory');
 	my $apcdbh = Plugins::AlternativePlayCount::Storage::dbh();
 	return unless $apcdbh;
 
@@ -2640,11 +2643,9 @@ sub purgeInvalidPlayHistory {
 		$sth->execute();
 		my $deleted = $sth->rows;
 		main::DEBUGLOG && $log->is_debug && $log->debug("Purged $deleted invalid play history entries");
+		$sth->finish();
 	};
-	if ($@) {
-		$log->error("Error purging invalid play history entries: $@");
-	}
-	$sth->finish();
+	if ($@) { $log->error("Error purging invalid play history entries: $@"); }
 }
 
 

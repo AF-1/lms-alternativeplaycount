@@ -187,6 +187,15 @@ sub addPlayEntry {
 		return 0;
 	}
 
+	# trim oldest entries if maxdbentries limit is set
+	my $maxdbentries = $prefs->get('playhistory_maxdbentries') // 0;
+	if ($maxdbentries > 0) {
+		eval {
+			$dbh->do("DELETE FROM play_history WHERE id NOT IN (SELECT id FROM play_history ORDER BY played DESC LIMIT $maxdbentries)");
+		};
+		if ($@) { $log->error("Error trimming play history: $@"); }
+	}
+
 	return 1;
 }
 

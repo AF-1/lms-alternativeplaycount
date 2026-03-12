@@ -37,8 +37,13 @@
 [% END %]
 <br>
 
-[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXITEMS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXITEMS_DESC" %]
-	<input type="text" class="stdedit sliderInput_5_500_5" name="pref_playhistory_maxitems" id="playhistory_maxitems" value="[% prefs.playhistory_maxitems %]" size="2">
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDISPLAYITEMS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDISPLAYITEMS_DESC" %]
+	<input type="text" class="stdedit sliderInput_5_500_5" name="pref_playhistory_maxdisplayitems" id="playhistory_maxdisplayitems" value="[% prefs.playhistory_maxdisplayitems %]" size="2">
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDBENTRIES" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDBENTRIES_DESC" %]
+	<input type="text" class="stdedit sliderInput_0_50000_1000" name="pref_playhistory_maxdbentries" id="playhistory_maxdbentries" value="[% prefs.playhistory_maxdbentries %]" size="5">
 [% END %]
 <br>
 

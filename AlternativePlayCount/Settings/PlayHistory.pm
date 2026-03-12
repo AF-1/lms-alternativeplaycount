@@ -64,7 +64,7 @@ sub pages {
 }
 
 sub prefs {
-	return ($prefs, qw(playhistory playhistory_contextmenu playhistory_homemenu playhistory_maxitems playhistory_jiveextralinelength displayratingchar playhistory_showinvalidtracks));
+	return ($prefs, qw(playhistory playhistory_contextmenu playhistory_homemenu playhistory_maxdisplayitems playhistory_maxdbentries playhistory_jiveextralinelength displayratingchar playhistory_showinvalidtracks));
 }
 
 sub handler {

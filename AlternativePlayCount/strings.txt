@@ -470,11 +470,17 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_HOMEMENU
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_HOMEMENU_DESC
 	EN	Add a play history entry to the LMS home menu (My Music) showing the play history of <i>all</i> tracks. Changes take effect after restarting LMS.
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXITEMS
-	EN	Maximum number of items in play history lists
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDISPLAYITEMS
+	EN	Max. number of items in play history lists
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXITEMS_DESC
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDISPLAYITEMS_DESC
 	EN	Sets the maximum number of entries displayed in play history lists (context menus and home menu).
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDBENTRIES
+	EN	Max. number of play history<br><i>database</i> entries (0 = unlimited)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDBENTRIES_DESC
+	EN	Automatically delete the oldest play history entries when the total number exceeds this limit. Set to 0 to keep all entries.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_JIVEEXTRALINELENGTH
 	EN	Max. line length for play history<br>entries (jivelite, Material)
