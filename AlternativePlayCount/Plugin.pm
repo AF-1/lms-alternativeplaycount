@@ -174,11 +174,11 @@ sub initPrefs {
 		postscanscheduledelay => 20,
 		ignoreCS3skiprequests => 1,
 		autoincdpsv_value => 1,
-		playHistory => 1,
+		playhistory => 1,
 		playhistory_contextmenu => 1,
 		playhistory_homemenu => 1,
 		playhistory_maxdisplayitems => 200,
-		playhistory_maxdbentries => 10,
+		playhistory_maxdbentries => 0,
 		playhistory_jiveextralinelength => 82,
 		displayratingchar => 0,
 		playhistory_showinvalidtracks => 1,
@@ -915,7 +915,7 @@ sub markAsPlayed {
 			musicbrainz_id => $trackMBID,
 			played => $lastPlayed,
 			rating => $track->rating,
-			remote => 0,
+			remote => (Slim::Music::Info::isRemoteURL($trackURL) ? 1 : 0),
 			client_id => $client->id
 		});
 	}
@@ -2960,7 +2960,6 @@ sub setTimers {
 	Slim::Utils::Timers::setTimer(undef, time() + 2, \&autoIncDpsvScheduler) if $prefs->get('autoincdpsv_interval');
 	Slim::Utils::Timers::setTimer(undef, time() + 10, \&backupScheduler);
 }
-
 
 sub removeDeadTracks {
 	my $dbh = Slim::Schema->dbh;
