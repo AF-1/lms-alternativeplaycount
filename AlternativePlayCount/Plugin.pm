@@ -181,7 +181,9 @@ sub initPrefs {
 		playhistory_maxdbentries => 0,
 		playhistory_jiveextralinelength => 82,
 		displayratingchar => 0,
+		playhistory_showrawrating => 0,
 		playhistory_showinvalidtracks => 1,
+		playhistory_jiveshownonameclientid => 0
 	});
 
 	createAPCfolder();
@@ -2198,6 +2200,7 @@ sub playHistoryWeb {
 	my $sth_artist = $dbh->prepare_cached('SELECT contributors.name, contributors.id FROM contributor_track JOIN contributors ON contributor_track.contributor = contributors.id WHERE contributor_track.track = ? AND contributor_track.role = ? LIMIT 1');
 
 	my $showinvalid = $prefs->get('playhistory_showinvalidtracks');
+	my $showRawRatingVal = $prefs->get('playhistory_showrawrating');
 	my @filteredHistory;
 
 	foreach my $entry (@{$history}) {
@@ -2256,7 +2259,7 @@ sub playHistoryWeb {
 
 		$entry->{played_formatted} = Slim::Utils::DateTime::shortDateF($entry->{played}) . ' ' . strftime('%H:%M', localtime($entry->{played}));
 		my $rawRating = $entry->{rating} // 0;
-		$entry->{rating_at_play} = $rawRating > 0 ? round($rawRating / 20) : 0;
+		$entry->{rating_at_play} = $rawRating > 0 ? formatRatingForDisplay($rawRating, $showRawRatingVal) : 0;
 		my $pname = $clientNames{$entry->{client_id}};
 		$entry->{playername} = $pname // (string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER') . ' (' . ($entry->{client_id} // '') . ')');
 		push @filteredHistory, $entry;
@@ -2359,6 +2362,9 @@ sub _jivePlayHistoryItems {
 		my $sth = $dbh->prepare_cached('SELECT tracks.title, tracks.id, albums.title, albums.artwork, albums.compilation, ifnull(tracks_persistent.rating, 0) FROM tracks JOIN albums ON tracks.album = albums.id LEFT JOIN tracks_persistent ON tracks_persistent.urlmd5 = tracks.urlmd5 WHERE tracks.urlmd5 = ? LIMIT 1');
 		my $sth_artist = $dbh->prepare_cached('SELECT contributors.name FROM contributor_track JOIN contributors ON contributor_track.contributor = contributors.id WHERE contributor_track.track = ? AND contributor_track.role = ? LIMIT 1');
 
+		my $showRawRatingVal = $prefs->get('playhistory_showrawrating');
+		my $showUnknownPlayerClientID = $prefs->get('playhistory_jiveshownonameclientid');
+
 		foreach my $entry (@{$history}) {
 			my ($title, $trackID, $album, $artworkid, $compilation, $currentRating);
 			eval {
@@ -2395,11 +2401,15 @@ sub _jivePlayHistoryItems {
 			my $jiveExtraLineLength = $prefs->get('playhistory_jiveextralinelength');
 			my $playedFormatted = Slim::Utils::DateTime::shortDateF($entry->{played}) . ' ' . strftime('%H:%M', localtime($entry->{played}));
 			my $rawRating = $entry->{rating} // 0;
-			my $histRatingStr = string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_RATINGATPLAY') . ': ' . ($rawRating > 0 ? round($rawRating/20) : 0);
+			my $histRatingStr = string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_RATINGATPLAY') . ': ' . ($rawRating > 0 ? formatRatingForDisplay($rawRating, $showRawRatingVal) : 0);
 			my $stats = $playedFormatted . ' ' . $sepChar . ' ' . $histRatingStr;
 			if (!$clientID || $clientID eq '') {
 				my $pname = $clientNames{$entry->{client_id}};
-				$stats .= ' ' . $sepChar . ' ' . ($pname // (string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER') . ' (' . ($entry->{client_id} // '') . ')'));
+				my $isUnknown = !defined $pname || $pname =~ /^\Q@{[string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER')]}\E/;
+				my $playerStr = $isUnknown
+					? (string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER') . ($showUnknownPlayerClientID ? ' (' . ($entry->{client_id} // '') . ')' : ''))
+					: $pname;
+				$stats .= ' ' . $sepChar . ' ' . $playerStr;
 			}
 
 			# line 2 depends on type and compilation flag
@@ -3104,6 +3114,16 @@ sub round {
 	my $factor = 10**$decimals;
 	return int($value * $factor + 0.5) / $factor if $value >= 0;
 	return int($value * $factor - 0.5) / $factor if $value < 0;
+}
+
+sub formatRatingForDisplay {
+	my ($rating100, $showRaw) = @_;
+	return 0 unless defined $rating100 && $rating100 > 0;
+	# round to nearest half star
+	my $rounded100 = int(($rating100 + 5) / 10) * 10;
+	$rounded100 = 100 if $rounded100 > 100;
+	my $starsVal = $rounded100 / 20;
+	return $showRaw ? "$starsVal ($rating100)" : "$starsVal";
 }
 
 sub padnum {

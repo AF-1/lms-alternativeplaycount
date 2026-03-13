@@ -500,6 +500,18 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_TEXT
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_STAR
 	EN	★ (Unicode)
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWRAWRATING
+	EN	Append exact <i>rating at play</i> value
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWRAWRATING_DESC
+	EN	By default, only the <i>rounded</i> half-star value is shown, e.g. 3.5. If enabled, APC will append the exact (raw) LMS rating value in brackets, e.g. 3.5 (68).
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWCLIENTID
+	EN	Show client ID for unknown players<br>in play history lists (jivelite, Material)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWCLIENTID_DESC
+	EN	If enabled, the client ID is shown in brackets after unknown players in play history lists, e.g. Unknown Player (ab:cd:ef:12:34:56).<br>This only applies to jivelite players (e.g. SqueezePlay, piCorePlayer) and Material. If disabled, only "Unknown Player" is shown, saving space for artist and album information.<br>Note: the client ID is always shown in the player selection menu regardless of this setting.
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM
 	EN	APC Play History
 
