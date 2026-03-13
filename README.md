@@ -36,7 +36,9 @@ You can use APC data in any SQLite query or with other plugins to create/play sm
 
 * Automatically undo a track's last (accidental) skip count increment if the track is played within a certain time span afterwards (see plugin settings).
 
-* Record **play history** for each player in a completely separate <i>external</i> database file, i.e. which track from the LMS database was played when on which player.
+* Record a detailed **play history** for each player in a completely separate <i>external</i> database file – capturing which track was played when, on which player and with which rating at the time of play.
+
+* Display play history for a specific track, all tracks of an album or artist, or your complete play history across all tracks.
 
 * Automatically increase *negative* DPSV values of tracks over time so that they **re**appear at some point in dynamic playlist mixes with a minimum DPSV limit, for example.
 
