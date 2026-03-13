@@ -2393,8 +2393,8 @@ sub _jivePlayHistoryItems {
 			}
 
 			# line 1
-			$title = Slim::Utils::Unicode::utf8decode(trimStringLength($title // $entry->{url}, 60), 'utf8');
 			my $ratingStars = ($inLibrary && $currentRating && $currentRating > 0) ? getAppendedRatingText($currentRating) : '';
+			$title = Slim::Utils::Unicode::utf8decode(trimStringLength($title // $entry->{url}, 60 - length($ratingStars)), 'utf8');
 			my $line1 = $title . $ratingStars;
 
 			# stats: date • hist.rating (always) • player (name if found, else id)
