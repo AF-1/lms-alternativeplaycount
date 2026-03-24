@@ -1,21 +1,7 @@
 #
 # Alternative Play Count
-#
 # (c) 2022 AF
-#
-# GPLv3 license
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
+# Licensed under the GPLv3 - see LICENSE file
 #
 
 package Plugins::AlternativePlayCount::Importer;
@@ -37,7 +23,7 @@ sub initPlugin {
 	main::INFOLOG && $log->is_info && $log->info('importer module init');
 
 	my $preScanBackup = $prefs->get('prescanbackup');
-	main::INFOLOG && $log->is_info && $log->info('prescanbackup = '.Data::Dump::dump($preScanBackup));
+	main::INFOLOG && $log->is_info && $log->info('prescanbackup = ' . ($preScanBackup ? '1' : '0'));
 	if ($preScanBackup) {
 		main::INFOLOG && $log->is_info && $log->info('creating pre-scan backup before scan process starts');
 		createBackup();

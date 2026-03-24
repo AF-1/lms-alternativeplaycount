@@ -1,21 +1,7 @@
 #
 # Alternative Play Count
-#
 # (c) 2022 AF
-#
-# GPLv3 license
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
+# Licensed under the GPLv3 - see LICENSE file
 #
 
 package Plugins::AlternativePlayCount::Storage;
@@ -58,19 +44,16 @@ sub init {
 			}
 		);
 	};
-
 	if ($@) {
 		$log->error("Failed to connect to database: $@");
 		return 0;
 	}
 
-	# optimize SQLite
 	$dbh->do("PRAGMA journal_mode = WAL");
 	$dbh->do("PRAGMA synchronous = NORMAL");
 	$dbh->do("PRAGMA temp_store = MEMORY");
 	$dbh->do("PRAGMA cache_size = 10000");
 
-	# attach LMS library.db for album/artist JOIN queries (for menus)
 	if ($prefs->get('playhistory_contextmenu') || $prefs->get('playhistory_homemenu')) {
 		my $lmsDbFile = Slim::Utils::SQLiteHelper->dbFile('library');
 		$lmsDbFile .= '.db' unless $lmsDbFile =~ /\.db$/i;
@@ -87,8 +70,13 @@ sub init {
 		}
 	}
 
-	# create table and indices
-	$class->createTables();
+	my $tableExists = $dbh->selectrow_array("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='play_history'");
+
+	if (!$tableExists) {
+		$class->createTables();
+	} else {
+		$class->_migrateSchema();
+	}
 
 	$initialized = 1;
 	main::DEBUGLOG && $log->is_debug && $log->debug("APC external database initialized successfully");
@@ -98,54 +86,133 @@ sub init {
 
 sub createTables {
 	my $class = shift;
-
 	return unless $dbh;
 
-	# create main table
-	my $sql = qq{
-		CREATE TABLE IF NOT EXISTS play_history (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			url TEXT NOT NULL COLLATE NOCASE,
-			urlmd5 CHAR(32) NOT NULL DEFAULT '0',
-			musicbrainz_id VARCHAR(40),
-			played INT(10) NOT NULL,
-			rating INTEGER,
-			remote BOOL DEFAULT '0',
-			client_id TEXT
-		)
-	};
-
 	eval {
-		$dbh->do($sql);
-		main::DEBUGLOG && $log->is_debug && $log->debug('Created play_history table');
+		$dbh->do(qq{
+			CREATE TABLE IF NOT EXISTS play_history (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				url TEXT NOT NULL COLLATE NOCASE,
+				urlmd5 CHAR(32) NOT NULL DEFAULT '0',
+				musicbrainz_id VARCHAR(40),
+				played INT(10) NOT NULL,
+				rating INTEGER,
+				remote BOOL DEFAULT '0',
+				client_id TEXT
+			)
+		});
 	};
-
 	if ($@) {
 		$log->error("Failed to create play_history table: $@");
 		return 0;
 	}
 
-	# create indices
 	my @indices = (
 		'CREATE INDEX IF NOT EXISTS urlmd5Idx ON play_history (urlmd5)',
 		'CREATE INDEX IF NOT EXISTS playedIdx ON play_history (played)',
 		'CREATE INDEX IF NOT EXISTS mbidIdx ON play_history (musicbrainz_id)',
 		'CREATE INDEX IF NOT EXISTS clientIdx ON play_history (client_id)',
-		'CREATE INDEX IF NOT EXISTS remoteIdx ON play_history (remote)',
-		'CREATE INDEX IF NOT EXISTS urlmd5PlayedIdx ON play_history (urlmd5, played)',
 	);
 
 	foreach my $index (@indices) {
+		eval { $dbh->do($index) };
+		$log->warn("Failed to create index: $@") if $@;
+	}
+
+	eval { $dbh->do("PRAGMA user_version = " . _currentSchemaVersion()) };
+	$log->error("Failed to set user_version: $@") if $@;
+
+	main::DEBUGLOG && $log->is_debug && $log->debug('play_history table and indices created.');
+	return 1;
+}
+
+sub _currentSchemaVersion { return 1 }
+
+sub _migrateSchema {
+	my $class = shift;
+
+	my $installedVersion;
+	eval { ($installedVersion) = $dbh->selectrow_array("PRAGMA user_version") };
+	if ($@) { $log->error("Failed to read schema version: $@"); $installedVersion = 0; }
+	$installedVersion //= 0;
+
+	my $currentVersion = _currentSchemaVersion();
+
+	return if $installedVersion >= $currentVersion;
+
+	main::DEBUGLOG && $log->is_debug && $log->debug("play_history schema migration needed: v$installedVersion -> v$currentVersion");
+
+	# Never remove or renumber existing blocks
+	if ($installedVersion < 1) {
+		my %existingColumns;
 		eval {
-			$dbh->do($index);
+			my $sth = $dbh->prepare("PRAGMA table_info(play_history)");
+			$sth->execute();
+			while (my $row = $sth->fetchrow_hashref()) {
+				$existingColumns{lc($row->{name})} = 1;
+			}
+			$sth->finish();
+		};
+		if ($@) {
+			$log->error("play_history schema migration: failed to read table_info: $@");
+			return;
+		}
+
+		# Add new columns here and add a corresponding "if ($installedVersion < N)" block below
+		my %expectedColumns = (
+			url => 'TEXT NOT NULL COLLATE NOCASE',
+			urlmd5 => "CHAR(32) NOT NULL DEFAULT '0'",
+			musicbrainz_id => 'VARCHAR(40)',
+			played => 'INT(10) NOT NULL',
+			rating => 'INTEGER',
+			remote => "BOOL DEFAULT '0'",
+			client_id => 'TEXT',
+		);
+
+		for my $col (sort keys %expectedColumns) {
+			unless ($existingColumns{$col}) {
+				$log->warn("play_history schema migration: adding missing column '$col'");
+				eval { $dbh->do("ALTER TABLE play_history ADD COLUMN $col $expectedColumns{$col}") };
+				$log->error("play_history schema migration: failed to add column '$col': $@") if $@;
+			}
+		}
+
+		# Add missing indices
+		my %expectedIndices = (
+			urlmd5Idx => 'CREATE INDEX IF NOT EXISTS urlmd5Idx ON play_history (urlmd5)',
+			playedIdx => 'CREATE INDEX IF NOT EXISTS playedIdx ON play_history (played)',
+			mbidIdx => 'CREATE INDEX IF NOT EXISTS mbidIdx ON play_history (musicbrainz_id)',
+			clientIdx => 'CREATE INDEX IF NOT EXISTS clientIdx ON play_history (client_id)',
+		);
+
+		my %existingIndices;
+		eval {
+			my $sth = $dbh->prepare("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='play_history'");
+			$sth->execute();
+			while (my ($name) = $sth->fetchrow_array()) {
+				$existingIndices{$name} = 1;
+			}
+			$sth->finish();
 		};
 
-		if ($@) {
-			$log->warn("Failed to create index: $@");
+		for my $idx (sort keys %expectedIndices) {
+			unless ($existingIndices{$idx}) {
+				eval { $dbh->do($expectedIndices{$idx}) };
+				$log->warn("play_history schema migration: failed to create index '$idx': $@") if $@;
+			}
 		}
+
+		# Remove obsolete indices
+		for my $idx (qw(remoteIdx urlmd5PlayedIdx)) {
+			eval { $dbh->do("DROP INDEX IF EXISTS $idx") };
+			$log->warn("play_history schema migration: failed to drop index '$idx': $@") if $@;
+		}
+
+		main::DEBUGLOG && $log->is_debug && $log->debug('play_history schema migration v1 complete.');
 	}
-	main::DEBUGLOG && $log->is_debug && $log->debug('Created indices for play_history table');
-	return 1;
+
+	eval {$dbh->do("PRAGMA user_version = $currentVersion")};
+	$log->error("play_history schema migration: failed to set user_version: $@") if $@;
 }
 
 sub dbh {
@@ -191,7 +258,7 @@ sub addPlayEntry {
 	my $maxdbentries = $prefs->get('playhistory_maxdbentries') // 0;
 	if ($maxdbentries > 0) {
 		eval {
-			$dbh->do("DELETE FROM play_history WHERE id NOT IN (SELECT id FROM play_history ORDER BY played DESC LIMIT $maxdbentries)");
+			$dbh->do("DELETE FROM play_history WHERE id NOT IN (SELECT id FROM play_history ORDER BY played DESC LIMIT ?)", undef, $maxdbentries);
 		};
 		if ($@) { $log->error("Error trimming play history: $@"); }
 	}

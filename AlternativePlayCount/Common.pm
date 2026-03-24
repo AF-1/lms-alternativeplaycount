@@ -1,21 +1,7 @@
 #
 # Alternative Play Count
-#
 # (c) 2022 AF
-#
-# GPLv3 license
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
+# Licensed under the GPLv3 - see LICENSE file
 #
 
 package Plugins::AlternativePlayCount::Common;
@@ -34,14 +20,13 @@ use File::Basename;
 use File::Copy qw(move);
 use File::Spec::Functions qw(:ALL);
 use File::stat;
-use FindBin qw($Bin);
 use POSIX qw(strftime);
 use Time::HiRes qw(time);
 use Path::Class;
 
 use base 'Exporter';
 our %EXPORT_TAGS = (
-	all => [qw(commit rollback createBackup cleanupBackups isTimeOrEmpty getMusicDirs parse_duration pathForItem roundFloat)],
+	all => [qw(createBackup cleanupBackups isTimeOrEmpty getMusicDirs parse_duration pathForItem roundFloat)],
 );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
 
@@ -58,21 +43,25 @@ sub createBackup {
 	$prefs->set('status_creatingbackup', 1);
 
 	my $backupDir = $prefs->get('apcfolderpath');
-	my ($sql, $sth) = undef;
 	my $dbh = Slim::Schema->dbh;
 	my ($trackURL, $trackURLmd5, $apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped, $apcDynPSval, $apcRemote, $apcTrackMBID);
 	my $started = time();
 	my $backuptimestamp = strftime "%Y-%m-%d %H:%M:%S", localtime time;
 	my $filename_timestamp = strftime "%Y%m%d-%H%M", localtime time;
 
-	$sql = "select alternativeplaycount.url, alternativeplaycount.urlmd5, ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(alternativeplaycount.dynPSval, 0), alternativeplaycount.remote, alternativeplaycount.musicbrainz_id from alternativeplaycount where (ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0)";
-	$sth = $dbh->prepare($sql);
-	$sth->execute();
-	$sth->bind_columns(undef, \$trackURL, \$trackURLmd5, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped, \$apcDynPSval, \$apcRemote, \$apcTrackMBID);
-
+	my $sth = $dbh->prepare("select alternativeplaycount.url, alternativeplaycount.urlmd5, ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(alternativeplaycount.dynPSval, 0), alternativeplaycount.remote, alternativeplaycount.musicbrainz_id from alternativeplaycount where (ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0)");
 	my @APCTracks = ();
-	while ($sth->fetch()) {
-		push (@APCTracks, {'url' => $trackURL, 'urlmd5' => $trackURLmd5, 'playcount' => $apcPlayCount, 'lastplayed' => $apcLastPlayed, 'skipcount' => $apcSkipCount, 'lastskipped' => $apcLastSkipped, 'dynpsval' => $apcDynPSval, 'remote' => $apcRemote, 'musicbrainzid' => $apcTrackMBID});
+	eval {
+		$sth->execute();
+		$sth->bind_columns(undef, \$trackURL, \$trackURLmd5, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped, \$apcDynPSval, \$apcRemote, \$apcTrackMBID);
+		while ($sth->fetch()) {
+			push (@APCTracks, {'url' => $trackURL, 'urlmd5' => $trackURLmd5, 'playcount' => $apcPlayCount, 'lastplayed' => $apcLastPlayed, 'skipcount' => $apcSkipCount, 'lastskipped' => $apcLastSkipped, 'dynpsval' => $apcDynPSval, 'remote' => $apcRemote, 'musicbrainzid' => $apcTrackMBID});
+		}
+	};
+	if ($@) {
+		$log->error("Database error during backup: $DBI::errstr");
+		$prefs->set('status_creatingbackup', 0);
+		return;
 	}
 	$sth->finish();
 
@@ -84,7 +73,6 @@ sub createBackup {
 			return;
 		};
 		my $trackcount = scalar(@APCTracks);
-		my $ignoredtracks = 0;
 		main::DEBUGLOG && $log->is_debug && $log->debug('Found '.$trackcount.($trackcount == 1 ? ' track' : ' tracks').' with values in the APC database');
 
 		print $output "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
@@ -132,7 +120,7 @@ sub cleanupBackups {
 		my $backupsdaystokeep = $prefs->get('backupsdaystokeep');
 		my $maxkeeptime = $backupsdaystokeep * 24 * 60 * 60; # in seconds
 		my @files;
-		opendir(my $DH, $backupDir) or die "Error opening $backupDir: $!";
+		opendir(my $DH, $backupDir) or do { $log->error("Error opening $backupDir: $!"); return; };
 		@files = grep(/^APC_Backup_.*$/, readdir($DH));
 		closedir($DH);
 		main::DEBUGLOG && $log->is_debug && $log->debug('number of backup files found: '.scalar(@files));
@@ -144,9 +132,12 @@ sub cleanupBackups {
 				my $filepath = catfile($backupDir, $file);
 				$mtime = stat($filepath)->mtime;
 				if (($etime - $mtime) > $maxkeeptime) {
-					unlink($filepath) or die "Can't delete $file: $!";
-					$n++;
-					last if ((scalar(@files) - $n) <= $backupFilesMin);
+					if (unlink($filepath)) {
+						$n++;
+						last if ((scalar(@files) - $n) <= $backupFilesMin);
+					} else {
+						$log->error("Can't delete $file: $!");
+					}
 				}
 			}
 		} else {
@@ -233,7 +224,7 @@ sub isTimeOrEmpty {
 	my $arg = shift;
 	if (!$arg || $arg eq '') {
 		return 1;
-	} elsif ($arg =~ m/^([0\s]?[0-9]|1[0-9]|2[0-4]):([0-5][0-9])\s*(P|PM|A|AM)?$/isg) {
+	} elsif ($arg =~ m/^(0?[0-9]|1[0-9]|2[0-3]):([0-5][0-9])$/) {
 		return 1;
 	}
 	return 0;
@@ -251,20 +242,6 @@ sub pathForItem {
 sub roundFloat {
 	my $float = shift;
 	return int($float + $float/abs($float*2 || 1));
-}
-
-sub commit {
-	my $dbh = shift;
-	if (!$dbh->{'AutoCommit'}) {
-		$dbh->commit();
-	}
-}
-
-sub rollback {
-	my $dbh = shift;
-	if (!$dbh->{'AutoCommit'}) {
-		$dbh->rollback();
-	}
 }
 
 *escape = \&URI::Escape::uri_escape_utf8;

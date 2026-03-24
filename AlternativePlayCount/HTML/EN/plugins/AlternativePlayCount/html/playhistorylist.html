@@ -15,7 +15,7 @@
 .cover img { height: 50px; }
 .textwrapper {
 	padding-left: 20px;
-	vertical-align: center;
+	vertical-align: middle;
 }
 .firstline {
 	font-size: [% IF systemSkin != 'Classic' %]12[% ELSE %]11[% END %]px;
@@ -112,7 +112,7 @@
 <script type="text/javascript">
 	function refreshpage(clientid) {
 		let timestamp = Date.now();
-		let thisurl = "[% webroot %]plugins/AlternativePlayCount/playhistory?objecttype=[% objecttype %]&objectid=[% objectid %]&objectname=" + encodeURIComponent('[% objectname %]') + "&urlmd5=[% urlmd5 %]&clientid=" + clientid + "&player=[% playerURI %]&v=" + timestamp;
+		let thisurl = "[% webroot %]plugins/AlternativePlayCount/playhistory?objecttype=[% objecttype %]&objectid=[% objectid %]&objectname=" + encodeURIComponent('[% objectname | html %]') + "&urlmd5=[% urlmd5 %]&clientid=" + clientid + "&player=[% playerURI %]&v=" + timestamp;
 		document.getElementById("infocircle").classList.add("loader-path");
 		document.getElementById("circularloader").classList.add("circular-loader-rotate");
 		window.location.replace(thisurl);
