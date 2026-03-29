@@ -101,9 +101,9 @@ sub createBackup {
 		}
 		print $output "</AlternativePlayCount>\n";
 		close $output;
-		my $ended = time() - $started;
-		main::DEBUGLOG && $log->is_debug && $log->debug('Backup completed after '.$ended.' seconds.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Backup completed after '.(time() - $started).' seconds.');
 
+		$prefs->set('lastbackup', int(time()));
 		cleanupBackups();
 	} else {
 		main::INFOLOG && $log->is_info && $log->info('No tracks with play/skip counts in APC database');
@@ -119,18 +119,16 @@ sub cleanupBackups {
 		return unless (-d $backupDir);
 		my $backupsdaystokeep = $prefs->get('backupsdaystokeep');
 		my $maxkeeptime = $backupsdaystokeep * 24 * 60 * 60; # in seconds
-		my @files;
 		opendir(my $DH, $backupDir) or do { $log->error("Error opening $backupDir: $!"); return; };
-		@files = grep(/^APC_Backup_.*$/, readdir($DH));
+		my @files = grep(/^RL_Backup_.*$/, readdir($DH));
 		closedir($DH);
 		main::DEBUGLOG && $log->is_debug && $log->debug('number of backup files found: '.scalar(@files));
-		my $mtime;
 		my $etime = int(time());
 		my $n = 0;
 		if (scalar(@files) > $backupFilesMin) {
 			foreach my $file (@files) {
 				my $filepath = catfile($backupDir, $file);
-				$mtime = stat($filepath)->mtime;
+				my $mtime = stat($filepath)->mtime;
 				if (($etime - $mtime) > $maxkeeptime) {
 					if (unlink($filepath)) {
 						$n++;
@@ -146,7 +144,6 @@ sub cleanupBackups {
 		main::DEBUGLOG && $log->is_debug && $log->debug('Deleted '.$n.($n == 1 ? ' backup. ' : ' backups. ').(scalar(@files) - $n).((scalar(@files) - $n) == 1 ? " backup" : " backups")." remaining.");
 	}
 }
-
 
 sub getRelFilePath {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Getting relative file url/path.');

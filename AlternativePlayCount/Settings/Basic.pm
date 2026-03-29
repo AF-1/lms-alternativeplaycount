@@ -53,11 +53,6 @@ sub prefs {
 	return ($prefs, qw(apcparentfolderpath playedthreshold_percent undoskiptimespan ignoreCS3skiprequests alwaysdisplayvals hideskipdpsvtrackinfo allmusicbrainzidversions autoincdpsv_interval autoincdpsv_value postscanscheduledelay));
 }
 
-sub handler {
-	my ($class, $client, $paramRef) = @_;
-	return $class->SUPER::handler($client, $paramRef);
-}
-
 sub beforeRender {
 	my ($class, $paramRef) = @_;
 	my $advMode = $prefs->get('advmode');

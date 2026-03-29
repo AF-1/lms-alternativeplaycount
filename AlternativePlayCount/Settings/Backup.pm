@@ -59,6 +59,7 @@ sub handler {
 	my ($class, $client, $paramRef) = @_;
 	my $result;
 	my $callHandler = 1;
+	$paramRef->{'pref_backuptime'} = trim($paramRef->{'pref_backuptime'} // '');
 
 	if ($paramRef->{'saveSettings'}) {
 		$result = $class->SUPER::handler($client, $paramRef);
@@ -78,7 +79,7 @@ sub handler {
 			$callHandler = 0;
 		}
 		my $selectedfile = $paramRef->{'pref_restorefile'};
-		main::DEBUGLOG && $log->is_debug && $log->debug("restorefile = ".$selectedfile);
+		main::DEBUGLOG && $log->is_debug && $log->debug("restorefile = ".Data::Dump::dump($selectedfile));
 		if (!defined($selectedfile) || $selectedfile eq '') {
 			$paramRef->{'restoremissingfile'} = 1;
 		} elsif ($selectedfile !~ /\.xml/i) {
@@ -88,12 +89,22 @@ sub handler {
 		}
 	}
 
-	# Reset restorefile pref to APC folder path so the file browser
-	# opens in the correct directory next time
-	$prefs->set('restorefile', $prefs->get('apcfolderpath'));
-
-	$result = $class->SUPER::handler($client, $paramRef) if $callHandler;
+	$result = $class->SUPER::handler($client, $paramRef);
 	return $result;
+}
+
+sub beforeRender {
+	my ($class, $paramRef) = @_;
+	# reset restorefile pref to folder path so field shows folder instead of last used filename
+	$prefs->set('restorefile', $prefs->get('apcfolderpath'));
+	$paramRef->{lastsuccessfulbackup} = Slim::Utils::DateTime::longDateF($prefs->get('lastbackup')).", ".Slim::Utils::DateTime::timeF($prefs->get('lastbackup')) if $prefs->get('lastbackup');
+}
+
+sub trim {
+	my $str = shift;
+	$str =~ s{^\s+}{};
+	$str =~ s{\s+$}{};
+	return $str;
 }
 
 1;

@@ -53,9 +53,4 @@ sub prefs {
 	return ($prefs, qw(autorating autoratingdynamicfactor baselinerating autoratinglineardelta));
 }
 
-sub handler {
-	my ($class, $client, $paramRef) = @_;
-	return $class->SUPER::handler($client, $paramRef);
-}
-
 1;

@@ -1238,7 +1238,6 @@ sub _skipWithoutCount {
 
 sub backupScheduler {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Checking backup scheduler');
-
 	main::DEBUGLOG && $log->is_debug && $log->debug('Killing all backup timers');
 	Slim::Utils::Timers::killTimers(undef, \&backupScheduler);
 
@@ -1254,13 +1253,9 @@ sub backupScheduler {
 		if (defined($backuptime) && $backuptime ne '') {
 			my $time = 0;
 			$backuptime =~ s{
-				^(0?[0-9]|1[0-9]|2[0-4]):([0-5][0-9])\s*(P|PM|A|AM)?$
+				^(0?[0-9]|1[0-9]|2[0-3]):([0-5][0-9])$
 			}{
-				if (defined $3) {
-					$time = ($1 == 12?0:$1 * 60 * 60) + ($2 * 60) + ($3 =~ /P/?12 * 60 * 60:0);
-				} else {
-					$time = ($1 * 60 * 60) + ($2 * 60);
-				}
+				$time = ($1 * 60 * 60) + ($2 * 60);
 			}iegsx;
 			my ($sec,$min,$hour,$mday,$mon,$year) = localtime(time);
 			main::DEBUGLOG && $log->is_debug && $log->debug('local time = '.Data::Dump::dump(padnum($hour).':'.padnum($min).':'.padnum($sec).' -- '.padnum($mday).'.'.padnum($mon).'.'));
@@ -1382,6 +1377,7 @@ sub restoreScanFunction {
 				last;
 			}
 		}
+		$line //= '';
 		$line =~ s/&#(\d*);/escape(chr($1))/ge;
 		$backupParserNB->parse_more($line);
 		return 1;

@@ -3,7 +3,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT
 	FR	Nombre de Lectures Alternatif (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_DESC
-	EN	Provides alternative play counts and skip counts that aim to reflect your true listening history. You set a time after which a song counts as played. If you skip the song before, it counts as skipped, not played. Use the data with other plugins to create/play smart playlists, virtual libraries or to skip specific tracks.
+	EN	Provides alternative play counts and skip counts that aim to reflect your true listening history. You set a time after which a song counts as played. If you skip the song before, it counts as skipped, not played. Optionally records a detailed play history with timestamps, player and rating at the time of play, with display for individual tracks, albums, artists or all tracks. Use the data with other plugins to create/play smart playlists (dynamic playlists), create virtual libraries or skip tracks.
 	FR	Fournit un nombre de lectures et de sauts alternatif qui vise à refléter votre vrai historique de lecture. Définissez une durée après laquelle un morceau est considéré comme joué. Utilisez les données avec d'autres plugins pour créer/jouer des listes de lecture intelligentes, des bibliothèques virtuelles ou pour sauter des pistes spécifiques.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LOG_DESC
@@ -144,6 +144,9 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP
 	EN	Backup
 	FR	Sauvegarde
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_LASTBACKUP
+	EN	Last backup
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP
 	EN	Manual Backup
 	FR	Sauvegarde Manuelle
@@ -181,7 +184,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS_BACKUPTIME
 	FR	Heure de sauvegarde
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS_BACKUPTIME_DESC
-	EN	Set the time for your daily backup. If you leave this empty, no scheduled backups will occur.
+	EN	Set the time for your daily backup (24h format, e.g. 05:30). If you leave this empty, no scheduled backups will occur.
 	FR	Définit l'heure pour la sauvegarde quotidienne. Si vous laissez vide, aucune sauvegarde ne sera faite.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_AUTODELETEBACKUPS
