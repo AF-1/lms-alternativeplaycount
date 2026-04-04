@@ -18,6 +18,7 @@ use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 use Slim::Utils::Misc;
 use Slim::Utils::Strings;
+use File::Spec::Functions qw(catfile);
 
 my $prefs = preferences('plugin.alternativeplaycount');
 my $log = logger('plugin.alternativeplaycount');
@@ -73,18 +74,19 @@ sub handler {
 		}
 		createBackup();
 	} elsif ($paramRef->{'restore'}) {
+		my $selectedfile = $paramRef->{'pref_restorefile'};
 		if ($callHandler) {
 			$paramRef->{'saveSettings'} = 1;
 			$result = $class->SUPER::handler($client, $paramRef);
 			$callHandler = 0;
 		}
-		my $selectedfile = $paramRef->{'pref_restorefile'};
-		main::DEBUGLOG && $log->is_debug && $log->debug("restorefile = ".Data::Dump::dump($selectedfile));
+		main::DEBUGLOG && $log->is_debug && $log->debug('restorefile = '.Data::Dump::dump($selectedfile));
 		if (!defined($selectedfile) || $selectedfile eq '') {
 			$paramRef->{'restoremissingfile'} = 1;
 		} elsif ($selectedfile !~ /\.xml/i) {
 			$paramRef->{'restoremissingfile'} = 2;
 		} else {
+			$prefs->set('restorefile', $selectedfile);
 			Plugins::AlternativePlayCount::Plugin::restoreFromBackup();
 		}
 	}
@@ -95,8 +97,7 @@ sub handler {
 
 sub beforeRender {
 	my ($class, $paramRef) = @_;
-	# reset restorefile pref to folder path so field shows folder instead of last used filename
-	$prefs->set('restorefile', $prefs->get('apcfolderpath'));
+	$paramRef->{'restorefilefolder'} = $prefs->get('apcfolderpath');
 	$paramRef->{lastsuccessfulbackup} = Slim::Utils::DateTime::longDateF($prefs->get('lastbackup')).", ".Slim::Utils::DateTime::timeF($prefs->get('lastbackup')) if $prefs->get('lastbackup');
 }
 

@@ -26,7 +26,7 @@ use Path::Class;
 
 use base 'Exporter';
 our %EXPORT_TAGS = (
-	all => [qw(createBackup cleanupBackups isTimeOrEmpty getMusicDirs parse_duration pathForItem roundFloat)],
+	all => [qw(createBackup cleanupBackups isTimeOrEmpty getMusicDirs parse_duration pathForItem roundFloat toIntTimestamp)],
 );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
 
@@ -87,9 +87,9 @@ sub createBackup {
 			my $BACKUPtrackURL = $APCTrack->{'url'};
 			my $BACKUPtrackURLmd5 = $APCTrack->{'urlmd5'};
 			my $BACKUPplayCount = $APCTrack->{'playcount'} || 0;
-			my $BACKUPlastPlayed = $APCTrack->{'lastplayed'} || 0;
+			my $BACKUPlastPlayed = toIntTimestamp($APCTrack->{'lastplayed'}) // 0;
 			my $BACKUPskipCount = $APCTrack->{'skipcount'} || 0;
-			my $BACKUPlastSkipped = $APCTrack->{'lastskipped'} || 0;
+			my $BACKUPlastSkipped = toIntTimestamp($APCTrack->{'lastskipped'}) // 0;
 			my $BACKUPdynPSval = $APCTrack->{'dynpsval'} || 0;
 			my $BACKUPremote = $APCTrack->{'remote'};
 			my $BACKUPrelFilePath = ($BACKUPremote == 0 ? getRelFilePath($BACKUPtrackURL) : '');
@@ -239,6 +239,14 @@ sub pathForItem {
 sub roundFloat {
 	my $float = shift;
 	return int($float + $float/abs($float*2 || 1));
+}
+
+sub toIntTimestamp {
+	my $val = shift;
+	return undef unless defined $val && $val ne '';
+	$val =~ s/,/./;
+	return undef unless $val =~ /^\d+(?:\.\d+)?$/;
+	return int($val + 0.5);
 }
 
 *escape = \&URI::Escape::uri_escape_utf8;

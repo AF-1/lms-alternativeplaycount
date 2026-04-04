@@ -241,7 +241,7 @@ sub addPlayEntry {
 			$params->{url},
 			$params->{urlmd5},
 			$params->{musicbrainz_id},
-			$params->{played} || time(),
+			$params->{played} || int(time()),
 			$params->{rating},
 			$params->{remote} || 0,
 			$params->{client_id}

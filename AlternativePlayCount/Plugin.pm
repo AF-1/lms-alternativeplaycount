@@ -201,7 +201,13 @@ sub initPrefs {
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 1000}, 'playhistory_maxdisplayitems');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 0, 'high' => 50000}, 'playhistory_maxdbentries');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 65, 'high' => 150}, 'playhistory_jiveextralinelength');
-	$prefs->setValidate('file', 'restorefile');
+	$prefs->setValidate(sub {
+		my $val = $_[1];
+		return 1 if !$val || $val eq ''; # empty is ok
+		return 1 if -d $val; # directory is ok (filepicker default)
+		return 1 if -f $val && $val =~ /\.xml$/i; # xml file is ok
+		return 0;
+	}, 'restorefile');
 
 	%itemNames = ('playCount' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCPLAYCOUNT'),
 				'lastPlayed' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTPLAYED'),
@@ -903,7 +909,7 @@ sub markAsPlayed {
 
 	main::INFOLOG && $log->is_info && $log->info('Marking track with url "'.$trackURL.'" as played. urlmd5 = '.Data::Dump::dump($trackURLmd5));
 	$client->pluginData('markedAsPlayed' => $trackURL);
-	my $lastPlayed = time();
+	my $lastPlayed = int(time());
 
 	if ($prefs->get('playhistory')) {
 		Plugins::AlternativePlayCount::Storage->addPlayEntry({
@@ -955,7 +961,7 @@ sub markAsSkipped {
 	main::INFOLOG && $log->is_info && $log->info('Marking track with url "'.$trackURL.'" as skipped. urlmd5 = '.Data::Dump::dump($trackURLmd5));
 	$trackURLmd5 = md5_hex($trackURL) if !$trackURLmd5;
 
-	my $lastSkipped = time();
+	my $lastSkipped = int(time());
 	my $dbh = Slim::Schema->dbh;
 	if ($prefs->get('allmusicbrainzidversions')) {
 		if ($trackMBID && $trackMBID !~ /^[a-zA-Z0-9\-]+$/) {
@@ -1499,15 +1505,15 @@ sub handleEndElement {
 
 			if ($isTSlegacyBackupFile) {
 				my $playCount = (!$curTrack->{'playCount'} || $curTrack->{'playCount'} !~ /^\d+$/) ? undef : $curTrack->{'playCount'} + 0;
-				my $lastPlayed = (!$curTrack->{'lastPlayed'} || $curTrack->{'lastPlayed'} !~ /^\d+$/) ? undef : $curTrack->{'lastPlayed'} + 0;
+				my $lastPlayed = toIntTimestamp($curTrack->{'lastPlayed'});
 				$setClause = "set playCount = ?, lastPlayed = ?";
 				@bindVals = ($playCount, $lastPlayed);
 				main::DEBUGLOG && $log->is_debug && $log->debug("Setting these values for track: playCount = $playCount, lastPlayed = $lastPlayed\n");
 			} else {
 				my $playCount = (!$curTrack->{'playcount'} || $curTrack->{'playcount'} !~ /^\d+$/) ? undef : $curTrack->{'playcount'} + 0;
-				my $lastPlayed = (!$curTrack->{'lastplayed'} || $curTrack->{'lastplayed'} !~ /^\d+$/) ? undef : $curTrack->{'lastplayed'} + 0;
+				my $lastPlayed = toIntTimestamp($curTrack->{'lastplayed'});
 				my $skipCount = (!defined($curTrack->{'skipcount'}) || !$curTrack->{'skipcount'} || $curTrack->{'skipcount'} !~ /^\d+$/) ? undef : $curTrack->{'skipcount'} + 0;
-				my $lastSkipped = (!defined($curTrack->{'lastskipped'}) || !$curTrack->{'lastskipped'} || $curTrack->{'lastskipped'} !~ /^\d+$/) ? undef : $curTrack->{'lastskipped'} + 0;
+				my $lastSkipped = toIntTimestamp($curTrack->{'lastskipped'});
 				my $dynPSval = (!defined($curTrack->{'dynpsval'}) || $curTrack->{'dynpsval'} eq '' || $curTrack->{'dynpsval'} !~ /^-?\d+$/) ? undef : $curTrack->{'dynpsval'} + 0;
 				$setClause = "set playCount = ?, lastPlayed = ?, skipCount = ?, lastSkipped = ?, dynPSval = ?";
 				@bindVals = ($playCount, $lastPlayed, $skipCount, $lastSkipped, $dynPSval);
