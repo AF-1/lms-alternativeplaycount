@@ -1,6 +1,6 @@
 Alternative Play Count
 ====
-![Min. LMS Version](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2FAF-1%2Fsobras%2Fmain%2Frepos%2Flms%2Fpublic.xml&query=%2F%2F*%5Blocal-name()%3D'plugin'%20and%20%40name%3D'AlternativePlayCount'%5D%2F%40minTarget&prefix=v&label=Min.%20LMS%20Version%20Required&color=darkgreen)<br>
+![Min. LMS Version](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2FAF-1%2Fsobras%2Fmain%2Frepos%2Flms%2Fpublic.xml&cacheSeconds=172800&query=%2F%2F*%5Blocal-name()%3D'plugin'%20and%20%40name%3D'AlternativePlayCount'%5D%2F%40minTarget&prefix=v&label=Min.%20LMS%20Version%20Required&color=darkgreen)<br>
 
 <img src="screenshots/apc_repo_icon.png" align="right" width="90px">**Alternative Play Count** provides *alternative* **play count**s and **skip count**s that aim to **reflect your *true* listening history**.<br><br>
 If you *skip* tracks in a playlist, LMS still increases their *play* counts. With **Alternative Play Count** you set a time *after* which a song counts as **played**. If you skip the song **before**, it counts as **skipped**, **not played**.<br clear="right"><br>
