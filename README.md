@@ -123,7 +123,6 @@ If you have the <i>Ratings Light</i> plugin installed, APC can change the <i>rat
 ---
 
 If this project was useful to you, you can star the repository using the <img src="screenshots/githubstar.png" width="20" height="20" alt="star" /> button in the top-right corner of this page.
-
 <br><br><br>
 [^1]: The screenshots might not correspond to the UI of the latest release in every detail.
 [^2]: i.e. percentage of the total song duration
