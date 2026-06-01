@@ -122,9 +122,9 @@ sub createTables {
 	eval {
 		$dbh->do(qq{
 			CREATE TABLE IF NOT EXISTS players (
-				mac       TEXT PRIMARY KEY NOT NULL,
-				name      TEXT,
-				model     TEXT,
+				mac TEXT PRIMARY KEY NOT NULL,
+				name TEXT,
+				model TEXT,
 				last_seen INT NOT NULL DEFAULT 0
 			)
 		});

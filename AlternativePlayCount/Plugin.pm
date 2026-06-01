@@ -1057,7 +1057,7 @@ sub _ratingsLightChangedCB {
 	my $request = shift;
 	return unless $prefs->get('playhistory');
 
-	my $changedURL    = $request->getParam('_url');
+	my $changedURL = $request->getParam('_url');
 	my $changedUrlmd5 = $request->getParam('_urlmd5') || (defined $changedURL ? md5_hex($changedURL) : undef);
 	my $changedRating = $request->getParam('_ratingpercent');
 
@@ -1068,9 +1068,9 @@ sub _ratingsLightChangedCB {
 
 		main::DEBUGLOG && $log->is_debug && $log->debug('RatingsLight rating changed for already-marked-as-played track on client '.$client->id.' -- updating play_history rating to '.$changedRating);
 		Plugins::AlternativePlayCount::Storage->updateLatestPlayRating({
-			urlmd5    => $changedUrlmd5,
+			urlmd5 => $changedUrlmd5,
 			client_id => $client->id,
-			rating    => $changedRating,
+			rating => $changedRating,
 		});
 	}
 }
