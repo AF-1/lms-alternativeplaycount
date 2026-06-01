@@ -119,14 +119,29 @@ sub createTables {
 		$log->warn("Failed to create index: $@") if $@;
 	}
 
+	eval {
+		$dbh->do(qq{
+			CREATE TABLE IF NOT EXISTS players (
+				mac       TEXT PRIMARY KEY NOT NULL,
+				name      TEXT,
+				model     TEXT,
+				last_seen INT NOT NULL DEFAULT 0
+			)
+		});
+	};
+	if ($@) {
+		$log->error("Failed to create players table: $@");
+		return 0;
+	}
+
 	eval { $dbh->do("PRAGMA user_version = " . _currentSchemaVersion()) };
 	$log->error("Failed to set user_version: $@") if $@;
 
-	main::DEBUGLOG && $log->is_debug && $log->debug('play_history table and indices created.');
+	main::DEBUGLOG && $log->is_debug && $log->debug('play_history and players tables created.');
 	return 1;
 }
 
-sub _currentSchemaVersion { return 1 }
+sub _currentSchemaVersion { return 2 }
 
 sub _migrateSchema {
 	my $class = shift;
@@ -140,7 +155,7 @@ sub _migrateSchema {
 
 	return if $installedVersion >= $currentVersion;
 
-	main::DEBUGLOG && $log->is_debug && $log->debug("play_history schema migration needed: v$installedVersion -> v$currentVersion");
+	main::DEBUGLOG && $log->is_debug && $log->debug("APC external schema migration needed: v$installedVersion -> v$currentVersion");
 
 	# Never remove or renumber existing blocks
 	if ($installedVersion < 1) {
@@ -208,11 +223,29 @@ sub _migrateSchema {
 			$log->warn("play_history schema migration: failed to drop index '$idx': $@") if $@;
 		}
 
-		main::DEBUGLOG && $log->is_debug && $log->debug('play_history schema migration v1 complete.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('APC external schema migration v1 complete.');
+	}
+
+	if ($installedVersion < 2) {
+		eval {
+			$dbh->do(qq{
+				CREATE TABLE IF NOT EXISTS players (
+					mac       TEXT PRIMARY KEY NOT NULL,
+					name      TEXT,
+					model     TEXT,
+					last_seen INT NOT NULL DEFAULT 0
+				)
+			});
+		};
+		if ($@) {
+			$log->error("APC external schema migration v2: failed to create players table: $@");
+		} else {
+			main::DEBUGLOG && $log->is_debug && $log->debug('APC external schema migration v2 complete.');
+		}
 	}
 
 	eval {$dbh->do("PRAGMA user_version = $currentVersion")};
-	$log->error("play_history schema migration: failed to set user_version: $@") if $@;
+	$log->error("APC external schema migration: failed to set user_version: $@") if $@;
 }
 
 sub dbh {
@@ -264,6 +297,70 @@ sub addPlayEntry {
 	}
 
 	return 1;
+}
+
+sub updateLatestPlayRating {
+	my ($class, $params) = @_;
+	return unless $dbh && $initialized;
+	return unless $params->{urlmd5} && defined $params->{rating} && $params->{client_id};
+
+	eval {
+		my $sth = $dbh->prepare_cached(qq{
+			UPDATE play_history SET rating = ?
+			WHERE id = (
+				SELECT id FROM play_history
+				WHERE urlmd5 = ?
+				AND client_id = ?
+				ORDER BY played DESC
+				LIMIT 1
+			)
+		});
+		$sth->execute($params->{rating}, $params->{urlmd5}, $params->{client_id});
+		$sth->finish();
+	};
+	$log->error("updateLatestPlayRating failed: $@") if $@;
+}
+
+sub savePlayer {
+	my ($class, $params) = @_;
+	return unless $dbh && $initialized;
+	return unless $params->{mac};
+
+	eval {
+		my ($exists) = $dbh->selectrow_array('SELECT 1 FROM players WHERE mac = ?', undef, $params->{mac});
+		if ($exists) {
+			$dbh->do(
+				'UPDATE players SET name = ?, model = ?, last_seen = ? WHERE mac = ?',
+				undef,
+				$params->{name},
+				$params->{model},
+				$params->{last_seen} || int(time()),
+				$params->{mac},
+			);
+		} else {
+			$dbh->do(
+				'INSERT INTO players (mac, name, model, last_seen) VALUES (?, ?, ?, ?)',
+				undef,
+				$params->{mac},
+				$params->{name},
+				$params->{model},
+				$params->{last_seen} || int(time()),
+			);
+		}
+	};
+	$log->error("savePlayer failed: $@") if $@;
+}
+
+sub getPlayerName {
+	my ($class, $mac) = @_;
+	return undef unless $dbh && $initialized && $mac;
+
+	my $name;
+	eval {
+		($name) = $dbh->selectrow_array('SELECT name FROM players WHERE mac = ?', undef, $mac);
+	};
+	$log->error("getPlayerName failed: $@") if $@;
+	return $name;
 }
 
 sub getPlayHistory {

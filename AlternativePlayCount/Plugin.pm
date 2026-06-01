@@ -135,6 +135,10 @@ sub postinitPlugin {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Plugin "Ratings Light" is enabled') if $ratingslight_enabled;
 
 	initPlayHistoryDB() if $prefs->get('playhistory');
+	if ($prefs->get('playhistory') && $ratingslight_enabled) {
+		Slim::Control::Request::subscribe(\&_ratingsLightChangedCB, [['ratingslight'], ['changedrating']]);
+		main::DEBUGLOG && $log->is_debug && $log->debug('Subscribed to RatingsLight changedrating dispatch for play history rating updates.');
+	}
 	registerPlayHistoryAllJiveMenu($class) if $prefs->get('playhistory') && $prefs->get('playhistory_homemenu');
 }
 
@@ -235,8 +239,12 @@ sub initPrefs {
 			if ($prefs->get('playhistory')) {
 				main::DEBUGLOG && $log->is_debug && $log->debug('Pref for playhistory changed. Init DB.');
 				initPlayHistoryDB();
+				if ($ratingslight_enabled) {
+					Slim::Control::Request::subscribe(\&_ratingsLightChangedCB, [['ratingslight'], ['changedrating']]);
+				}
 			} else {
 				main::DEBUGLOG && $log->is_debug && $log->debug('Pref for playhistory changed. Close DB.');
+				Slim::Control::Request::unsubscribe(\&_ratingsLightChangedCB);
 				Plugins::AlternativePlayCount::Storage->shutdown();
 			}
 		}, 'playhistory');
@@ -784,7 +792,7 @@ sub _APCcommandCB {
 		}
 
 		my $currentTrackURL = $track->url;
-		my $currentTrackURLmd5 = $track->urlmd5;
+		my $currentTrackURLmd5 = $track->urlmd5 || md5_hex($currentTrackURL);
 		my $currentTrackMBID = getTrackMBID($track) || '';
 		my $previousTrackURL = $client->pluginData('currentTrackURL');
 		my $previousTrackURLmd5 = $client->pluginData('currentTrackURLmd5');
@@ -807,13 +815,13 @@ sub _APCcommandCB {
 			# stop old timer for this client
 			Slim::Utils::Timers::killTimers($client, \&markAsPlayed);
 
-			# check current track url against previous track url because jumping inside a track also triggers newsong event
-			if (!defined($previousTrackURL) || ($currentTrackURL ne $previousTrackURL)) {
+			# check current track urlmd5 against previous track urlmd5 because jumping inside a track also triggers newsong event
+			if (!defined($previousTrackURLmd5) || ($currentTrackURLmd5 ne $previousTrackURLmd5)) {
 				# if previous song wasn't marked as played, mark as skipped
 				main::DEBUGLOG && $log->is_debug && $log->debug('previousTrackURL = '.Data::Dump::dump($previousTrackURL));
 				main::DEBUGLOG && $log->is_debug && $log->debug('previousTrackURLmd5 = '.Data::Dump::dump($previousTrackURLmd5).' -- lastCustomSkippedTrackURLmd5 = '.Data::Dump::dump($client->pluginData('lastCustomSkippedTrackURLmd5')));
 
-				if (defined($previousTrackURL) && (!defined($client->pluginData('markedAsPlayed')) || $client->pluginData('markedAsPlayed') ne $previousTrackURL)) {
+				if (defined($previousTrackURLmd5) && (!defined($client->pluginData('markedAsPlayed')) || $client->pluginData('markedAsPlayed') ne $previousTrackURLmd5)) {
 					# DFS request to ignore skip count
 					if ($client->pluginData('skipWithoutCountTrackURLmd5') && $client->pluginData('skipWithoutCountTrackURLmd5') eq $previousTrackURLmd5) {
 						main::INFOLOG && $log->is_info && $log->info("skip requested by DarkFlat - don't mark this track as skipped in db: ".$previousTrackURL);
@@ -873,7 +881,7 @@ sub startPlayCountTimer {
 	my ($client, $track) = @_;
 
 	# check if track has been marked as played already
-	if ($client->pluginData('markedAsPlayed') && $client->pluginData('markedAsPlayed') eq $track->url) {
+	if ($client->pluginData('markedAsPlayed') && $client->pluginData('markedAsPlayed') eq $track->urlmd5) {
 		main::DEBUGLOG && $log->is_debug && $log->debug('Song has already been marked as played in this session.');
 		return;
 	}
@@ -908,7 +916,7 @@ sub markAsPlayed {
 	undoLastSkipCountIncrement($client, $track);
 
 	main::INFOLOG && $log->is_info && $log->info('Marking track with url "'.$trackURL.'" as played. urlmd5 = '.Data::Dump::dump($trackURLmd5));
-	$client->pluginData('markedAsPlayed' => $trackURL);
+	$client->pluginData('markedAsPlayed' => $trackURLmd5);
 	my $lastPlayed = int(time());
 
 	if ($prefs->get('playhistory')) {
@@ -919,7 +927,13 @@ sub markAsPlayed {
 			played => $lastPlayed,
 			rating => $track->rating,
 			remote => (Slim::Music::Info::isRemoteURL($trackURL) ? 1 : 0),
-			client_id => $client->id
+			client_id => $client->id,
+		});
+		Plugins::AlternativePlayCount::Storage->savePlayer({
+			mac => $client->id,
+			name => $client->name,
+			model => $client->model,
+			last_seen => $lastPlayed,
 		});
 	}
 
@@ -1036,6 +1050,28 @@ sub undoLastSkipCountIncrement {
 			_setDynamicPlayedSkippedValue($track->url, $trackURLmd5, $trackMBID, 3);
 			_setAutoRatingValue($client, $track, 3) if $prefs->get('autorating') && $ratingslight_enabled;
 		}
+	}
+}
+
+sub _ratingsLightChangedCB {
+	my $request = shift;
+	return unless $prefs->get('playhistory');
+
+	my $changedURL    = $request->getParam('_url');
+	my $changedUrlmd5 = $request->getParam('_urlmd5') || (defined $changedURL ? md5_hex($changedURL) : undef);
+	my $changedRating = $request->getParam('_ratingpercent');
+
+	return unless defined $changedUrlmd5 && defined $changedRating;
+
+	for my $client (Slim::Player::Client::clients()) {
+		next unless defined $client->pluginData('markedAsPlayed') && $client->pluginData('markedAsPlayed') eq $changedUrlmd5;
+
+		main::DEBUGLOG && $log->is_debug && $log->debug('RatingsLight rating changed for already-marked-as-played track on client '.$client->id.' -- updating play_history rating to '.$changedRating);
+		Plugins::AlternativePlayCount::Storage->updateLatestPlayRating({
+			urlmd5    => $changedUrlmd5,
+			client_id => $client->id,
+			rating    => $changedRating,
+		});
 	}
 }
 
@@ -1763,7 +1799,7 @@ sub checkCustomSkipFilterType {
 						$log->error("Error executing SQL: $@\n$DBI::errstr");
 					}
 					$sth->finish();
-					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->url))) {
+					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->urlmd5))) {
 						if (time() - $lastPlayed < $time) {
 							return 1;
 						}
@@ -1941,7 +1977,7 @@ sub checkCustomSkipFilterType {
 						$log->error("Error executing SQL: $@\n$DBI::errstr");
 					}
 					$sth->finish();
-					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->url))) {
+					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->urlmd5))) {
 						if (time() - $lastPlayed < $time) {
 							return 1;
 						}
@@ -2010,7 +2046,7 @@ sub checkCustomSkipFilterType {
 						$log->error("Error executing SQL: $@\n$DBI::errstr");
 					}
 					$sth->finish();
-					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->url))) {
+					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->urlmd5))) {
 						if (time() - $lastPlayed < $time) {
 							return 1;
 						}
@@ -2692,7 +2728,12 @@ sub _getPlayHistoryClients {
 		} elsif (exists $activeClients{$id}) {
 			push @unnamed, {id => $id, name => string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNNAMEDPLAYER') . ' (' . $id . ')', displayname => string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNNAMEDPLAYER') . ' (' . $id . ')'};
 		} else {
-			push @unknown, {id => $id, name => string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER') . ' (' . $id . ')', displayname => string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER') . ' (' . $id . ')'};
+			my $storedName = Plugins::AlternativePlayCount::Storage->getPlayerName($id);
+			if ($storedName && $storedName ne '') {
+				push @named, {id => $id, name => $storedName . ' (' . $id . ')', displayname => $storedName};
+			} else {
+				push @unknown, {id => $id, name => string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER') . ' (' . $id . ')', displayname => string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER') . ' (' . $id . ')'};
+			}
 		}
 	}
 
