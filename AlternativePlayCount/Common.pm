@@ -59,7 +59,7 @@ sub createBackup {
 		}
 	};
 	if ($@) {
-		$log->error("Database error during backup: $DBI::errstr");
+		$log->error("Database error during backup: $@");
 		$prefs->set('status_creatingbackup', 0);
 		return;
 	}

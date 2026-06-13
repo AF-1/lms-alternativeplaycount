@@ -293,7 +293,7 @@ sub trackInfoHandler {
 			$sth->finish();
 	};
 	if ($@) {
-		$log->error("Database error: $DBI::errstr");
+		$log->error("Database error: $@");
 	}
 	main::DEBUGLOG && $log->is_debug && $log->debug('track title = '.substr($track->title, 0, 15).' # apcPlayCount = '.Data::Dump::dump($apcPlayCount).' # persistentPlayCount = '.Data::Dump::dump($persistentPlayCount).' # apcSkipCount = '.Data::Dump::dump($apcSkipCount).' # apcLastPlayed = '.Data::Dump::dump($apcLastPlayed).' # persistentLastPlayed = '.Data::Dump::dump($persistentLastPlayed).' # apcLastSkipped = '.Data::Dump::dump($apcLastSkipped).' # apcdynPSval = '.Data::Dump::dump($dynPSval));
 
@@ -754,7 +754,7 @@ sub resetValues {
 		} elsif ($objectType eq 'decade') {
 			eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where ifnull(tracks.year, 0) >= ? and ifnull(tracks.year, 0) <= (? + 9))", undef, $objectID, $objectID) };
 		}
-		if ($@) { $log->error("Database error: $DBI::errstr"); }
+		if ($@) { $log->error("Database error: $@"); }
 	}
 	main::DEBUGLOG && $log->is_debug && $log->debug("Finished resetting $infoItem for $objectType with ID: ".$objectID);
 }
@@ -944,7 +944,7 @@ sub markAsPlayed {
 			my $APCplaycount = $dbh->selectcol_arrayref("select ifnull(alternativeplaycount.playCount, 0) from alternativeplaycount where alternativeplaycount.urlmd5 = ?", undef, $trackURLmd5);
 			$baselineRatingPlayCount = $APCplaycount->[0];
 		};
-		if ($@) { $log->error("Database error: $DBI::errstr"); }
+		if ($@) { $log->error("Database error: $@"); }
 		main::DEBUGLOG && $log->is_debug && $log->debug('previous APC play count for baseline rating = '.Data::Dump::dump($baselineRatingPlayCount));
 	}
 
@@ -962,7 +962,7 @@ sub markAsPlayed {
 	} else {
 		eval { $dbh->do("update alternativeplaycount set playCount = ifnull(playCount, 0) + 1, lastPlayed = ? where urlmd5 = ?", undef, $lastPlayed, $trackURLmd5) };
 	}
-	if ($@) { $log->error("Database error: $DBI::errstr"); }
+	if ($@) { $log->error("Database error: $@"); }
 
 	_setDynamicPlayedSkippedValue($trackURL, $trackURLmd5, $trackMBID, 1);
 	_setAutoRatingValue($client, $track, 1, $baselineRatingPlayCount) if $prefs->get('autorating') && $ratingslight_enabled;
@@ -991,7 +991,7 @@ sub markAsSkipped {
 	} else {
 		eval { $dbh->do("update alternativeplaycount set skipCount = ifnull(skipCount, 0) + 1, lastSkipped = ? where urlmd5 = ?", undef, $lastSkipped, $trackURLmd5) };
 	}
-	if ($@) { $log->error("Database error: $DBI::errstr"); }
+	if ($@) { $log->error("Database error: $@"); }
 
 	_setDynamicPlayedSkippedValue($trackURL, $trackURLmd5, $trackMBID, 2);
 
@@ -1017,7 +1017,7 @@ sub undoLastSkipCountIncrement {
 			$sth->execute($trackURLmd5);
 			($skipCount, $lastSkipped) = $sth->fetchrow_array();
 		};
-		if ($@) { $log->error("Database error: $DBI::errstr"); }
+		if ($@) { $log->error("Database error: $@"); }
 		$sth->finish();
 		$skipCount //= 0;
 		$lastSkipped //= 0;
@@ -1045,7 +1045,7 @@ sub undoLastSkipCountIncrement {
 			} else {
 				eval { $dbh->do("update alternativeplaycount $setClause where urlmd5 = ?", undef, $trackURLmd5) };
 			}
-			if ($@) { $log->error("Database error: $DBI::errstr"); }
+			if ($@) { $log->error("Database error: $@"); }
 
 			_setDynamicPlayedSkippedValue($track->url, $trackURLmd5, $trackMBID, 3);
 			_setAutoRatingValue($client, $track, 3) if $prefs->get('autorating') && $ratingslight_enabled;
@@ -1088,7 +1088,7 @@ sub _setDynamicPlayedSkippedValue {
 		$sth->bind_columns(undef, \$curDPSV);
 		$sth->fetch();
 	};
-	if ($@) { $log->error("Database error: $DBI::errstr"); }
+	if ($@) { $log->error("Database error: $@"); }
 	$sth->finish();
 	main::DEBUGLOG && $log->is_debug && $log->debug('Current dynamic played/skipped value (DPSV) = '.Data::Dump::dump($curDPSV));
 
@@ -1148,7 +1148,7 @@ sub _setDynamicPlayedSkippedValue {
 	} else {
 		eval { $dbh->do("update alternativeplaycount set dynPSval = ? where urlmd5 = ?", undef, $newDPSV, $trackURLmd5) };
 	}
-	if ($@) { $log->error("Database error: $DBI::errstr"); }
+	if ($@) { $log->error("Database error: $@"); }
 
 	main::INFOLOG && $log->is_info && $log->info($logActionPrefix.' dynamic played/skipped value (DPSV) from '.$curDPSV.' to '.$newDPSV.' for track with url: '.$trackURL);
 }
@@ -1284,6 +1284,12 @@ sub backupScheduler {
 	Slim::Utils::Timers::killTimers(undef, \&backupScheduler);
 
 	if ($prefs->get('scheduledbackups')) {
+		if (Slim::Music::Import->stillScanning) {
+			main::DEBUGLOG && $log->is_debug && $log->debug('Library scan in progress. Postponing scheduled backup check.');
+			Slim::Utils::Timers::setTimer(undef, time() + 60, \&backupScheduler);
+			return;
+		}
+
 		my $backuptime = $prefs->get('backuptime');
 		my $day = $prefs->get('backup_lastday');
 		if (!defined($day)) {
@@ -1561,7 +1567,7 @@ sub handleEndElement {
 					$log->error("Invalid urlmd5 in backup file, skipping track: $trackURLmd5");
 				} else {
 					eval { $dbh->do("update alternativeplaycount $setClause where urlmd5 = ?", undef, @bindVals, $trackURLmd5) };
-					if ($@) { $log->error("Database error: $DBI::errstr"); }
+					if ($@) { $log->error("Database error: $@"); }
 					else { $restoreCount++; }
 				}
 			} elsif ($trackMBID) {
@@ -1570,7 +1576,7 @@ sub handleEndElement {
 				} else {
 					main::DEBUGLOG && $log->is_debug && $log->debug("** Trying to restore values for track with musicbrainz ID = ".$trackMBID);
 					eval { $dbh->do("update alternativeplaycount $setClause where musicbrainz_id = ?", undef, @bindVals, $trackMBID) };
-					if ($@) { $log->error("Database error: $DBI::errstr"); }
+					if ($@) { $log->error("Database error: $@"); }
 					else { $restoreCount++; }
 				}
 			}
@@ -1796,7 +1802,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->error("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@");
 					}
 					$sth->finish();
 					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->urlmd5))) {
@@ -1825,7 +1831,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->error("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@");
 					}
 					$sth->finish();
 					if (defined($lastSkipped) && $lastSkipped > 0) {
@@ -1860,7 +1866,7 @@ sub checkCustomSkipFilterType {
 				}
 			};
 			if ($@) {
-				$log->error("Error executing SQL: $@\n$DBI::errstr");
+				$log->error("Error executing SQL: $@");
 			}
 			$sth->finish();
 
@@ -1945,7 +1951,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->error("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@");
 					}
 					$sth->finish();
 					if (defined($skipCount) && !defined($client->pluginData('markedAsPlayed'))) {
@@ -1974,7 +1980,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->error("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@");
 					}
 					$sth->finish();
 					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->urlmd5))) {
@@ -2001,7 +2007,7 @@ sub checkCustomSkipFilterType {
 					$composerName = $sthComposerName->fetchrow || '';
 				};
 				if ($@) {
-					$log->error("Error executing SQL: $@\n$DBI::errstr");
+					$log->error("Error executing SQL: $@");
 				}
 				$sthComposerName->finish();
 
@@ -2013,7 +2019,7 @@ sub checkCustomSkipFilterType {
 						$lastPlayed = $sth->fetchrow || 0;
 					};
 					if ($@) {
-						$log->error("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@");
 					}
 					$sth->finish();
 
@@ -2043,7 +2049,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->error("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@");
 					}
 					$sth->finish();
 					if (defined($lastPlayed) && (!defined($client->pluginData('markedAsPlayed')) || (defined($client->pluginData('markedAsPlayed')) && $client->pluginData('markedAsPlayed') ne $track->urlmd5))) {
@@ -2071,7 +2077,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->error("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@");
 					}
 					$sth->finish();
 					if (defined($dpsv) && $dpsv > $dpsv_selected) {
@@ -2097,7 +2103,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->error("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@");
 					}
 					$sth->finish();
 					if (defined($dpsv) && $dpsv < $dpsv_selected) {
@@ -2123,7 +2129,7 @@ sub checkCustomSkipFilterType {
 						$sth->fetch();
 					};
 					if ($@) {
-						$log->error("Error executing SQL: $@\n$DBI::errstr");
+						$log->error("Error executing SQL: $@");
 					}
 					$sth->finish();
 					if (defined($dpsv)) {
@@ -2155,6 +2161,12 @@ sub autoIncDpsvScheduler {
 	Slim::Utils::Timers::killTimers(undef, \&autoIncDpsvScheduler);
 
 	if ($prefs->get('autoincdpsv_interval')) {
+		if (Slim::Music::Import->stillScanning) {
+			main::DEBUGLOG && $log->is_debug && $log->debug('Library scan in progress. Postponing autoIncDPSV check.');
+			Slim::Utils::Timers::setTimer(undef, time() + 60, \&autoIncDpsvScheduler);
+			return;
+		}
+
 		my $interval = $prefs->get('autoincdpsv_interval') + 0;
 		my $lastInc = $prefs->get('lastautoincdpsv') + 0;
 		main::DEBUGLOG && $log->is_debug && $log->debug('interval = '.Data::Dump::dump($interval).' -- lastInc = '.Data::Dump::dump($lastInc));
@@ -2165,7 +2177,7 @@ sub autoIncDpsvScheduler {
 			my $incVal = $prefs->get('autoincdpsv_value');
 			my $dbh = Slim::Schema->dbh;
 			eval { $dbh->do("update alternativeplaycount set dynPSval = min(ifnull(dynPSval, 0) + ?, 0) where ifnull(dynPSval, 0) < 0", undef, $incVal) };
-			if ($@) { $log->error("Database error: $DBI::errstr"); }
+			if ($@) { $log->error("Database error: $@"); }
 
 			$prefs->set('lastautoincdpsv', time());
 		} else {
@@ -2307,7 +2319,7 @@ sub playHistoryWeb {
 			$sth->execute($entry->{urlmd5});
 			($title, $trackid, $album, $albumid, $artworkid) = $sth->fetchrow_array();
 		};
-		if ($@) { $log->error("SQL error: $@ DBI: $DBI::errstr"); }
+		if ($@) { $log->error("SQL error: $@"); }
 
 		my $inLibrary = defined $trackid;
 		next if !$inLibrary && !$showinvalid;
@@ -2318,7 +2330,7 @@ sub playHistoryWeb {
 				$sth_rating->execute($entry->{urlmd5});
 				($currentRating) = $sth_rating->fetchrow_array();
 			};
-			if ($@) { $log->error("SQL error: $@ DBI: $DBI::errstr"); }
+			if ($@) { $log->error("SQL error: $@"); }
 			$currentRating //= 0;
 
 			$entry->{tracktitle} = Slim::Utils::Unicode::utf8decode(trimStringLength($title, 70), 'utf8');
@@ -2336,7 +2348,7 @@ sub playHistoryWeb {
 					$sth_artist->execute($trackid, $role);
 					($n, $i) = $sth_artist->fetchrow_array();
 				};
-				if ($@) { $log->error("SQL error: $@ DBI: $DBI::errstr"); }
+				if ($@) { $log->error("SQL error: $@"); }
 				if ($n && $n ne '') { $artistName = $n; $artistID = $i // ''; last; }
 			}
 			$entry->{artistname} = Slim::Utils::Unicode::utf8decode(trimStringLength($artistName, 80), 'utf8');
@@ -2468,7 +2480,7 @@ sub _jivePlayHistoryItems {
 				$sth->execute($entry->{urlmd5});
 				($title, $trackID, $album, $artworkid, $compilation, $currentRating) = $sth->fetchrow_array();
 			};
-			if ($@) { $log->error("SQL error: $@ DBI: $DBI::errstr"); }
+			if ($@) { $log->error("SQL error: $@"); }
 
 			my $inLibrary = defined $trackID;
 			next if !$inLibrary && !$prefs->get('playhistory_showinvalidtracks');
@@ -2482,7 +2494,7 @@ sub _jivePlayHistoryItems {
 						$sth_artist->execute($trackID, $role);
 						($n) = $sth_artist->fetchrow_array();
 					};
-					if ($@) { $log->error("SQL error: $@ DBI: $DBI::errstr"); }
+					if ($@) { $log->error("SQL error: $@"); }
 					if ($n && $n ne '') { $artist = $n; last; }
 				}
 			}
@@ -2804,7 +2816,7 @@ sub getTitleFormat {
 			$sth->finish();
 		};
 		if ($@) {
-			$log->error("Database error: $DBI::errstr");
+			$log->error("Database error: $@");
 		}
 		main::DEBUGLOG && $log->is_debug && $log->debug("Title format: $titleFormatName --- Value: $returnVal");
 	}
@@ -2842,7 +2854,7 @@ sub initDatabase {
 		}
 	};
 	if ($@) {
-		$log->error("Database error: $DBI::errstr\n");
+		$log->error("Database error: $@\n");
 	}
 	$sth->finish();
 	main::DEBUGLOG && $log->is_debug && $log->debug($tableExists ? 'APC table found.' : 'No APC table found.');
@@ -2853,14 +2865,14 @@ sub initDatabase {
 		main::DEBUGLOG && $log->is_debug && $log->debug('Creating table.');
 		main::DEBUGLOG && $log->is_debug && $log->debug('Creating APC database table');
 		eval { $dbh->do("create table if not exists persistentdb.alternativeplaycount (url text NOT NULL COLLATE NOCASE, playCount int(10), lastPlayed int(10), skipCount int(10), lastSkipped int(10), dynPSval int(10), remote bool default '0', urlmd5 char(32) not null default '0', musicbrainz_id varchar(40));") };
-		if ($@) { $log->error("Database error: $DBI::errstr"); }
+		if ($@) { $log->error("Database error: $@"); }
 
 		# create indices
 		main::DEBUGLOG && $log->is_debug && $log->debug('Creating indices.');
 		eval { $dbh->do("create index if not exists persistentdb.cpurlIndex on alternativeplaycount (url);") };
-		if ($@) { $log->error("Database error: $DBI::errstr"); }
+		if ($@) { $log->error("Database error: $@"); }
 		eval { $dbh->do("create index if not exists persistentdb.cpurlmd5Index on alternativeplaycount (urlmd5);") };
-		if ($@) { $log->error("Database error: $DBI::errstr"); }
+		if ($@) { $log->error("Database error: $@"); }
 
 		populateAPCtable();
 	}
@@ -2883,7 +2895,7 @@ sub _migrateAPCschema {
 		$sth->finish();
 	};
 	if ($@) {
-		$log->error("APC schema migration: failed to read table_info: $DBI::errstr");
+		$log->error("APC schema migration: failed to read table_info: $@");
 		return;
 	}
 
@@ -2912,7 +2924,7 @@ sub _migrateAPCschema {
 			eval {
 				$dbh->do("ALTER TABLE persistentdb.alternativeplaycount ADD COLUMN $col $expectedColumns{$col}");
 			};
-			$log->error("APC schema migration: failed to add column '$col': $DBI::errstr") if $@;
+			$log->error("APC schema migration: failed to add column '$col': $@") if $@;
 		}
 	}
 
@@ -2920,7 +2932,7 @@ sub _migrateAPCschema {
 	eval {
 		$dbh->do("UPDATE alternativeplaycount SET remote = 1 WHERE remote = 0 AND urlmd5 IN (SELECT urlmd5 FROM tracks WHERE remote = 1)");
 	};
-	$log->error("APC schema migration: failed to backfill remote: $DBI::errstr") if $@;
+	$log->error("APC schema migration: failed to backfill remote: $@") if $@;
 
 	main::DEBUGLOG && $log->is_debug && $log->debug("APC schema migration v$migrationVersion complete.");
 }
@@ -2942,7 +2954,7 @@ sub populateAPCtable {
 			}
 		};
 		if ($@) {
-			$log->error("Database error: $DBI::errstr\n");
+			$log->error("Database error: $@\n");
 		}
 		$sth->finish();
 	} else {
@@ -2953,7 +2965,7 @@ sub populateAPCtable {
 			$sth->execute();
 		};
 		if ($@) {
-			$log->error("Database error: $DBI::errstr\n");
+			$log->error("Database error: $@\n");
 		}
 		$sth->finish();
 	}
@@ -2971,9 +2983,9 @@ sub populateDPSV {
 	# revisit both methods when LMS uses SQLite version >= 3.33.0 that supports update FROM
 	if ($popMethod == 2) {
 		eval { $dbh->do("update alternativeplaycount set dynPSval = case when (ifnull(playCount, 0) > 0 and ifnull(skipCount, 0) == 0) then playCount when (ifnull(playCount, 0) == 0 and skipCount == 1) then cast(95 as float)/100 when (ifnull(playCount, 0) == 0 and ifnull(skipCount, 0) > 1) then cast(1 as float)/skipCount when (ifnull(playCount, 0) > 0 and ifnull(skipCount, 0) > 0) then cast(playCount as float)/skipCount end where ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0;") };
-		if ($@) { $log->error("Database error: $DBI::errstr"); }
+		if ($@) { $log->error("Database error: $@"); }
 		eval { $dbh->do("update alternativeplaycount set dynPSval = case when (dynPSval == 1 and ifnull(skipCount, 0) == 0) then 10 when dynPSval == 1 then 0 when (dynPSval > 1 and dynPSval <= 15) then 10 when (dynPSval > 15 and dynPSval <= 25) then 20 when (dynPSval > 25 and dynPSval <= 35) then 30 when (dynPSval > 35 and dynPSval <= 45) then 40 when (dynPSval > 45 and dynPSval <= 55) then 50 when (dynPSval > 55 and dynPSval <= 65) then 60 when (dynPSval > 65 and dynPSval <= 75) then 70 when (dynPSval > 75 and dynPSval <= 85) then 80 when (dynPSval > 85 and dynPSval <= 95) then 90 when dynPSval > 95 then 100 when (dynPSval < 1 and dynPSval > cast(85 as float)/100) then -10 when (dynPSval <= cast(85 as float)/100 and dynPSval > cast(75 as float)/100) then -20 when (dynPSval <= cast(75 as float)/100 and dynPSval > cast(65 as float)/100) then -30 when (dynPSval <= cast(65 as float)/100 and dynPSval > cast(55 as float)/100) then -40 when (dynPSval <= cast(55 as float)/100 and dynPSval > cast(45 as float)/100) then -50 when (dynPSval <= cast(45 as float)/100 and dynPSval > cast(35 as float)/100) then -60 when (dynPSval <= cast(35 as float)/100 and dynPSval > cast(25 as float)/100) then -70 when (dynPSval <= cast(25 as float)/100 and dynPSval > cast(15 as float)/100) then -80 when (dynPSval <= cast(15 as float)/100 and dynPSval > cast(5 as float)/100) then -90 when dynPSval <= cast(5 as float)/100 then -100 end;") };
-		if ($@) { $log->error("Database error: $DBI::errstr"); }
+		if ($@) { $log->error("Database error: $@"); }
 		main::DEBUGLOG && $log->is_debug && $log->debug('Finished populating DPSV column with values calculated using APC play count/skip count ratio');
 
 	} elsif ($popMethod == 3) {
@@ -3002,14 +3014,14 @@ sub populateDPSV {
 				$ratedTracks{$trackURLmd5} = $dpsv;
 			}
 		};
-		if ($@) { $log->error("Database error: $DBI::errstr"); }
+		if ($@) { $log->error("Database error: $@"); }
 		$sth->finish;
 
 		# set dynPSval db values
 		my $sthUpdate = $dbh->prepare_cached("update alternativeplaycount set dynPSval = ? where alternativeplaycount.urlmd5 = ?");
 		foreach my $trackurlmd5 (keys %ratedTracks) {
 			eval { $sthUpdate->execute($ratedTracks{$trackurlmd5}, $trackurlmd5) };
-			$log->error("Database error: $DBI::errstr") if $@;
+			$log->error("Database error: $@") if $@;
 		}
 		$sthUpdate->finish();
 		main::DEBUGLOG && $log->is_debug && $log->debug('Finished populating DPSV column with values derived from track ratings');
@@ -3033,7 +3045,7 @@ sub resetColValues {
 		$sqlstatement .= "set dynPSval = null where ifnull(dynPSval, 0) != 0";
 	}
 	eval { $dbh->do($sqlstatement) };
-	if ($@) { $log->error("Database error: $DBI::errstr"); }
+	if ($@) { $log->error("Database error: $@"); }
 	main::DEBUGLOG && $log->is_debug && $log->debug("Finished resetting $type column");
 	populateDPSV() if $type eq 'dpsv';
 }
@@ -3053,7 +3065,7 @@ sub refreshDatabase {
 	my $newTracksSql = "INSERT INTO alternativeplaycount (url, urlmd5, remote, musicbrainz_id) select tracks.url, tracks.urlmd5, tracks.remote, tracks.musicbrainz_id from tracks left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio = 1 and tracks.content_type != \"cpl\" and tracks.content_type != \"src\" and tracks.content_type != \"ssp\" and tracks.content_type != \"dir\" and tracks.content_type is not null and alternativeplaycount.urlmd5 is null;";
 	eval {$dbh->do($newTracksSql)};
 	if ($@) {
-		$log->error("Database error: $DBI::errstr\n");
+		$log->error("Database error: $@\n");
 	}
 
 	# refresh Musicbrainz IDs in APC table
@@ -3061,11 +3073,11 @@ sub refreshDatabase {
 	my $refreshMBIDsSql = "update alternativeplaycount set musicbrainz_id = (select tracks.musicbrainz_id from tracks where tracks.urlmd5 = alternativeplaycount.urlmd5 and tracks.audio = 1 and tracks.content_type != \"ssp\");";
 	eval {$dbh->do($refreshMBIDsSql)};
 	if ($@) {
-		$log->error("Database error: $DBI::errstr\n");
+		$log->error("Database error: $@\n");
 	}
 
 	eval { $dbh->do("analyze alternativeplaycount;") };
-	if ($@) { $log->error("Database error: $DBI::errstr"); }
+	if ($@) { $log->error("Database error: $@"); }
 
 	main::DEBUGLOG && $log->is_debug && $log->debug('DB refresh complete.');
 	setTimers();
@@ -3083,7 +3095,7 @@ sub removeDeadTracks {
 	my $sqlstatement = "delete from alternativeplaycount where urlmd5 not in (select urlmd5 from tracks where tracks.urlmd5 = alternativeplaycount.urlmd5)";
 	eval {$dbh->do($sqlstatement)};
 	if ($@) {
-		$log->error("Database error: $DBI::errstr\n");
+		$log->error("Database error: $@\n");
 	}
 
 	main::DEBUGLOG && $log->is_debug && $log->debug('Finished removing dead tracks from APC database table.');
@@ -3096,7 +3108,7 @@ sub resetLMSvalues {
 	my $sqlstatement = "update tracks_persistent set playCount = (select alternativeplaycount.playCount from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5), lastPlayed = (select round(alternativeplaycount.lastPlayed,0) from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5);";
 	eval {$dbh->do($sqlstatement)};
 	if ($@) {
-		$log->error("Database error: $DBI::errstr\n");
+		$log->error("Database error: $@\n");
 	}
 
 	main::DEBUGLOG && $log->is_debug && $log->debug('Finished resetting LMS to APC values.');
@@ -3112,7 +3124,7 @@ sub resetAPCDatabase {
 
 	my $dbh = Slim::Schema->dbh;
 	eval { $dbh->do("delete from alternativeplaycount") };
-	if ($@) { $log->error("Database error: $DBI::errstr"); }
+	if ($@) { $log->error("Database error: $@"); }
 	main::DEBUGLOG && $log->is_debug && $log->debug('APC table cleared');
 
 	populateAPCtable($isRestore);
