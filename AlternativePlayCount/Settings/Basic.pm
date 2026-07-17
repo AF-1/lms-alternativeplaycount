@@ -20,11 +20,8 @@ use Slim::Utils::Strings;
 my $prefs = preferences('plugin.alternativeplaycount');
 my $log = logger('plugin.alternativeplaycount');
 
-my $plugin;
-
 sub new {
-	my $class = shift;
-	$plugin = shift;
+	my ($class, $plugin) = @_;
 	$class->SUPER::new($plugin,1);
 }
 

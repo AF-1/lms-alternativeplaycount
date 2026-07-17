@@ -23,11 +23,8 @@ use File::Spec::Functions qw(catfile);
 my $prefs = preferences('plugin.alternativeplaycount');
 my $log = logger('plugin.alternativeplaycount');
 
-my $plugin;
-
 sub new {
-	my $class = shift;
-	$plugin = shift;
+	my ($class, $plugin) = @_;
 	$class->SUPER::new($plugin);
 }
 
@@ -66,13 +63,18 @@ sub handler {
 		$result = $class->SUPER::handler($client, $paramRef);
 		$callHandler = 0;
 	}
+
 	if ($paramRef->{'backup'}) {
 		if ($callHandler) {
 			$paramRef->{'saveSettings'} = 1;
 			$result = $class->SUPER::handler($client, $paramRef);
 			$callHandler = 0;
 		}
-		createBackup();
+		if (Slim::Music::Import->stillScanning) {
+			$log->warn('Cannot start a backup while an LMS scan is in progress');
+		} else {
+			createBackup();
+		}
 	} elsif ($paramRef->{'restore'}) {
 		my $selectedfile = $paramRef->{'pref_restorefile'};
 		if ($callHandler) {
@@ -87,7 +89,11 @@ sub handler {
 			$paramRef->{'restoremissingfile'} = 2;
 		} else {
 			$prefs->set('restorefile', $selectedfile);
-			Plugins::AlternativePlayCount::Plugin::restoreFromBackup();
+			if (Slim::Music::Import->stillScanning) {
+				$log->warn('Cannot start a restore while an LMS scan is in progress');
+			} else {
+				Plugins::AlternativePlayCount::Plugin::restoreFromBackup();
+			}
 		}
 	}
 
@@ -99,6 +105,9 @@ sub beforeRender {
 	my ($class, $paramRef) = @_;
 	$paramRef->{'restorefilefolder'} = $prefs->get('apcfolderpath');
 	$paramRef->{lastsuccessfulbackup} = Slim::Utils::DateTime::longDateF($prefs->get('lastbackup')).", ".Slim::Utils::DateTime::timeF($prefs->get('lastbackup')) if $prefs->get('lastbackup');
+	$paramRef->{'squeezebox_server_jsondatareq'} = '/jsonrpc.js';
+	$paramRef->{'activebackuprestore'} = 1 if $prefs->get('status_backuprestore');
+	$paramRef->{'activelmsscan'} = 1 if (!Slim::Schema::hasLibrary() || Slim::Music::Import->stillScanning);
 }
 
 sub trim {

@@ -20,6 +20,7 @@ use File::Basename;
 use File::Copy qw(move);
 use File::Spec::Functions qw(:ALL);
 use File::stat;
+use FileHandle;
 use POSIX qw(strftime);
 use Time::HiRes qw(time);
 use Path::Class;
@@ -34,81 +35,114 @@ my $log = logger('plugin.alternativeplaycount');
 my $prefs = preferences('plugin.alternativeplaycount');
 my $serverPrefs = preferences('server');
 
+my ($backupQueue, $backupOutput, $backupStarted, $backupTotalCount);
+
 sub createBackup {
-	my $status_creatingbackup = $prefs->get('status_creatingbackup');
-	if ($status_creatingbackup == 1) {
-		$log->warn('A backup is already in progress, please wait for the previous backup to finish');
+	my $importerCall = shift;
+
+	if ($prefs->get('status_backuprestore')) {
+		$log->warn('A backup is already in progress, please wait for it to finish');
 		return;
 	}
-	$prefs->set('status_creatingbackup', 1);
+	$prefs->set('status_backuprestore', 1);
+	$prefs->set('backuprestoreprogresspercentage', 0);
+	$prefs->set('backuprestoreresult', 0);
 
 	my $backupDir = $prefs->get('apcfolderpath');
 	my $dbh = Slim::Schema->dbh;
 	my ($trackURL, $trackURLmd5, $apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped, $apcDynPSval, $apcRemote, $apcTrackMBID);
-	my $started = time();
+	$backupStarted = time();
 	my $backuptimestamp = strftime "%Y-%m-%d %H:%M:%S", localtime time;
 	my $filename_timestamp = strftime "%Y%m%d-%H%M", localtime time;
 
-	my $sth = $dbh->prepare("select alternativeplaycount.url, alternativeplaycount.urlmd5, ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(alternativeplaycount.dynPSval, 0), alternativeplaycount.remote, alternativeplaycount.musicbrainz_id from alternativeplaycount where (ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0)");
-	my @APCTracks = ();
+	$backupQueue = [];
 	eval {
+		my $sth = $dbh->prepare("select alternativeplaycount.url, alternativeplaycount.urlmd5, alternativeplaycount.playCount, alternativeplaycount.lastPlayed, alternativeplaycount.skipCount, alternativeplaycount.lastSkipped, alternativeplaycount.dynPSval, alternativeplaycount.remote, alternativeplaycount.musicbrainz_id from alternativeplaycount where (ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0)");
 		$sth->execute();
 		$sth->bind_columns(undef, \$trackURL, \$trackURLmd5, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped, \$apcDynPSval, \$apcRemote, \$apcTrackMBID);
 		while ($sth->fetch()) {
-			push (@APCTracks, {'url' => $trackURL, 'urlmd5' => $trackURLmd5, 'playcount' => $apcPlayCount, 'lastplayed' => $apcLastPlayed, 'skipcount' => $apcSkipCount, 'lastskipped' => $apcLastSkipped, 'dynpsval' => $apcDynPSval, 'remote' => $apcRemote, 'musicbrainzid' => $apcTrackMBID});
+			push (@{$backupQueue}, {'url' => $trackURL, 'urlmd5' => $trackURLmd5, 'playcount' => $apcPlayCount, 'lastplayed' => $apcLastPlayed, 'skipcount' => $apcSkipCount, 'lastskipped' => $apcLastSkipped, 'dynpsval' => $apcDynPSval, 'remote' => $apcRemote, 'musicbrainzid' => $apcTrackMBID});
 		}
+		$sth->finish();
 	};
 	if ($@) {
 		$log->error("Database error during backup: $@");
-		$prefs->set('status_creatingbackup', 0);
+		$prefs->set('backuprestoreresult', 2);
+		$prefs->set('status_backuprestore', 0);
 		return;
 	}
-	$sth->finish();
 
-	if (@APCTracks) {
+	$backupTotalCount = scalar(@{$backupQueue});
+
+	if ($backupTotalCount) {
 		my $filename = catfile($backupDir, 'APC_Backup_'.$filename_timestamp.'.xml');
-		my $output = FileHandle->new($filename, '>:utf8') or do {
+		$backupOutput = FileHandle->new($filename, '>:utf8') or do {
 			$log->error('Could not open '.$filename.' for writing. Does the AlternativePlayCount folder exist? Does LMS have read/write permissions (755) for the (parent) folder?');
-			$prefs->set('status_creatingbackup', 0);
+			$prefs->set('backuprestoreresult', 2);
+			$prefs->set('status_backuprestore', 0);
 			return;
 		};
-		my $trackcount = scalar(@APCTracks);
-		main::DEBUGLOG && $log->is_debug && $log->debug('Found '.$trackcount.($trackcount == 1 ? ' track' : ' tracks').' with values in the APC database');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Found '.$backupTotalCount.' track(s) with values in the APC database');
 
-		print $output "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
-		print $output "<!-- Backup of APC database values for ".$trackcount.($trackcount == 1 ? " track" : " tracks")." -->\n";
-		print $output "<!-- ".$backuptimestamp." -->\n";
-		print $output "<AlternativePlayCount>\n";
-		for my $APCTrack (@APCTracks) {
-			if (!defined($APCTrack->{'remote'})) {
-				$trackcount--;
-				next;
-			}
-			my $BACKUPtrackURL = $APCTrack->{'url'};
-			my $BACKUPtrackURLmd5 = $APCTrack->{'urlmd5'};
-			my $BACKUPplayCount = $APCTrack->{'playcount'} || 0;
-			my $BACKUPlastPlayed = toIntTimestamp($APCTrack->{'lastplayed'}) // 0;
-			my $BACKUPskipCount = $APCTrack->{'skipcount'} || 0;
-			my $BACKUPlastSkipped = toIntTimestamp($APCTrack->{'lastskipped'}) // 0;
-			my $BACKUPdynPSval = $APCTrack->{'dynpsval'} || 0;
-			my $BACKUPremote = $APCTrack->{'remote'};
-			my $BACKUPrelFilePath = ($BACKUPremote == 0 ? getRelFilePath($BACKUPtrackURL) : '');
-			my $BACKUPtrackMBID = $APCTrack->{'musicbrainzid'} || '';
+		print $backupOutput "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
+		print $backupOutput "<!-- Backup of APC database values for ".$backupTotalCount." track(s) -->\n";
+		print $backupOutput "<!-- ".$backuptimestamp." -->\n";
+		print $backupOutput "<AlternativePlayCount>\n";
+		print $backupOutput "\t<trackcount>".$backupTotalCount."</trackcount>\n";
 
-			$BACKUPtrackURL = escape($BACKUPtrackURL);
-			$BACKUPrelFilePath = $BACKUPrelFilePath ? escape($BACKUPrelFilePath) : '';
-			print $output "\t<track>\n\t\t<url>".$BACKUPtrackURL."</url>\n\t\t<urlmd5>".$BACKUPtrackURLmd5."</urlmd5>\n\t\t<relurl>".$BACKUPrelFilePath."</relurl>\n\t\t<playcount>".$BACKUPplayCount."</playcount>\n\t\t<lastplayed>".$BACKUPlastPlayed."</lastplayed>\n\t\t<skipcount>".$BACKUPskipCount."</skipcount>\n\t\t<lastskipped>".$BACKUPlastSkipped."</lastskipped>\n\t\t<dynpsval>".$BACKUPdynPSval."</dynpsval>\n\t\t<remote>".$BACKUPremote."</remote>\n\t\t<musicbrainzid>".$BACKUPtrackMBID."</musicbrainzid>\n\t</track>\n";
+		if ($importerCall) {
+			while (writeBackupChunk()) {}
+		} else {
+			Slim::Utils::Scheduler::add_task(\&writeBackupChunk);
 		}
-		print $output "</AlternativePlayCount>\n";
-		close $output;
-		main::DEBUGLOG && $log->is_debug && $log->debug('Backup completed after '.(time() - $started).' seconds.');
-
-		$prefs->set('lastbackup', int(time()));
-		cleanupBackups();
 	} else {
 		main::INFOLOG && $log->is_info && $log->info('No tracks with play/skip counts in APC database');
+		$prefs->set('backuprestoreresult', 1);
+		$prefs->set('status_backuprestore', 0);
 	}
-	$prefs->set('status_creatingbackup', 0);
+}
+
+sub writeBackupChunk {
+	if (my $APCTrack = shift(@{$backupQueue})) {
+		if (!defined($APCTrack->{'remote'})) {
+			_advanceBackupProgress();
+			return 1;
+		}
+
+		my $BACKUPtrackURL = $APCTrack->{'url'};
+		my $BACKUPtrackURLmd5 = $APCTrack->{'urlmd5'};
+		my $BACKUPplayCount = $APCTrack->{'playcount'} // '';
+		my $BACKUPlastPlayed = toIntTimestamp($APCTrack->{'lastplayed'}) // '';
+		my $BACKUPskipCount = $APCTrack->{'skipcount'} // '';
+		my $BACKUPlastSkipped = toIntTimestamp($APCTrack->{'lastskipped'}) // '';
+		my $BACKUPdynPSval = $APCTrack->{'dynpsval'} // '';
+		my $BACKUPremote = $APCTrack->{'remote'};
+		my $BACKUPrelFilePath = ($BACKUPremote == 0 ? getRelFilePath($BACKUPtrackURL) : '');
+		my $BACKUPtrackMBID = $APCTrack->{'musicbrainzid'} || '';
+
+		$BACKUPtrackURL = escape($BACKUPtrackURL);
+		$BACKUPrelFilePath = $BACKUPrelFilePath ? escape($BACKUPrelFilePath) : '';
+		print $backupOutput "\t<track>\n\t\t<url>".$BACKUPtrackURL."</url>\n\t\t<urlmd5>".$BACKUPtrackURLmd5."</urlmd5>\n\t\t<relurl>".$BACKUPrelFilePath."</relurl>\n\t\t<playcount>".$BACKUPplayCount."</playcount>\n\t\t<lastplayed>".$BACKUPlastPlayed."</lastplayed>\n\t\t<skipcount>".$BACKUPskipCount."</skipcount>\n\t\t<lastskipped>".$BACKUPlastSkipped."</lastskipped>\n\t\t<dynpsval>".$BACKUPdynPSval."</dynpsval>\n\t\t<remote>".$BACKUPremote."</remote>\n\t\t<musicbrainzid>".$BACKUPtrackMBID."</musicbrainzid>\n\t</track>\n";
+		_advanceBackupProgress();
+		return 1;
+	}
+
+	print $backupOutput "</AlternativePlayCount>\n";
+	close $backupOutput;
+	$backupOutput = undef;
+	main::INFOLOG && $log->is_info && $log->info('Backup completed after '.(time() - $backupStarted).' seconds.');
+
+	$prefs->set('lastbackup', int(time()));
+	cleanupBackups();
+	$prefs->set('backuprestoreprogresspercentage', 100);
+	$prefs->set('backuprestoreresult', 1);
+	$prefs->set('status_backuprestore', 0);
+	return 0;
+}
+
+sub _advanceBackupProgress {
+	return unless $backupTotalCount;
+	$prefs->set('backuprestoreprogresspercentage', sprintf("%.0f", (($backupTotalCount - scalar(@{$backupQueue})) / $backupTotalCount) * 100));
 }
 
 sub cleanupBackups {
@@ -120,7 +154,7 @@ sub cleanupBackups {
 		my $backupsdaystokeep = $prefs->get('backupsdaystokeep');
 		my $maxkeeptime = $backupsdaystokeep * 24 * 60 * 60; # in seconds
 		opendir(my $DH, $backupDir) or do { $log->error("Error opening $backupDir: $!"); return; };
-		my @files = grep(/^RL_Backup_.*$/, readdir($DH));
+		my @files = grep(/^APC_Backup_.*$/, readdir($DH));
 		closedir($DH);
 		main::DEBUGLOG && $log->is_debug && $log->debug('number of backup files found: '.scalar(@files));
 		my $etime = int(time());

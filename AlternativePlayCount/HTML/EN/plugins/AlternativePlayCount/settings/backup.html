@@ -1,12 +1,14 @@
-<script TYPE="text/javascript">
-	function inprogress(elementid) {
-		document.getElementById(elementid).className = "inprogress";
-	}
-</script>
-
 <style>
-@-webkit-keyframes Pulse{from{color:#630030;-webkit-text-shadow:0 0 2px transparent}50%{color:#e33100;-webkit-text-shadow:0 0 5px #e33100}to{color:#630030;-webkit-text-shadow:0 0 2px transparent}}@keyframes Pulse{from{color:#630030;text-shadow:0 0 2px transparent}50%{color:#e33100;text-shadow:0 0 5px #e33100}to{color:#630030;text-shadow:0 0 2px transparent}}.inprogress{padding-left:15px;-webkit-animation-name:Pulse;animation-name:Pulse;-webkit-animation-duration:2s;animation-duration:2s;-webkit-animation-iteration-count:infinite;animation-iteration-count:infinite}
-.status{visibility:hidden;}
+.apcstatuswrapper{padding-left:294px;color:red;font-size:calc(1em + 2px);}.hide{visibility:hidden;}
+.apcbackuprestorestatuswrapper{padding-left:294px;}
+#apcbackuprestoreprogresswrapper{display:none;width:200px;margin:8px 0 10px 294px;background-color:gray;}
+#apcbackuprestoreprogressbar{width:0%;height:4px;background-color:#04AA6D;}
+:root{--apc-status-main-color:red;--apc-status-text-shadow-color:rgba(0,0,0,0)}
+.apcstatus{color:var(--apc-status-main-color) !important;font-size:calc(1em + 2px);}
+.apcsuccess{color:green !important;font-size:calc(1em + 2px);}
+.apcerror{color:red !important;font-size:calc(1em + 2px);}
+.apcscanstatus:after{font-size:180%;content:' .';animation:apcdots 1.8s steps(5,end)infinite}
+@keyframes apcdots{0%,20%{color:var(--apc-status-text-shadow-color);text-shadow:.25em 0 0 var(--apc-status-text-shadow-color),.5em 0 0 var(--apc-status-text-shadow-color)}40%{color:var(--apc-status-main-color);text-shadow:.25em 0 0 var(--apc-status-text-shadow-color),.5em 0 0 var(--apc-status-text-shadow-color)}60%{text-shadow:.25em 0 0 var(--apc-status-main-color),.5em 0 0 var(--apc-status-text-shadow-color)}80%,100%{text-shadow:.25em 0 0 var(--apc-status-main-color),.5em 0 0 var(--apc-status-main-color)}}
 .error{color:red;}
 .recommended{padding-left:15px;color:red;}
 </style>
@@ -16,14 +18,20 @@
 
 [% PROCESS plugins/AlternativePlayCount/settings/subpage_chooser.html %]
 
+<div id="apclmsscanstatus" class="apcstatuswrapper apclmsscan[% IF !activelmsscan %] hide[% END %]">[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_LMSSCANINPROGRESS" | string %]</div>
+<div class="apcbackuprestorestatuswrapper">
+	<span id="apcbackuprestorestatus"></span>
+</div>
+<div id="apcbackuprestoreprogresswrapper"><div id="apcbackuprestoreprogressbar"></div></div>
+<br>
+
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP" desc="" %]
 [% IF lastsuccessfulbackup %]
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_LASTBACKUP" desc="" %][% lastsuccessfulbackup %][% END %]<br>
 [% END %]
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_DESC" %]
-	<input name="backup" type="submit" class="stdclick" onclick="inprogress('backupstatus');" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_BUTTON" | string %]">
-	<span class='status' id='backupstatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_INPROGRESS" | string %]</span>
+	<input name="backup" type="submit" class="stdclick" id="apcbackupbutton" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_BUTTON" | string %]"[% IF activebackuprestore || activelmsscan %] disabled[% END %]>
 [% END %]
 <br>
 
@@ -68,9 +76,8 @@
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE" desc="" %]
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE_DESC" %]
 	<input type="text" class="stdedit selectFile_xml" name="pref_restorefile" id="restorefile" value="[% restorefilefolder %]" size="40"><br><br>
-	<input name="restore" type="submit" class="stdclick" onclick="inprogress('restorestatus');" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_BUTTON" | string %]">
-	<span class='status' id='restorestatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGESS" | string %]</span>
-	[% IF restoremissingfile %]<span class='[% IF restoremissingfile %]error[% ELSE %]status[% END %]'>[% IF restoremissingfile == 1 %][% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE" | string %][% ELSE %][% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE" | string %][% END %]</span>[% END %]
+	<input name="restore" type="submit" class="stdclick" id="apcrestorebutton" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_BUTTON" | string %]"[% IF activebackuprestore || activelmsscan %] disabled[% END %]>
+	[% IF restoremissingfile %]<span class='error'>[% IF restoremissingfile == 1 %][% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE" | string %][% ELSE %][% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE" | string %][% END %]</span>[% END %]
 [% END %]
 <br>
 
@@ -83,3 +90,107 @@
 [% END %]
 
 [% PROCESS settings/footer.html %]
+
+<script type="text/javascript">
+	var apcStatusInterval;
+	var apcLmsScanInterval;
+
+	function apcSetButtonsDisabled(disabled) {
+		document.getElementById('apcbackupbutton').disabled = disabled;
+		var restoreButton = document.getElementById('apcrestorebutton');
+		if (restoreButton) {
+			restoreButton.disabled = disabled;
+		}
+	}
+
+	function apcShowStatus(text, cssClasses) {
+		var el = document.getElementById('apcbackuprestorestatus');
+		el.innerHTML = text;
+		el.classList.remove('apcstatus', 'apcscanstatus', 'apcsuccess', 'apcerror');
+		if (cssClasses) {
+			cssClasses.split(' ').forEach(function(c) { el.classList.add(c); });
+		}
+	}
+
+	function apcGetPrefVal(prefName, val) {
+		const serverjsonurl = "[% squeezebox_server_jsondatareq %]";
+		let prefValue = (val !== undefined) ? val : '?';
+		let vsBody;
+
+		if (prefName == 'rescanprogress') {
+			vsBody = JSON.stringify({
+				id: 1,
+				method: 'slim.request',
+				params: ['', ['rescanprogress', 'rescan']]
+			});
+		} else {
+			vsBody = JSON.stringify({
+				id: 1,
+				method: 'slim.request',
+				params: ['', ['pref', 'plugin.alternativeplaycount:' + prefName, prefValue]]
+			});
+		}
+
+		async function apcGetPrefValFromServer() {
+			let response = await fetch(serverjsonurl, {
+				method: "post",
+				headers: { "Content-Type": "application/json", "Origin": window.location.hostname },
+				body: vsBody
+			});
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			return await response.json();
+		}
+
+		apcGetPrefValFromServer().then((jsonData) => {
+			let value = Object.values(jsonData.result)[0];
+			if (prefName == 'rescanprogress') {
+				if (jsonData.result["rescan"] == 1) {
+					apcSetButtonsDisabled(true);
+					document.getElementById('apclmsscanstatus').classList.remove('hide');
+				} else {
+					document.getElementById('apclmsscanstatus').classList.add('hide');
+					clearInterval(apcLmsScanInterval);
+					apcGetPrefVal('status_backuprestore');
+					apcStatusInterval = setInterval(function() { apcGetPrefVal('status_backuprestore'); }, 3000);
+				}
+			} else if (prefName == 'status_backuprestore') {
+				if (value == 0) {
+					apcSetButtonsDisabled(false);
+					document.getElementById('apcbackuprestoreprogresswrapper').style.display = 'none';
+					clearInterval(apcStatusInterval);
+					apcGetPrefVal('backuprestoreresult');
+				} else {
+					apcSetButtonsDisabled(true);
+					apcShowStatus(value == 1 ? '[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_INPROGRESS" | string %]' : '[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGRESS" | string %]', 'apcstatus apcscanstatus');
+					document.getElementById('apcbackuprestoreprogresswrapper').style.display = 'block';
+					apcGetPrefVal('backuprestoreprogresspercentage');
+				}
+			} else if (prefName == 'backuprestoreprogresspercentage') {
+				document.getElementById('apcbackuprestoreprogressbar').style.width = value + '%';
+			} else if (prefName == 'backuprestoreresult') {
+				if (value == 1) {
+					apcShowStatus('[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SUCCESS" | string %]', 'apcsuccess');
+					setTimeout(apcGetPrefVal, 3000, 'backuprestoreresult', '0');
+				} else if (value == 2) {
+					apcShowStatus('[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_ERROR" | string %]', 'apcerror');
+					setTimeout(apcGetPrefVal, 3000, 'backuprestoreresult', '0');
+				} else if (value == 3) {
+					apcShowStatus('[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SUCCESS" | string %]', 'apcsuccess');
+					setTimeout(apcGetPrefVal, 3000, 'backuprestoreresult', '0');
+				} else if (value == 4) {
+					apcShowStatus('[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_ERROR" | string %]', 'apcerror');
+					setTimeout(apcGetPrefVal, 3000, 'backuprestoreresult', '0');
+				}
+			}
+		}).catch(function(error) {
+			console.log(error);
+		});
+	}
+
+	window.addEventListener("load", () => {
+		apcGetPrefVal('rescanprogress');
+		apcLmsScanInterval = setInterval(function() { apcGetPrefVal('rescanprogress'); }, 10000);
+	});
+</script>

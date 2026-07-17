@@ -160,8 +160,28 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_BUTTON
 	FR	Sauvegarder maintenant
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_INPROGRESS
-	EN	creating backup...
-	FR	creation de la sauvegarde...
+	EN	creating backup
+	FR	creation de la sauvegarde
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SUCCESS
+	EN	Backup successful
+	FR	Sauvegarde réussie
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_ERROR
+	EN	Backup failed - please check the server log
+	FR	échec de la sauvegarde - veuillez consulter le journal du serveur
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SUCCESS
+	EN	Restore successful
+	FR	Restauration réussie
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_ERROR
+	EN	Restore failed - please check the server log
+	FR	échec de la restauration - veuillez consulter le journal du serveur
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_LMSSCANINPROGRESS
+	EN	Active LMS scan detected - backup/restore temporarily disabled
+	FR	Scan LMS actif détecté - sauvegarde/restauration temporairement désactivée
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_PRESCANBACKUP
 	EN	Backup before each library rescan
@@ -381,9 +401,9 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE
 	EN	Please select a valid XML file created with <i>Alternative Play Count</i> !
 	FR	Merci de sélectionner un ficher XML valide créé avec <i>Nombre de Lectures Alternatif</i> !
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGESS
-	EN	preparing to start restore as a background task...
-	FR	restauration...
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGRESS
+	EN	restoring
+	FR	restauration
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE
 	EN	Clear all APC database values<br>before restoring
@@ -631,7 +651,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_PARAM_NAME
 	FR	Sauter si sauté dans les derniers
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RACKSRECENTLYPLAYEDSIMILARBYSAMEARTIST_NAME
-	EN	Recently played & similar track titles<br>by same artist (APC)
+	EN	Recently played & similar track titles by same artist (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RACKSRECENTLYPLAYEDSIMILARBYSAMEARTIST_DESC
 	EN	Skip recently played songs by the same artist<br>with similar track titles (according to the APC database)

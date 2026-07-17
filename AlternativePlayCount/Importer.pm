@@ -26,7 +26,7 @@ sub initPlugin {
 	main::INFOLOG && $log->is_info && $log->info('prescanbackup = ' . ($preScanBackup ? '1' : '0'));
 	if ($preScanBackup) {
 		main::INFOLOG && $log->is_info && $log->info('creating pre-scan backup before scan process starts');
-		createBackup();
+		createBackup(1);
 	}
 }
 
