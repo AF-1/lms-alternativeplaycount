@@ -2450,9 +2450,6 @@ sub playHistoryWeb {
 	$params->{historyitems} = scalar(@filteredHistory) > 0 ? \@filteredHistory : undef;
 	$params->{itemcount} = scalar(@filteredHistory);
 
-	my $host = $params->{host} || (Slim::Utils::Network::serverAddr() . ':' . preferences('server')->get('httpport'));
-	$params->{thishost} = 'http://' . $host;
-
 	return Slim::Web::HTTP::filltemplatefile('plugins/AlternativePlayCount/html/playhistorylist.html', $params);
 }
 

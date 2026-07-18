@@ -101,7 +101,7 @@
 
 [%- pwd_list = BLOCK -%]/
 	[%- IF objecttype == 'track' || objecttype == 'album' || objecttype == 'artist' -%]
-	<a href="[% thishost %]/clixmlbrowser/clicmd=[% objecttype %]info+items&[% objecttype %]_id=[% objectid %]&linktitle=Information%20([% objectname | uri %])/?player=[% playerURI %]">
+	<a href="[% webroot %]clixmlbrowser/clicmd=[% objecttype %]info+items&[% objecttype %]_id=[% objectid %]&linktitle=Information%20([% objectname | uri %])/?player=[% playerURI %]">
 		Information ([% objectname | html %])
 	</a> [% IF systemSkin == 'Classic' %]/[% ELSE %]>[% END %]
 	[%- END -%]
