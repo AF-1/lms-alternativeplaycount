@@ -276,23 +276,40 @@ sub trackInfoHandler {
 	my $alwaysDisplayVals = $prefs->get('alwaysdisplayvals');
 	my $returnVal = 0;
 	my ($apcPlayCount, $apcLastPlayed, $persistentPlayCount, $persistentLastPlayed, $apcSkipCount, $apcLastSkipped, $dynPSval);
-	my $urlmd5 = $track->urlmd5 || md5_hex($url);
 	my $dbh = Slim::Schema->dbh;
 
-	my $rowFound = 0;
-	eval {
-		my $sth = $dbh->prepare("select ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(alternativeplaycount.dynPSval, 0), ifnull(tracks_persistent.playCount, 0), ifnull(tracks_persistent.lastPlayed, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.urlmd5 = ?");
-		$sth->execute($urlmd5);
-		$sth->bind_columns(undef, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped, \$dynPSval, \$persistentPlayCount, \$persistentLastPlayed);
-		$rowFound = 1 if $sth->fetch();
-		$sth->finish();
-	};
-	if ($@) {
-		$log->error("Database error: $@");
+	my @urlmd5Candidates;
+	if ($track->urlmd5) {
+		push @urlmd5Candidates, $track->urlmd5;
+	} else {
+		push @urlmd5Candidates, md5_hex($url);
+		if (Slim::Utils::Misc->can('safe_md5_hex')) {
+			push @urlmd5Candidates, Slim::Utils::Misc::safe_md5_hex($url);
+		}
 	}
+
+	my $rowFound = 0;
+	my $urlmd5 = $urlmd5Candidates[0];
+	my $sth = $dbh->prepare("select ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(alternativeplaycount.dynPSval, 0), ifnull(tracks_persistent.playCount, 0), ifnull(tracks_persistent.lastPlayed, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.urlmd5 = ?");
+	for my $candidate (@urlmd5Candidates) {
+		eval {
+			$sth->execute($candidate);
+			$sth->bind_columns(undef, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped, \$dynPSval, \$persistentPlayCount, \$persistentLastPlayed);
+			if ($sth->fetch()) {
+				$rowFound = 1;
+				$urlmd5 = $candidate;
+			}
+		};
+		$sth->finish();
+		if ($@) {
+			$log->error("Database error: $@");
+		}
+		last if $rowFound;
+	}
+	my $hadError = $@;
 	main::DEBUGLOG && $log->is_debug && $log->debug('track title = '.substr($track->title, 0, 15).' # apcPlayCount = '.Data::Dump::dump($apcPlayCount).' # persistentPlayCount = '.Data::Dump::dump($persistentPlayCount).' # apcSkipCount = '.Data::Dump::dump($apcSkipCount).' # apcLastPlayed = '.Data::Dump::dump($apcLastPlayed).' # persistentLastPlayed = '.Data::Dump::dump($persistentLastPlayed).' # apcLastSkipped = '.Data::Dump::dump($apcLastSkipped).' # apcdynPSval = '.Data::Dump::dump($dynPSval));
 
-	if (!$rowFound && !$@) {
+	if (!$rowFound && !$hadError) {
 		my $trackInDB = $dbh->selectrow_array(
 			"select count(*) from alternativeplaycount where urlmd5 = ?",
 			undef, $urlmd5
