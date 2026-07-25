@@ -27,7 +27,7 @@ use Path::Class;
 
 use base 'Exporter';
 our %EXPORT_TAGS = (
-	all => [qw(createBackup cleanupBackups isTimeOrEmpty getMusicDirs parse_duration pathForItem roundFloat toIntTimestamp)],
+	all => [qw(createBackup cleanupBackups isTimeOrEmpty getMusicDirs parse_duration pathForItem roundFloat toIntTimestamp hasValidBackupRootElement)],
 );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
 
@@ -35,7 +35,8 @@ my $log = logger('plugin.alternativeplaycount');
 my $prefs = preferences('plugin.alternativeplaycount');
 my $serverPrefs = preferences('server');
 
-my ($backupQueue, $backupOutput, $backupStarted, $backupTotalCount);
+my ($backupQueue, $backupOutput, $backupStarted, $backupTotalCount, $backupCombinedTotal, $backupCombinedItemsDone, $backupImporterCall);
+my ($extBackupPlayHistoryQueue, $extBackupPlayersQueue, $extBackupOutput, $extBackupTotalCount, $extBackupSection);
 
 sub createBackup {
 	my $importerCall = shift;
@@ -52,9 +53,11 @@ sub createBackup {
 	my $dbh = Slim::Schema->dbh;
 	my ($trackURL, $trackURLmd5, $apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped, $apcDynPSval, $apcRemote, $apcTrackMBID);
 	$backupStarted = time();
+	$backupImporterCall = $importerCall;
 	my $backuptimestamp = strftime "%Y-%m-%d %H:%M:%S", localtime time;
 	my $filename_timestamp = strftime "%Y%m%d-%H%M", localtime time;
 
+	$backupCombinedItemsDone = 0;
 	$backupQueue = [];
 	eval {
 		my $sth = $dbh->prepare("select alternativeplaycount.url, alternativeplaycount.urlmd5, alternativeplaycount.playCount, alternativeplaycount.lastPlayed, alternativeplaycount.skipCount, alternativeplaycount.lastSkipped, alternativeplaycount.dynPSval, alternativeplaycount.remote, alternativeplaycount.musicbrainz_id from alternativeplaycount where (ifnull(alternativeplaycount.playCount, 0) > 0 or ifnull(alternativeplaycount.skipCount, 0) > 0)");
@@ -73,6 +76,17 @@ sub createBackup {
 	}
 
 	$backupTotalCount = scalar(@{$backupQueue});
+
+	$extBackupPlayHistoryQueue = [];
+	$extBackupPlayersQueue = [];
+	if ($prefs->get('backupexternaldata')) {
+		require Plugins::AlternativePlayCount::Storage;
+		$extBackupPlayHistoryQueue = Plugins::AlternativePlayCount::Storage->getAllPlayHistoryForExport();
+		$extBackupPlayersQueue = Plugins::AlternativePlayCount::Storage->getAllPlayersForExport();
+	}
+	$extBackupTotalCount = scalar(@{$extBackupPlayHistoryQueue}) + scalar(@{$extBackupPlayersQueue});
+
+	$backupCombinedTotal = $backupTotalCount + $extBackupTotalCount;
 
 	if ($backupTotalCount) {
 		my $filename = catfile($backupDir, 'APC_Backup_'.$filename_timestamp.'.xml');
@@ -97,8 +111,7 @@ sub createBackup {
 		}
 	} else {
 		main::INFOLOG && $log->is_info && $log->info('No tracks with play/skip counts in APC database');
-		$prefs->set('backuprestoreresult', 1);
-		$prefs->set('status_backuprestore', 0);
+		_finishOrStartExternalBackup();
 	}
 }
 
@@ -132,20 +145,111 @@ sub writeBackupChunk {
 	$backupOutput = undef;
 	main::INFOLOG && $log->is_info && $log->info('Backup completed after '.(time() - $backupStarted).' seconds.');
 
-	$prefs->set('lastbackup', int(time()));
-	cleanupBackups();
-	$prefs->set('backuprestoreprogresspercentage', 100);
-	$prefs->set('backuprestoreresult', 1);
-	$prefs->set('status_backuprestore', 0);
+	_finishOrStartExternalBackup();
 	return 0;
 }
 
 sub _advanceBackupProgress {
-	return unless $backupTotalCount;
-	$prefs->set('backuprestoreprogresspercentage', sprintf("%.0f", (($backupTotalCount - scalar(@{$backupQueue})) / $backupTotalCount) * 100));
+	return unless $backupCombinedTotal;
+	$backupCombinedItemsDone++;
+	$prefs->set('backuprestoreprogresspercentage', sprintf("%.0f", ($backupCombinedItemsDone / $backupCombinedTotal) * 100));
+}
+
+sub _finishOrStartExternalBackup {
+	if ($extBackupTotalCount) {
+		_startExternalBackup();
+	} else {
+		_finalizeBackup();
+	}
+}
+
+sub _finalizeBackup {
+	if ($backupTotalCount || $extBackupTotalCount) {
+		$prefs->set('lastbackup', int(time()));
+		cleanupBackups();
+	} else {
+		main::INFOLOG && $log->is_info && $log->info('Nothing to back up: no APC values and no external data found.');
+	}
+	main::INFOLOG && $log->is_info && $log->info('Backup completed after '.(time() - $backupStarted).' seconds.');
+	$prefs->set('backuprestoreprogresspercentage', 100);
+	$prefs->set('backuprestoreresult', 1);
+	$prefs->set('status_backuprestore', 0);
+}
+
+sub _startExternalBackup {
+	my $backupDir = $prefs->get('apcfolderpath');
+	my $backuptimestamp = strftime "%Y-%m-%d %H:%M:%S", localtime time;
+	my $filename_timestamp = strftime "%Y%m%d-%H%M", localtime time;
+	my $filename = catfile($backupDir, 'APC_ExternalData_Backup_'.$filename_timestamp.'.xml');
+
+	$extBackupOutput = FileHandle->new($filename, '>:utf8') or do {
+		$log->error('Could not open '.$filename.' for writing external data backup. Does the AlternativePlayCount folder exist? Does LMS have read/write permissions (755) for the (parent) folder?');
+		_finalizeBackup();
+		return;
+	};
+
+	main::DEBUGLOG && $log->is_debug && $log->debug('Found '.scalar(@{$extBackupPlayHistoryQueue}).' play history entrie(s) and '.scalar(@{$extBackupPlayersQueue}).' player(s) to back up');
+
+	print $extBackupOutput "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
+	print $extBackupOutput "<!-- Backup of APC external database tables (e.g. play history) -->\n";
+	print $extBackupOutput "<!-- ".$backuptimestamp." -->\n";
+	print $extBackupOutput "<APCExternalData>\n";
+	print $extBackupOutput "\t<playhistorycount>".scalar(@{$extBackupPlayHistoryQueue})."</playhistorycount>\n";
+	print $extBackupOutput "\t<playercount>".scalar(@{$extBackupPlayersQueue})."</playercount>\n";
+	print $extBackupOutput "\t<playhistory>\n";
+	$extBackupSection = 'playhistory';
+
+	if ($backupImporterCall) {
+		while (writeExternalBackupChunk()) {}
+	} else {
+		Slim::Utils::Scheduler::add_task(\&writeExternalBackupChunk);
+	}
+}
+
+sub writeExternalBackupChunk {
+	if ($extBackupSection eq 'playhistory') {
+		if (my $entry = shift(@{$extBackupPlayHistoryQueue})) {
+			my $entryURL = escape($entry->{'url'});
+			my $entryUrlMD5 = $entry->{'urlmd5'} // '';
+			my $entryMBID = $entry->{'musicbrainz_id'} // '';
+			my $entryPlayed = $entry->{'played'} // '';
+			my $entryRating = $entry->{'rating'} // '';
+			my $entryRemote = $entry->{'remote'} // 0;
+			my $entryClientID = $entry->{'client_id'} ? escape($entry->{'client_id'}) : '';
+			print $extBackupOutput "\t\t<entry>\n\t\t\t<url>".$entryURL."</url>\n\t\t\t<urlmd5>".$entryUrlMD5."</urlmd5>\n\t\t\t<musicbrainzid>".$entryMBID."</musicbrainzid>\n\t\t\t<played>".$entryPlayed."</played>\n\t\t\t<rating>".$entryRating."</rating>\n\t\t\t<remote>".$entryRemote."</remote>\n\t\t\t<clientid>".$entryClientID."</clientid>\n\t\t</entry>\n";
+			_advanceBackupProgress();
+			return 1;
+		}
+		print $extBackupOutput "\t</playhistory>\n\t<players>\n";
+		$extBackupSection = 'players';
+		return 1;
+	}
+
+	if (my $player = shift(@{$extBackupPlayersQueue})) {
+		my $playerMac = escape($player->{'mac'});
+		my $playerName = $player->{'name'} ? escape($player->{'name'}) : '';
+		my $playerModel = $player->{'model'} ? escape($player->{'model'}) : '';
+		my $playerLastSeen = $player->{'last_seen'} // '';
+		print $extBackupOutput "\t\t<player>\n\t\t\t<mac>".$playerMac."</mac>\n\t\t\t<name>".$playerName."</name>\n\t\t\t<model>".$playerModel."</model>\n\t\t\t<lastseen>".$playerLastSeen."</lastseen>\n\t\t</player>\n";
+		_advanceBackupProgress();
+		return 1;
+	}
+
+	print $extBackupOutput "\t</players>\n</APCExternalData>\n";
+	close $extBackupOutput;
+	$extBackupOutput = undef;
+	main::INFOLOG && $log->is_info && $log->info('External data backup completed.');
+	_finalizeBackup();
+	return 0;
 }
 
 sub cleanupBackups {
+	_cleanupBackupFiles(qr/^APC_Backup_.*$/, 'APC table backup(s)');
+	_cleanupBackupFiles(qr/^APC_ExternalData_Backup_.*$/, 'external data backup(s)');
+}
+
+sub _cleanupBackupFiles {
+	my ($pattern, $label) = @_;
 	my $autodeletebackups = $prefs->get('autodeletebackups');
 	my $backupFilesMin = $prefs->get('backupfilesmin');
 	if ($autodeletebackups) {
@@ -154,17 +258,17 @@ sub cleanupBackups {
 		my $backupsdaystokeep = $prefs->get('backupsdaystokeep');
 		my $maxkeeptime = $backupsdaystokeep * 24 * 60 * 60; # in seconds
 		opendir(my $DH, $backupDir) or do { $log->error("Error opening $backupDir: $!"); return; };
-		my @files = grep(/^APC_Backup_.*$/, readdir($DH));
+		my @files = grep(/$pattern/, readdir($DH));
 		closedir($DH);
-		main::DEBUGLOG && $log->is_debug && $log->debug('number of backup files found: '.scalar(@files));
+		main::DEBUGLOG && $log->is_debug && $log->debug('number of '.$label.' found: '.scalar(@files));
+		my %mtimes = map { $_ => stat(catfile($backupDir, $_))->mtime } @files;
+		my @sortedFiles = sort { $mtimes{$a} <=> $mtimes{$b} } @files;
 		my $etime = int(time());
 		my $n = 0;
 		if (scalar(@files) > $backupFilesMin) {
-			foreach my $file (@files) {
-				my $filepath = catfile($backupDir, $file);
-				my $mtime = stat($filepath)->mtime;
-				if (($etime - $mtime) > $maxkeeptime) {
-					if (unlink($filepath)) {
+			foreach my $file (@sortedFiles) {
+				if (($etime - $mtimes{$file}) > $maxkeeptime) {
+					if (unlink(catfile($backupDir, $file))) {
 						$n++;
 						last if ((scalar(@files) - $n) <= $backupFilesMin);
 					} else {
@@ -173,9 +277,9 @@ sub cleanupBackups {
 				}
 			}
 		} else {
-			main::DEBUGLOG && $log->is_debug && $log->debug('Not deleting any backups. Number of backup files to keep ('.$backupFilesMin.') '.((scalar(@files) - $n) == $backupFilesMin ? '=' : '>').' backup files found ('.scalar(@files).').');
+			main::DEBUGLOG && $log->is_debug && $log->debug('Not deleting any '.$label.'. Number of files to keep ('.$backupFilesMin.') '.((scalar(@files) - $n) == $backupFilesMin ? '=' : '>').' files found ('.scalar(@files).').');
 		}
-		main::DEBUGLOG && $log->is_debug && $log->debug('Deleted '.$n.($n == 1 ? ' backup. ' : ' backups. ').(scalar(@files) - $n).((scalar(@files) - $n) == 1 ? " backup" : " backups")." remaining.");
+		main::DEBUGLOG && $log->is_debug && $log->debug('Deleted '.$n.' '.$label.'. '.(scalar(@files) - $n).' remaining.');
 	}
 }
 
@@ -281,6 +385,25 @@ sub toIntTimestamp {
 	$val =~ s/,/./;
 	return undef unless $val =~ /^\d+(?:\.\d+)?$/;
 	return int($val + 0.5);
+}
+
+sub hasValidBackupRootElement {
+	my ($file, $rootElement) = @_;
+	return 0 unless $file && -f $file;
+
+	open(my $fh, '<', $file) or return 0;
+	my $found = 0;
+	for (1..10) {
+		my $line = <$fh>;
+		last unless defined $line;
+		if ($line =~ /<\Q$rootElement\E[\s>]/) {
+			$found = 1;
+			last;
+		}
+	}
+	close($fh);
+
+	return $found;
 }
 
 *escape = \&URI::Escape::uri_escape_utf8;

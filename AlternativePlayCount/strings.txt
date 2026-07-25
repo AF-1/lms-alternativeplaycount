@@ -159,6 +159,14 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_BUTTON
 	EN	Backup now
 	FR	Sauvegarder maintenant
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_INCLUDEEXTERNALDATA
+	EN	Include external data
+	FR	Inclure les données externes
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_INCLUDEEXTERNALDATA_DESC
+	EN	Also back up the plugin's additional data (e.g. play history) stored in its external database file to a separate backup file.
+	FR	Sauvegarder également les données supplémentaires du plugin (par ex. l'historique de lecture) stockées dans son fichier de base de données externe dans un fichier de sauvegarde séparé.
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_INPROGRESS
 	EN	creating backup
 	FR	creation de la sauvegarde
@@ -250,8 +258,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_PLAYCOUNT
 	FR	Réinitaliser les nombres de lecture APC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_PLAYCOUNT_DESC
-	EN	This will <b>reset</b> all APC <b>play count</b> values. It will <b>not</b> reset the <i>complete</i> APC database.
-	FR	Cela <b>réinitialisera</b> tous les <b>nombres de lecture</b>. Cela ne réinitialisera <b>pas</b> la base de données APC <i>complète</i>
+	EN	This will <b>reset</b> all APC <b>play count</b> values. It will <b>not</b> reset the <i>complete</i> main APC table.
+	FR	Cela <b>réinitialisera</b> tous les <b>nombres de lecture</b>. Cela ne réinitialisera <b>pas</b> la table principale APC <i>complète</i>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_PLAYCOUNT_BUTTON
 	EN	Reset play count values now
@@ -266,8 +274,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT
 	FR	Réinitaliser les sauts
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_DESC
-	EN	This will <b>reset</b> all <b>skip count</b> values. It will <b>not</b> reset the <i>complete</i> APC database.
-	FR	Cela <b>réinitialisera</b> tous les <b>sauts</b>. Cela ne réinitialisera <b>pas</b> la base de données APC <i>complète</i>
+	EN	This will <b>reset</b> all <b>skip count</b> values. It will <b>not</b> reset the <i>complete</i> main APC table.
+	FR	Cela <b>réinitialisera</b> tous les <b>sauts</b>. Cela ne réinitialisera <b>pas</b> la table principale APC <i>complète</i>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_SKIPCOUNT_BUTTON
 	EN	Reset skip count values now
@@ -282,8 +290,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV
 	FR	Réinitialise les valeurs dynamiques joués/sautés (DPSV)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV_DESC
-	EN	This will <b>reset</b> all <b>dynamic played/skipped values</b> (DPSV) to the <b>initial values</b> that you have selected in the setting below. It will <b>not</b> reset the <i>complete</i> APC database.
-	FR	Cela <b>réinitialisera</b> toutes les <b>valeurs dynamiques joués/sautés (DPSV)</b> à la <b>valeur initiale</b> que vous avez définie dans le réglage ci-dessous. Cela ne réinitialisera <b>pas</b> la base de données <b>complète</b> APC
+	EN	This will <b>reset</b> all <b>dynamic played/skipped values</b> (DPSV) to the <b>initial values</b> that you have selected in the setting below. It will <b>not</b> reset the <i>complete</i> main APC table.
+	FR	Cela <b>réinitialisera</b> toutes les <b>valeurs dynamiques joués/sautés (DPSV)</b> à la <b>valeur initiale</b> que vous avez définie dans le réglage ci-dessous. Cela ne réinitialisera <b>pas</b> la table principale APC <b>complète</b>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_DPSV_BUTTON
 	EN	Reset DPSV now
@@ -298,8 +306,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS
 	FR	Valeur initiale dynamique joués/sautés (DPSV)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS_DESC
-	EN	Select the <b><i>initial</i> dynamic played/skipped values</b> (DPSV) after a reset of the complete APC database or the DPSV column.<br>You can set DPSV to:<br>- <b>zero</b> or<br>- <b>values calculated using APC play counts and APC skip counts</b> or<br>- <b>values derived from track ratings</b>.<br><br>If you select option <b>2</b>, APC will use the APC <b>play count/skip count <i>ratio</i></b> to calculate initial DPSV.<br>Roughly speaking, a delta of 10 or 1/10 corresponds to an increase or decrease in DPSV of 20 or -20, respectively, on a scale from -100 to 100. This is not an exact conversion, but just a starting point so that the initial values reflect at least somewhat your previous listening history.<br><br>With option <b>3</b> APC will calculate initial DPSV using <b>track ratings</b>.<br>1 star = -80, 2 stars = -40, 3 stars = 0, 4 stars = 40, 5 stars = 80<br>Again, not an exact conversion, but at least it allows you to translate ratings into DPSV.<br><br><b>Please note:</b> Calculated values from options 2 and 3 are <b>only</b> used to generate <b>initial</b> dynamic played/skipped values after a DPSV or database reset (or when the plugin is started for the first time). When you play or skip tracks, DPSV changes are calculated according to a different formula (see FAQ).
-	FR	Sélectionne la <b>valeur <i>initiale</i> dynamique joués/sautés</b> (DPSV) après une réinitialisation complète de la base de données APC ou de la colonne DPSV.<br>Vous pouvez définir DPSV à:<br>- <b>zero</b> ou<br>- <b>des valeurs calculées en utilisant les nombres de lectures et de sauts d'APC</b> ou<br>- <b>des valeurs dérivées des notes</b>.<br><br>Si vous choississez l'option <b>2</b>, APC utilisera le <b><i>ratio</i> nombre de lectures/sauts</b> pour calculer la valeur initiale DPSV<br>Grosso modo, un delta de 10 ou 1/10 corresponds à une augmentation ou réduction dans DPSV de 20 ou -20, respectivement, sur une échelle de -100 à 100. Ce n'est pas une conversion exacte, mais juste un point de départ pour que les valeurs initiales reflètent d'une certaine façon votre historique de lecture.<br><br>Avec l'option <b>3</b> APC calculera la valeur initial de DPSC en utilise les <b>notes</b>.<br>1 étoile = -80, 2 étoiles = -40, 3 étoiles = 0, 4 étoiles = 40, 5 étoiles = 80<br>Pareil, ce n'est pas une conversion exacte, mais cela permet au moins d'utiliser les notes dans DPSV.<br><br><b>Merci de noter :</b> Les valeurs calculées pour les options 2 et 3 sont <b>seulement</b> utilisées pour générer les valeurs dynamiques <b>initiales</b> DPSV après une réinitialisation de ces valeurs ou de la base (ou au premier lancement du plugin). Quand vous jouez ou sautez un morceau, les valeurs DPSV sont calculées selon une autre formule (voir la FAQ).
+	EN	Select the <b><i>initial</i> dynamic played/skipped values</b> (DPSV) after a reset of the complete main APC table or the DPSV column.<br>You can set DPSV to:<br>- <b>zero</b> or<br>- <b>values calculated using APC play counts and APC skip counts</b> or<br>- <b>values derived from track ratings</b>.<br><br>If you select option <b>2</b>, APC will use the APC <b>play count/skip count <i>ratio</i></b> to calculate initial DPSV.<br>Roughly speaking, a delta of 10 or 1/10 corresponds to an increase or decrease in DPSV of 20 or -20, respectively, on a scale from -100 to 100. This is not an exact conversion, but just a starting point so that the initial values reflect at least somewhat your previous listening history.<br><br>With option <b>3</b> APC will calculate initial DPSV using <b>track ratings</b>.<br>1 star = -80, 2 stars = -40, 3 stars = 0, 4 stars = 40, 5 stars = 80<br>Again, not an exact conversion, but at least it allows you to translate ratings into DPSV.<br><br><b>Please note:</b> Calculated values from options 2 and 3 are <b>only</b> used to generate <b>initial</b> dynamic played/skipped values after a DPSV or database reset (or when the plugin is started for the first time). When you play or skip tracks, DPSV changes are calculated according to a different formula (see FAQ).
+	FR	Sélectionne la <b>valeur <i>initiale</i> dynamique joués/sautés</b> (DPSV) après une réinitialisation complète de la table principale APC ou de la colonne DPSV.<br>Vous pouvez définir DPSV à:<br>- <b>zero</b> ou<br>- <b>des valeurs calculées en utilisant les nombres de lectures et de sauts d'APC</b> ou<br>- <b>des valeurs dérivées des notes</b>.<br><br>Si vous choississez l'option <b>2</b>, APC utilisera le <b><i>ratio</i> nombre de lectures/sauts</b> pour calculer la valeur initiale DPSV<br>Grosso modo, un delta de 10 ou 1/10 corresponds à une augmentation ou réduction dans DPSV de 20 ou -20, respectivement, sur une échelle de -100 à 100. Ce n'est pas une conversion exacte, mais juste un point de départ pour que les valeurs initiales reflètent d'une certaine façon votre historique de lecture.<br><br>Avec l'option <b>3</b> APC calculera la valeur initial de DPSC en utilise les <b>notes</b>.<br>1 étoile = -80, 2 étoiles = -40, 3 étoiles = 0, 4 étoiles = 40, 5 étoiles = 80<br>Pareil, ce n'est pas une conversion exacte, mais cela permet au moins d'utiliser les notes dans DPSV.<br><br><b>Merci de noter :</b> Les valeurs calculées pour les options 2 et 3 sont <b>seulement</b> utilisées pour générer les valeurs dynamiques <b>initiales</b> DPSV après une réinitialisation de ces valeurs ou de la table (ou au premier lancement du plugin). Quand vous jouez ou sautez un morceau, les valeurs DPSV sont calculées selon une autre formule (voir la FAQ).
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS_ZERO
 	EN	Zero (recommended)
@@ -316,36 +324,36 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS_RATINGS
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_APCDATABASE
-	EN	Reset <i>complete</i> Alternative Play Count database
-	FR	Réinitialiser la base de données d'APC
+	EN	Reset <i>complete</i> main APC table
+	FR	Réinitialiser la table principale APC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_APCDATABASE_DESC
-	EN	This will clear your <i>Alternative Play Count</i> database and create a new one.<br><b>Please note: Unless you have created a backup of your APC database, you will lose all APC data.</b>
-	FR	Cela va supprimer votre base de données de <i>Nombre de Lectures Alternatif</i> et crée une nouvelle en utilisant les valeurs courantes de <i>dernière lecture</i> et <i>nombre de lecture</i> de LMS. Cela va basiquement réinitialiser la base de données APC aux valeurs de LMS.<br><b>Attention: Sauf si vous avez créé une sauvegarde de votre base APC, vous perdrez toutes les données d'APC.</b>
+	EN	This will clear your main APC table and create a new one.<br><b>Please note: Unless you have created a backup of your main APC table, you will lose all APC data.</b>
+	FR	Cela va supprimer la table principale APC et en créer une nouvelle en utilisant les valeurs courantes de <i>dernière lecture</i> et <i>nombre de lecture</i> de LMS. Cela va basiquement réinitialiser la table principale APC aux valeurs de LMS.<br><b>Attention: Sauf si vous avez créé une sauvegarde de votre table principale APC, vous perdrez toutes les données d'APC.</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_APCDATABASE_BUTTON
-	EN	Reset APC database now
-	FR	Réinitialiser la base de données APC maintenant
+	EN	Reset main APC table now
+	FR	Réinitialiser la table principale APC maintenant
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_APCDATABASE_INPROGRESS
-	EN	resetting APC database...
-	FR	réinitialisation de la base de données APC...
+	EN	resetting main APC table...
+	FR	réinitialisation de la table principale APC...
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_LMSDEFAULT
 	EN	Populate with LMS play count values
 	FR	Remplir avec les nombre de lectures de LMS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_LMSDEFAULT_DESC
-	EN	If checked, APC will use current LMS values for <i>play count</i> and <i>last played</i> to populate the empty database after a reset. It basically resets the APC database to current LMS values.<br>Leave unchecked if you want to start from scratch without any previous play count values.
-	FR	APC utilise les valeurs courantes de <i>dernière lecture</i> et <i>nombre de lecture</i> de LMS pour remplir sa base de données <i>vide</i>. Cela va basiquement réinitialiser la base de données APC aux valeurs de LMS.
+	EN	If checked, APC will use current LMS values for <i>play count</i> and <i>last played</i> to populate the empty table after a reset. It basically resets the main APC table to current LMS values.<br>Leave unchecked if you want to start from scratch without any previous play count values.
+	FR	APC utilise les valeurs courantes de <i>dernière lecture</i> et <i>nombre de lecture</i> de LMS pour remplir sa table <i>vide</i>. Cela va basiquement réinitialiser la table principale APC aux valeurs de LMS.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_DPSV
 	EN	Populate with initial dynamic<br>played/skipped values (DPSV)
 	FR	Remplir avec les valeurs initiales DPSV
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_POPULATE_DPSV_DESC
-	EN	If checked, APC will populate the empty APC database after a reset with initial DPSV values according to the method you've selected in the setting above called <i>Initial dynamic played/skipped values</i>.
-	FR	Si sélectionné, APC remplira la base de données APC avec les valeurs initiales DPSV selon la méthode que vous avez sélectionnée ci-dessus appelée <i>Valeur initiale dynamique joués/sautés (DPSV)</i>
+	EN	If checked, APC will populate the empty main APC table after a reset with initial DPSV values according to the method you've selected in the setting above called <i>Initial dynamic played/skipped values</i>.
+	FR	Si sélectionné, APC remplira la table principale APC avec les valeurs initiales DPSV selon la méthode que vous avez sélectionnée ci-dessus appelée <i>Valeur initiale dynamique joués/sautés (DPSV)</i>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_MINPLAYCOUNT
 	EN	Minimum LMS play count
@@ -374,28 +382,36 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE
 	FR	Restauration
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE
-	EN	Select a backup file to restore from
-	FR	Sélectionner une sauvegarde depuis laquelle restaurer
+	EN	Select a backup file to restore APC main table values from
+	FR	Sélectionner une sauvegarde depuis laquelle restaurer votre table principale APC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE_DESC
-	EN	Select a backup file (created with <i>Alternative Play Count</i>) to restore your APC database values from.
-	FR	Sélectionne une sauvegarde (créée avec <i>Nombre de Lectures Alternatif</i>) pour restaurer votre base de données APC.
+	EN	Select a backup file (created with <i>Alternative Play Count</i>) to restore your main APC table values from.<br> At least one of the two file fields must point to a valid backup file.
+	FR	FR	Sélectionne une sauvegarde (créée avec <i>Nombre de Lectures Alternatif</i>) pour restaurer votre table principale APC.<br>Au moins l'un des deux champs de fichier doit indiquer un fichier de sauvegarde valide.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE
+	EN	External data backup file
+	FR	Fichier de sauvegarde des données externes
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE_DESC
+	EN	Optionally select a separate backup file containing external plugin data (e.g. play history) to restore.<br>At least one of the two file fields must point to a valid backup file.
+	FR	Sélectionnez éventuellement un fichier de sauvegarde séparé contenant des données externes du plugin (par ex. l'historique de lecture) à restaurer.<br>Au moins l'un des deux champs de fichier doit indiquer un fichier de sauvegarde valide.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW
 	EN	Restore from backup file now
 	FR	Restaurer à partir d'une sauvegarde maintenant
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW_DESC
-	EN	Restore APC database values from the backup file you chose above.<br><br><b>All APC database values will be reset to the values of the backup file.</b>
-	FR	Restaure les données de la base APC à partir du fichier de sauvegarde sélectionné ci-dessus.<br><br><b>Toutes les données APC seront réinitialisées aux valeurs de la sauvegarde.</b>
+	EN	Restore main APC table values from the backup file you chose above.<br><br><b>All main APC table values will be reset to the values of the backup file.</b>
+	FR	Restaure les données de la table principale APC à partir du fichier de sauvegarde sélectionné ci-dessus.<br><br><b>Toutes les données de la table principale APC seront réinitialisées aux valeurs de la sauvegarde.</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_BUTTON
 	EN	Restore now
 	FR	Restaurer maintenant
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE
-	EN	You have to select a file first!
-	FR	Vous devez sélectionner un fichier d'abord !
+	EN	You have to select at least one file first!
+	FR	Vous devez sélectionner au moins un fichier d'abord !
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE
 	EN	Please select a valid XML file created with <i>Alternative Play Count</i> !
@@ -406,12 +422,12 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGRESS
 	FR	restauration
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE
-	EN	Clear all APC database values<br>before restoring
-	FR	Vider toute la base de données APC<br>avant de restaurer
+	EN	Clear all main APC table values<br>before restoring
+	FR	Vider toute la table principale APC<br>avant de restaurer
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE_DESC
-	EN	This will clear all values in the APC database before starting the restore process. All current values in your APC database will be reset to the values from the backup. In other words, values not contained in the backup will be lost.
-	FR	Cela va vider toutes les valeurs dans la base de données APC avant de démarrer le processus de restauration. Toutes les valeurs courantes de la base de données APC seront remises aux valeurs de la sauvegarde. En d'autres mots, les valeurs non sauvegardées seront perdues.
+	EN	This will clear all values in the main APC table before starting the restore process. All current values in your main APC table will be reset to the values from the backup. In other words, values not contained in the backup will be lost.
+	FR	Cela va vider toutes les valeurs dans la table principale APC avant de démarrer le processus de restauration. Toutes les valeurs courantes de la table principale APC seront remises aux valeurs de la sauvegarde. En d'autres mots, les valeurs non sauvegardées seront perdues.
 
 
 
@@ -592,6 +608,21 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_BUTTON
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_INPROGRESS
 	EN	cleaning up APC play history...
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL
+	EN	Clear play history
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_DESC
+	EN	Permanently delete all play history entries and all remembered player names from the external database file. This cannot be undone.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_BUTTON
+	EN	Clear now
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_CONFIRM
+	EN	This will permanently delete all play history entries and all remembered player names. This cannot be undone. Continue?
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_INPROGRESS
+	EN	clearing play history...
+
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_NAME
@@ -599,8 +630,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_NAME
 	FR	Albums joués récemment (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_DESC
-	EN	Skip songs from albums that have been<br>recently played (according to the APC database)
-	FR	Sauter les morceaux des albums qui ont été<br>récemment joués (d'après la base de données APC)
+	EN	Skip songs from albums that have been<br>recently played (according to the main APC table)
+	FR	Sauter les morceaux des albums qui ont été<br>récemment joués (d'après la table principale APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDALBUM_PARAM_NAME
 	EN	Skip if played in the last
@@ -611,8 +642,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_NAME
 	FR	Artistes joués récemment (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_DESC
-	EN	Skip songs by artists that have been<br>recently played (according to the APC database)
-	FR	Sauter les morceaux par artistes qui ont été<br>récemment joués (d'après la base de données APC)
+	EN	Skip songs by artists that have been<br>recently played (according to the main APC table)
+	FR	Sauter les morceaux par artistes qui ont été<br>récemment joués (d'après la table principale APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDARTIST_PARAM_NAME
 	EN	Skip if played in the last
@@ -623,16 +654,16 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDCOMPOSER_NAME
 	FR	Compositeurs joués récemment (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RECENTLYPLAYEDCOMPOSER_DESC
-	EN	Skip songs by composers that have been<br>recently played (according to the APC database)
-	FR	Sauter les morceaux par compositeurs qui ont été<br>récemment joués (d'après la base de données APC)
+	EN	Skip songs by composers that have been<br>recently played (according to the main APC table)
+	FR	Sauter les morceaux par compositeurs qui ont été<br>récemment joués (d'après la table principale APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYPLAYED_NAME
 	EN	Recently played songs (APC)
 	FR	Morceaux joués récemment (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYPLAYED_DESC
-	EN	Skip songs that have been<br>recently played (according to the APC database)
-	FR	Sauter les morceaux qui ont été<br>récemment joués (d'après la base de données APC)
+	EN	Skip songs that have been<br>recently played (according to the main APC table)
+	FR	Sauter les morceaux qui ont été<br>récemment joués (d'après la table principale APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYPLAYED_PARAM_NAME
 	EN	Skip if played in the last
@@ -643,8 +674,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_NAME
 	FR	Morceaux sautés récemment (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_DESC
-	EN	Skip songs that have been<br>recently skipped (according to the APC database)
-	FR	Sauter les morceaux qui ont été<br>récemment sautés (d'après la base de données APC)
+	EN	Skip songs that have been<br>recently skipped (according to the main APC table)
+	FR	Sauter les morceaux qui ont été<br>récemment sautés (d'après la table principale APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_PARAM_NAME
 	EN	Skip if skipped in the last
@@ -654,7 +685,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RACKSRECENTLYPLAYEDSIMILARBYSAMEARTIST_NA
 	EN	Recently played & similar track titles by same artist (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RACKSRECENTLYPLAYEDSIMILARBYSAMEARTIST_DESC
-	EN	Skip recently played songs by the same artist<br>with similar track titles (according to the APC database)
+	EN	Skip recently played songs by the same artist<br>with similar track titles (according to the main APC table)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_NAME
 	EN	High APC skip count

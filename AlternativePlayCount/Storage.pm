@@ -288,15 +288,22 @@ sub addPlayEntry {
 	}
 
 	# trim oldest entries if maxdbentries limit is set
-	my $maxdbentries = $prefs->get('playhistory_maxdbentries') // 0;
-	if ($maxdbentries > 0) {
-		eval {
-			$dbh->do("DELETE FROM play_history WHERE id NOT IN (SELECT id FROM play_history ORDER BY played DESC LIMIT ?)", undef, $maxdbentries);
-		};
-		if ($@) { $log->error("Error trimming play history: $@"); }
-	}
+	$class->trimPlayHistory();
 
 	return 1;
+}
+
+sub trimPlayHistory {
+	my $class = shift;
+	return unless $class->dbh;
+
+	my $maxdbentries = $prefs->get('playhistory_maxdbentries') // 0;
+	return unless $maxdbentries > 0;
+
+	eval {
+		$dbh->do("DELETE FROM play_history WHERE id NOT IN (SELECT id FROM play_history ORDER BY played DESC LIMIT ?)", undef, $maxdbentries);
+	};
+	if ($@) { $log->error("Error trimming play history: $@"); }
 }
 
 sub updateLatestPlayRating {
@@ -323,7 +330,7 @@ sub updateLatestPlayRating {
 
 sub savePlayer {
 	my ($class, $params) = @_;
-	return unless $dbh && $initialized;
+	return unless $class->dbh;
 	return unless $params->{mac};
 
 	eval {
@@ -467,6 +474,100 @@ sub getDistinctClients {
 		return [];
 	}
 	return $clients;
+}
+
+sub getAllPlayHistoryForExport {
+	my $class = shift;
+	return [] unless $class->dbh;
+
+	my $history = [];
+	eval {
+		my $sth = $dbh->prepare_cached('SELECT url, urlmd5, musicbrainz_id, played, rating, remote, client_id FROM play_history ORDER BY id');
+		$sth->execute();
+		while (my $row = $sth->fetchrow_hashref()) {
+			push @$history, $row;
+		}
+		$sth->finish();
+	};
+	if ($@) {
+		$log->error("getAllPlayHistoryForExport failed: $@");
+		return [];
+	}
+
+	return $history;
+}
+
+sub getAllPlayersForExport {
+	my $class = shift;
+	return [] unless $class->dbh;
+
+	my $players = [];
+	eval {
+		my $sth = $dbh->prepare_cached('SELECT mac, name, model, last_seen FROM players ORDER BY mac');
+		$sth->execute();
+		while (my $row = $sth->fetchrow_hashref()) {
+			push @$players, $row;
+		}
+		$sth->finish();
+	};
+	if ($@) {
+		$log->error("getAllPlayersForExport failed: $@");
+		return [];
+	}
+
+	return $players;
+}
+
+sub importPlayHistoryEntry {
+	my ($class, $params) = @_;
+	return 0 unless $class->dbh;
+	return 0 unless $params->{url} && defined $params->{played};
+
+	eval {
+		my $sth = $dbh->prepare_cached('INSERT INTO play_history (url, urlmd5, musicbrainz_id, played, rating, remote, client_id) VALUES (?, ?, ?, ?, ?, ?, ?)');
+		$sth->execute(
+			$params->{url},
+			$params->{urlmd5} || '0',
+			$params->{musicbrainz_id},
+			$params->{played},
+			$params->{rating},
+			$params->{remote} || 0,
+			$params->{client_id}
+		);
+		$sth->finish();
+	};
+	if ($@) {
+		$log->error("importPlayHistoryEntry failed: $@");
+		return 0;
+	}
+
+	return 1;
+}
+
+sub clearPlayHistory {
+	my $class = shift;
+	return 0 unless $class->dbh;
+
+	eval { $dbh->do('DELETE FROM play_history') };
+	if ($@) {
+		$log->error("clearPlayHistory failed: $@");
+		return 0;
+	}
+
+	return 1;
+}
+
+sub clearPlayers {
+	my $class = shift;
+	return 0 unless $class->dbh;
+
+	eval { $dbh->do('DELETE FROM players') };
+	if ($@) {
+		$log->error("clearPlayers failed: $@");
+		return 0;
+	}
+
+	return 1;
 }
 
 sub shutdown {

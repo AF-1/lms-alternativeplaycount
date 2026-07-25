@@ -38,8 +38,10 @@ my $log = Slim::Utils::Log->addLogCategory({
 my $serverPrefs = preferences('server');
 my $prefs = preferences('plugin.alternativeplaycount');
 
-my ($ratingslight_enabled, %restoreitem, $currentKey, $inTrack, $inValue, $backupFH, $backupParser, $backupParserNB, $restorestarted, %itemNames, $restoreTotalCount, $restoreProcessedCount);
+my ($ratingslight_enabled, %restoreitem, $currentKey, $inTrack, $inValue, $backupFH, $backupParser, $backupParserNB, $restorestarted, %itemNames, $restoreTotalCount, $restoreCombinedItemsDone, $restoreCombinedTotal, $restoreDone);
 my ($opened, $restoreCount, $restoreErrors) = (0, 0, 0);
+my (%extRestoreItem, $extCurrentKey, $extInEntry, $extInPlayer, $extInValue, $extRestoreFH, $extRestoreParser, $extRestoreParserNB, $extRestoreTotalCount, $extRestoreDone);
+my ($extOpened, $extRestoreCount, $extRestoreErrors) = (0, 0, 0);
 
 sub initPlugin {
 	my $class = shift;
@@ -49,12 +51,12 @@ sub initPlugin {
 
 	if (main::WEBUI) {
 		require Plugins::AlternativePlayCount::Settings::Basic;
-		require Plugins::AlternativePlayCount::Settings::Backup;
+		require Plugins::AlternativePlayCount::Settings::BackupRestore;
 		require Plugins::AlternativePlayCount::Settings::Reset;
 		require Plugins::AlternativePlayCount::Settings::Autorating;
 		require Plugins::AlternativePlayCount::Settings::PlayHistory;
 		Plugins::AlternativePlayCount::Settings::Basic->new($class);
-		Plugins::AlternativePlayCount::Settings::Backup->new($class);
+		Plugins::AlternativePlayCount::Settings::BackupRestore->new($class);
 		Plugins::AlternativePlayCount::Settings::Reset->new($class);
 		Plugins::AlternativePlayCount::Settings::Autorating->new($class);
 		Plugins::AlternativePlayCount::Settings::PlayHistory->new($class);
@@ -170,7 +172,8 @@ sub initPrefs {
 		displayratingchar => 0,
 		playhistory_showrawrating => 0,
 		playhistory_showinvalidtracks => 1,
-		playhistory_jiveshownonameclientid => 0
+		playhistory_jiveshownonameclientid => 0,
+		backupexternaldata => 0,
 	});
 
 	createAPCfolder();
@@ -205,13 +208,6 @@ sub initPrefs {
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 1000}, 'playhistory_maxdisplayitems');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 0, 'high' => 50000}, 'playhistory_maxdbentries');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 65, 'high' => 150}, 'playhistory_jiveextralinelength');
-	$prefs->setValidate(sub {
-		my $val = $_[1];
-		return 1 if !$val || $val eq ''; # empty is ok
-		return 1 if -d $val; # directory is ok (filepicker default)
-		return 1 if -f $val && $val =~ /\.xml$/i; # xml file is ok
-		return 0;
-	}, 'restorefile');
 
 	%itemNames = ('playCount' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCPLAYCOUNT'),
 				'lastPlayed' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTPLAYED'),
@@ -1366,18 +1362,28 @@ sub restoreFromBackup {
 	$backupParser = undef;
 	$restoreCount = 0;
 	$restoreErrors = 0;
-	$restoreProcessedCount = 0;
+	$restoreCombinedItemsDone = 0;
+	$extRestoreCount = 0;
+	$extRestoreErrors = 0;
 	$restorestarted = time();
 	my $restorefile = $prefs->get('restorefile');
+	my $restoreexternalfile = $prefs->get('restoreexternalfile');
 
-	if ($restorefile) {
-		if ($clearallbeforerestore) {
-			resetAPCDatabase(1);
+	if ($restorefile || $restoreexternalfile) {
+		$restoreTotalCount = $restorefile ? _getAPCBackupTrackCount($restorefile) : 0;
+		$extRestoreTotalCount = $restoreexternalfile ? _getExternalBackupCount($restoreexternalfile) : 0;
+		$restoreCombinedTotal = $restoreTotalCount + $extRestoreTotalCount;
+
+		if ($restorefile) {
+			if ($clearallbeforerestore) {
+				resetAPCDatabase(1);
+			}
+			main::INFOLOG && $log->is_info && $log->info('Starting restore from backup file');
+			initRestore();
+			Slim::Utils::Scheduler::add_task(\&restoreScanFunction);
+		} else {
+			_finishOrStartExternalRestore();
 		}
-		main::INFOLOG && $log->is_info && $log->info('Starting restore from backup file');
-		$restoreTotalCount = _getAPCBackupTrackCount($restorefile);
-		initRestore();
-		Slim::Utils::Scheduler::add_task(\&restoreScanFunction);
 	} else {
 		$log->error('Error: No backup file specified');
 		$prefs->set('backuprestoreresult', 4);
@@ -1414,6 +1420,41 @@ sub _getAPCBackupTrackCount {
 	return $count || 0;
 }
 
+sub _getExternalBackupCount {
+	my $xmlFile = shift;
+	my ($playHistoryCount, $playerCount);
+
+	open(my $fh, '<', $xmlFile) or return 0;
+	for (1..15) {
+		my $line = <$fh>;
+		last unless defined $line;
+		if ($line =~ /<playhistorycount>(\d+)<\/playhistorycount>/) {
+			$playHistoryCount = $1;
+		}
+		if ($line =~ /<playercount>(\d+)<\/playercount>/) {
+			$playerCount = $1;
+		}
+		last if defined $playHistoryCount && defined $playerCount;
+	}
+	close($fh);
+
+	if (!defined $playHistoryCount || !defined $playerCount) {
+		main::DEBUGLOG && $log->is_debug && $log->debug('playhistorycount/playercount element not found in external backup file - falling back to counting <entry>/<player> occurrences');
+		open(my $fh2, '<', $xmlFile) or return 0;
+		$playHistoryCount = 0;
+		$playerCount = 0;
+		while (my $line = <$fh2>) {
+			my $entryMatches = () = $line =~ /<entry>/g;
+			my $playerMatches = () = $line =~ /<player>/g;
+			$playHistoryCount += $entryMatches;
+			$playerCount += $playerMatches;
+		}
+		close($fh2);
+	}
+
+	return ($playHistoryCount || 0) + ($playerCount || 0);
+}
+
 sub initRestore {
 	if (defined($backupParserNB)) {
 		eval {$backupParserNB->parse_done};
@@ -1444,6 +1485,7 @@ sub restoreScanFunction {
 		$opened = 1;
 		$inTrack = 0;
 		$inValue = 0;
+		$restoreDone = 0;
 		%restoreitem = ();
 		$currentKey = undef;
 
@@ -1469,6 +1511,7 @@ sub restoreScanFunction {
 				last;
 			}
 		}
+		my $reachedEOF = eof($backupFH);
 		$line //= '';
 		$line =~ s/&#(\d*);/escape(chr($1))/ge;
 		eval { $backupParserNB->parse_more($line) };
@@ -1478,7 +1521,17 @@ sub restoreScanFunction {
 			doneScanning();
 			return 0;
 		}
-		return defined($backupParserNB) ? 1 : 0;
+		if ($restoreDone) {
+			doneScanning();
+			return 0;
+		}
+		if ($reachedEOF) {
+			$log->error('Backup file ended unexpectedly before the closing </AlternativePlayCount> tag was found - the file may be incomplete, corrupted, or not a valid APC backup file.');
+			$restoreErrors++;
+			doneScanning();
+			return 0;
+		}
+		return 1;
 	}
 
 	$log->warn('No backupParserNB defined!');
@@ -1495,14 +1548,12 @@ sub doneScanning {
 	$backupParserNB = undef;
 	$backupParser = undef;
 	$opened = 0;
-	close($backupFH);
+	close $backupFH;
 	$backupFH = undef;
 
-	main::INFOLOG && $log->is_info && $log->info('Restore completed after '.(time() - $restorestarted).' seconds. Restored '.$restoreCount.($restoreCount == 1 ? ' track.' : ' tracks.').' Restore count listed here may be slightly higher (e.g. +1) than the correct number stated in the backup file.');
-	$prefs->set('isTSlegacyBackupFile', 0);
-	$prefs->set('backuprestoreprogresspercentage', 100);
-	$prefs->set('backuprestoreresult', $restoreErrors > 0 ? 4 : 3);
-	$prefs->set('status_backuprestore', 0);
+	main::INFOLOG && $log->is_info && $log->info('APC table restore completed after '.(time() - $restorestarted).' seconds. Restored '.$restoreCount.($restoreCount == 1 ? ' track.' : ' tracks.'));
+
+	_finishOrStartExternalRestore();
 }
 
 sub handleStartElement {
@@ -1511,6 +1562,7 @@ sub handleStartElement {
 	if ($inTrack) {
 		$currentKey = $element;
 		$inValue = 1;
+		$restoreitem{$currentKey} = '';
 	}
 	if ($element eq 'track') {
 		$inTrack = 1;
@@ -1525,7 +1577,7 @@ sub handleCharElement {
 	my ($p, $value) = @_;
 
 	if ($inValue && $currentKey) {
-		$restoreitem{$currentKey} = $value;
+		$restoreitem{$currentKey} .= $value;
 	}
 }
 
@@ -1664,15 +1716,220 @@ sub handleEndElement {
 			$restoreErrors++ unless $updated;
 		}
 
-		$restoreProcessedCount++;
-		if ($restoreTotalCount) {
-			$prefs->set('backuprestoreprogresspercentage', sprintf("%.0f", ($restoreProcessedCount / $restoreTotalCount) * 100));
+		$restoreCombinedItemsDone++;
+		if ($restoreCombinedTotal) {
+			$prefs->set('backuprestoreprogresspercentage', sprintf("%.0f", ($restoreCombinedItemsDone / $restoreCombinedTotal) * 100));
 		}
 		%restoreitem = ();
 	}
 	if ($element eq 'AlternativePlayCount' || $element eq 'TrackStat') {
-		doneScanning();
-		return 0;
+		$restoreDone = 1;
+	}
+}
+
+sub _finishOrStartExternalRestore {
+	if ($prefs->get('restoreexternalfile') && $extRestoreTotalCount) {
+		_startExternalRestore();
+	} else {
+		_finalizeRestore();
+	}
+}
+
+sub _finalizeRestore {
+	my $totalCount = $restoreCount + $extRestoreCount;
+	my $totalErrors = $restoreErrors + $extRestoreErrors;
+	main::INFOLOG && $log->is_info && $log->info('Restore completed after '.(time() - $restorestarted).' seconds. Restored '.$totalCount.($totalCount == 1 ? ' item.' : ' items.').' Restore count listed here may be slightly higher (e.g. +1) than the correct number stated in the backup file(s).');
+	$prefs->set('isTSlegacyBackupFile', 0);
+	$prefs->set('backuprestoreprogresspercentage', 100);
+	$prefs->set('backuprestoreresult', $totalErrors > 0 ? 4 : 3);
+	$prefs->set('status_backuprestore', 0);
+}
+
+sub _startExternalRestore {
+	if (defined($extRestoreParserNB)) {
+		eval {$extRestoreParserNB->parse_done};
+		$extRestoreParserNB = undef;
+	}
+	$extRestoreParser = XML::Parser->new(
+		'ErrorContext' => 2,
+		'ProtocolEncoding' => 'UTF-8',
+		'NoExpand' => 1,
+		'NoLWP' => 1,
+		'Handlers' => {
+			'Start' => \&handleExternalStartElement,
+			'Char' => \&handleExternalCharElement,
+			'End' => \&handleExternalEndElement,
+		},
+	);
+	Slim::Utils::Scheduler::add_task(\&externalRestoreScanFunction);
+}
+
+sub externalRestoreScanFunction {
+	my $restoreexternalfile = $prefs->get('restoreexternalfile');
+	if ($extOpened != 1) {
+		open($extRestoreFH, '<', $restoreexternalfile) || do {
+			$log->error('Couldn\'t open external data backup file: '.$restoreexternalfile);
+			$prefs->set('backuprestoreresult', 4);
+			$prefs->set('status_backuprestore', 0);
+			return 0;
+		};
+		$extOpened = 1;
+		$extInEntry = 0;
+		$extInPlayer = 0;
+		$extInValue = 0;
+		$extRestoreDone = 0;
+		%extRestoreItem = ();
+		$extCurrentKey = undef;
+		require Plugins::AlternativePlayCount::Storage;
+		Plugins::AlternativePlayCount::Storage->clearPlayHistory();
+
+		if (defined $extRestoreParser) {
+			$extRestoreParserNB = $extRestoreParser->parse_start();
+		} else {
+			$log->warn('No external restore parser was defined!');
+		}
+	}
+
+	if (defined $extRestoreParserNB) {
+		local $/ = '>';
+		my $line;
+
+		for (my $i = 0; $i < 25;) {
+			my $singleLine = <$extRestoreFH>;
+			if (defined($singleLine)) {
+				$line .= $singleLine;
+				if ($singleLine =~ /(<\/entry>|<\/player>)$/) {
+					$i++;
+				}
+			} else {
+				last;
+			}
+		}
+
+		my $reachedEOF = eof($extRestoreFH);
+		$line //= '';
+		$line =~ s/&#(\d*);/escape(chr($1))/ge;
+		eval { $extRestoreParserNB->parse_more($line) };
+		if ($@) {
+			$log->error("Error parsing external data backup file: $@");
+			$extRestoreErrors++;
+			_doneExternalScanning();
+			return 0;
+		}
+		if ($extRestoreDone) {
+			_doneExternalScanning();
+			return 0;
+		}
+		if ($reachedEOF) {
+			$log->error('External data backup file ended unexpectedly before the closing </APCExternalData> tag was found - the file may be incomplete, corrupted, or not a valid APC external data backup file.');
+			$extRestoreErrors++;
+			_doneExternalScanning();
+			return 0;
+		}
+		return 1;
+	}
+
+	$log->warn('No external restore parser (NB) defined!');
+	$prefs->set('backuprestoreresult', 4);
+	$prefs->set('status_backuprestore', 0);
+	return 0;
+}
+
+sub _doneExternalScanning {
+	if (defined $extRestoreParserNB) {
+		eval {$extRestoreParserNB->parse_done};
+	}
+
+	$extRestoreParserNB = undef;
+	$extRestoreParser = undef;
+	$extOpened = 0;
+	close $extRestoreFH;
+	$extRestoreFH = undef;
+
+	require Plugins::AlternativePlayCount::Storage;
+	Plugins::AlternativePlayCount::Storage->trimPlayHistory();
+
+	main::INFOLOG && $log->is_info && $log->info('External data restore completed. Restored '.$extRestoreCount.($extRestoreCount == 1 ? ' item.' : ' items.'));
+
+	_finalizeRestore();
+}
+
+sub handleExternalStartElement {
+	my ($p, $element) = @_;
+
+	if ($extInEntry || $extInPlayer) {
+		$extCurrentKey = $element;
+		$extInValue = 1;
+		$extRestoreItem{$extCurrentKey} = '';
+	}
+	if ($element eq 'entry') {
+		$extInEntry = 1;
+	}
+	if ($element eq 'player') {
+		$extInPlayer = 1;
+	}
+}
+
+sub handleExternalCharElement {
+	my ($p, $value) = @_;
+
+	if ($extInValue && $extCurrentKey) {
+		$extRestoreItem{$extCurrentKey} .= $value;
+	}
+}
+
+sub handleExternalEndElement {
+	my ($p, $element) = @_;
+	$extInValue = 0;
+
+	if ($extInEntry && $element eq 'entry') {
+		$extInEntry = 0;
+
+		my $curEntry = \%extRestoreItem;
+		my $imported = Plugins::AlternativePlayCount::Storage->importPlayHistoryEntry({
+			url => Encode::decode('utf8', unescape($curEntry->{'url'})),
+			urlmd5 => $curEntry->{'urlmd5'},
+			musicbrainz_id => $curEntry->{'musicbrainzid'} || undef,
+			played => $curEntry->{'played'},
+			rating => $curEntry->{'rating'} || undef,
+			remote => $curEntry->{'remote'} || 0,
+			client_id => $curEntry->{'clientid'} ? Encode::decode('utf8', unescape($curEntry->{'clientid'})) : undef,
+		});
+		if ($imported) { $extRestoreCount++; } else { $extRestoreErrors++; }
+
+		$restoreCombinedItemsDone++;
+		if ($restoreCombinedTotal) {
+			$prefs->set('backuprestoreprogresspercentage', sprintf("%.0f", ($restoreCombinedItemsDone / $restoreCombinedTotal) * 100));
+		}
+		%extRestoreItem = ();
+	}
+
+	if ($extInPlayer && $element eq 'player') {
+		$extInPlayer = 0;
+
+		my $curPlayer = \%extRestoreItem;
+		if ($curPlayer->{'mac'}) {
+			Plugins::AlternativePlayCount::Storage->savePlayer({
+				mac => Encode::decode('utf8', unescape($curPlayer->{'mac'})),
+				name => $curPlayer->{'name'} ? Encode::decode('utf8', unescape($curPlayer->{'name'})) : undef,
+				model => $curPlayer->{'model'} ? Encode::decode('utf8', unescape($curPlayer->{'model'})) : undef,
+				last_seen => $curPlayer->{'lastseen'},
+			});
+			$extRestoreCount++;
+		} else {
+			$log->warn('External backup file: skipping player entry without a MAC address');
+			$extRestoreErrors++;
+		}
+
+		$restoreCombinedItemsDone++;
+		if ($restoreCombinedTotal) {
+			$prefs->set('backuprestoreprogresspercentage', sprintf("%.0f", ($restoreCombinedItemsDone / $restoreCombinedTotal) * 100));
+		}
+		%extRestoreItem = ();
+	}
+
+	if ($element eq 'APCExternalData') {
+		$extRestoreDone = 1;
 	}
 }
 

@@ -90,4 +90,10 @@
 [% END %]
 <br>
 
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_DESC" %]
+	<input style="margin-top:-1px;" name="clearplayhistory" type="submit" class="stdclick" onClick="if (!confirm('[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_CONFIRM' | string %]')) { return false; } inprogress('clearplayhistorystatus');" value="[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_BUTTON' | string %]">
+	<span class='status' id='clearplayhistorystatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_INPROGRESS" | string %]</span>
+[% END %]
+<br>
+
 [% PROCESS settings/footer.html %]

@@ -33,6 +33,13 @@
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_DESC" %]
 	<input name="backup" type="submit" class="stdclick" id="apcbackupbutton" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_BUTTON" | string %]"[% IF activebackuprestore || activelmsscan %] disabled[% END %]>
 [% END %]
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_INCLUDEEXTERNALDATA" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_INCLUDEEXTERNALDATA_DESC" %]
+	<select class="stdedit" name="pref_backupexternaldata" id="backupexternaldata">
+		<option [% IF NOT prefs.backupexternaldata %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.backupexternaldata %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
+[% END %]
 <br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_SCHEDULED_BACKUPS_DESC" %]
@@ -75,9 +82,17 @@
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE" desc="" %]
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE_DESC" %]
-	<input type="text" class="stdedit selectFile_xml" name="pref_restorefile" id="restorefile" value="[% restorefilefolder %]" size="40"><br><br>
+	<input type="text" class="stdedit selectFile_xml" name="pref_restorefile" id="restorefile" value="[% restorefilefolder %]" size="40">
+	[% IF restoremissingfile == 2 %]<br><br><span class='error'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE" | string %]</span>[% END %]
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE_DESC" %]
+	<input type="text" class="stdedit selectFile_xml" name="pref_restoreexternalfile" id="restoreexternalfile" value="[% restoreexternalfilefolder %]" size="40">
+	[% IF restoreexternalmissingfile == 2 %]<br><br><span class='error'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE" | string %]</span>[% END %]
+	<br><br>
 	<input name="restore" type="submit" class="stdclick" id="apcrestorebutton" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_BUTTON" | string %]"[% IF activebackuprestore || activelmsscan %] disabled[% END %]>
-	[% IF restoremissingfile %]<span class='error'>[% IF restoremissingfile == 1 %][% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE" | string %][% ELSE %][% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE" | string %][% END %]</span>[% END %]
+	[% IF restoremissingfile == 1 %]<span class='error' style='padding-left:10px;'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE" | string %]</span>[% END %]
 [% END %]
 <br>
 

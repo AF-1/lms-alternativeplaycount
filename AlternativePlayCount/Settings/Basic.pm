@@ -38,12 +38,7 @@ sub currentPage {
 }
 
 sub pages {
-	my %page = (
-		'name' => Slim::Utils::Strings::string('PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS'),
-		'page' => page(),
-	);
-	my @pages = (\%page);
-	return \@pages;
+	return [{ 'name' => Slim::Utils::Strings::string('PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS'), 'page' => page() }];
 }
 
 sub prefs {
@@ -52,8 +47,7 @@ sub prefs {
 
 sub beforeRender {
 	my ($class, $paramRef) = @_;
-	my $advMode = $prefs->get('advmode');
-	$paramRef->{'advmode'} = 1 if $advMode;
+	$paramRef->{'advmode'} = 1 if $prefs->get('advmode');
 }
 
 1;

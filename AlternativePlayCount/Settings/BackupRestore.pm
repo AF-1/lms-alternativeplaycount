@@ -5,7 +5,7 @@
 #
 
 
-package Plugins::AlternativePlayCount::Settings::Backup;
+package Plugins::AlternativePlayCount::Settings::BackupRestore;
 
 use strict;
 use warnings;
@@ -33,7 +33,7 @@ sub name {
 }
 
 sub page {
-	return Slim::Web::HTTP::CSRF->protectURI('plugins/AlternativePlayCount/settings/backup.html');
+	return Slim::Web::HTTP::CSRF->protectURI('plugins/AlternativePlayCount/settings/backuprestore.html');
 }
 
 sub currentPage {
@@ -41,16 +41,11 @@ sub currentPage {
 }
 
 sub pages {
-	my %page = (
-		'name' => name(),
-		'page' => page(),
-	);
-	my @pages = (\%page);
-	return \@pages;
+	return [{ 'name' => name(), 'page' => page() }];
 }
 
 sub prefs {
-	return ($prefs, qw(scheduledbackups backuptime prescanbackup autodeletebackups backupsdaystokeep backupfilesmin restorefile clearallbeforerestore));
+	return ($prefs, qw(backupexternaldata scheduledbackups backuptime prescanbackup autodeletebackups backupsdaystokeep backupfilesmin clearallbeforerestore));
 }
 
 sub handler {
@@ -76,19 +71,33 @@ sub handler {
 			createBackup();
 		}
 	} elsif ($paramRef->{'restore'}) {
-		my $selectedfile = $paramRef->{'pref_restorefile'};
+		my $folderPath = $prefs->get('apcfolderpath');
+		my $selectedfile = $paramRef->{'pref_restorefile'} // '';
+		my $selectedexternalfile = $paramRef->{'pref_restoreexternalfile'} // '';
+		$selectedfile = '' if defined($selectedfile) && defined($folderPath) && $selectedfile eq $folderPath;
+		$selectedexternalfile = '' if defined($selectedexternalfile) && defined($folderPath) && $selectedexternalfile eq $folderPath;
 		if ($callHandler) {
 			$paramRef->{'saveSettings'} = 1;
 			$result = $class->SUPER::handler($client, $paramRef);
 			$callHandler = 0;
 		}
-		main::DEBUGLOG && $log->is_debug && $log->debug('restorefile = '.Data::Dump::dump($selectedfile));
-		if (!defined($selectedfile) || $selectedfile eq '') {
-			$paramRef->{'restoremissingfile'} = 1;
-		} elsif ($selectedfile !~ /\.xml/i) {
+		main::DEBUGLOG && $log->is_debug && $log->debug('restorefile = '.Data::Dump::dump($selectedfile).', restoreexternalfile = '.Data::Dump::dump($selectedexternalfile));
+
+		my $validfile = ($selectedfile ne '' && $selectedfile =~ /\.xml$/i && hasValidBackupRootElement($selectedfile, 'AlternativePlayCount')) ? 1 : 0;
+		my $validexternalfile = ($selectedexternalfile ne '' && $selectedexternalfile =~ /\.xml$/i && hasValidBackupRootElement($selectedexternalfile, 'APCExternalData')) ? 1 : 0;
+
+		if ($selectedfile ne '' && !$validfile) {
 			$paramRef->{'restoremissingfile'} = 2;
+		}
+		if ($selectedexternalfile ne '' && !$validexternalfile) {
+			$paramRef->{'restoreexternalmissingfile'} = 2;
+		}
+
+		if (!$validfile && !$validexternalfile) {
+			$paramRef->{'restoremissingfile'} = 1 unless $paramRef->{'restoremissingfile'};
 		} else {
-			$prefs->set('restorefile', $selectedfile);
+			$prefs->set('restorefile', $validfile ? $selectedfile : '');
+			$prefs->set('restoreexternalfile', $validexternalfile ? $selectedexternalfile : '');
 			if (Slim::Music::Import->stillScanning) {
 				$log->warn('Cannot start a restore while an LMS scan is in progress');
 			} else {
@@ -104,6 +113,7 @@ sub handler {
 sub beforeRender {
 	my ($class, $paramRef) = @_;
 	$paramRef->{'restorefilefolder'} = $prefs->get('apcfolderpath');
+	$paramRef->{'restoreexternalfilefolder'} = $prefs->get('apcfolderpath');
 	$paramRef->{lastsuccessfulbackup} = Slim::Utils::DateTime::longDateF($prefs->get('lastbackup')).", ".Slim::Utils::DateTime::timeF($prefs->get('lastbackup')) if $prefs->get('lastbackup');
 	$paramRef->{'squeezebox_server_jsondatareq'} = '/jsonrpc.js';
 	$paramRef->{'activebackuprestore'} = 1 if $prefs->get('status_backuprestore');

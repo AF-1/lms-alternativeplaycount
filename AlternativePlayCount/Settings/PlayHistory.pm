@@ -38,12 +38,7 @@ sub currentPage {
 }
 
 sub pages {
-	my %page = (
-		'name' => name(),
-		'page' => page(),
-	);
-	my @pages = (\%page);
-	return \@pages;
+	return [{ 'name' => name(), 'page' => page() }];
 }
 
 sub prefs {
@@ -63,6 +58,13 @@ sub handler {
 			$result = $class->SUPER::handler($client, $paramRef);
 		}
 		Plugins::AlternativePlayCount::Plugin::purgeInvalidPlayHistory();
+	} elsif ($paramRef->{'clearplayhistory'}) {
+		if ($callHandler) {
+			$result = $class->SUPER::handler($client, $paramRef);
+		}
+		require Plugins::AlternativePlayCount::Storage;
+		Plugins::AlternativePlayCount::Storage->clearPlayHistory();
+		Plugins::AlternativePlayCount::Storage->clearPlayers();
 	} elsif ($callHandler) {
 		$result = $class->SUPER::handler($client, $paramRef);
 	}
