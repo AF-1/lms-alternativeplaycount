@@ -98,12 +98,17 @@ sub createBackup {
 		};
 		main::DEBUGLOG && $log->is_debug && $log->debug('Found '.$backupTotalCount.' track(s) with values in the APC database');
 
+		my $osDetails = Slim::Utils::OSDetect::details();
+		my $backupCodepage = getBackupCodepage();
 		print $backupOutput "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
 		print $backupOutput "<!-- Backup of APC database values for ".$backupTotalCount." track(s) -->\n";
 		print $backupOutput "<!-- ".$backuptimestamp." -->\n";
+		print $backupOutput "<!-- Created on OS: ".($osDetails->{'osName'} || $^O)."; OS family: ".($osDetails->{'os'} || 'unknown')." -->\n";
+		print $backupOutput "<!-- OS-Arch: ".($osDetails->{'osArch'} || 'unknown')."; Perl-Arch: ".($osDetails->{'binArch'} || 'unknown')."; FS: ".($osDetails->{'fsType'} || 'unknown')."; Perl $] -->\n";
 		print $backupOutput "<AlternativePlayCount>\n";
+		print $backupOutput "\t<backupos>".($osDetails->{'os'} || $^O)."</backupos>\n";
+		print $backupOutput "\t<backupcodepage>".($backupCodepage || '')."</backupcodepage>\n";
 		print $backupOutput "\t<trackcount>".$backupTotalCount."</trackcount>\n";
-
 		if ($importerCall) {
 			while (writeBackupChunk()) {}
 		} else {
@@ -190,10 +195,16 @@ sub _startExternalBackup {
 
 	main::DEBUGLOG && $log->is_debug && $log->debug('Found '.scalar(@{$extBackupPlayHistoryQueue}).' play history entrie(s) and '.scalar(@{$extBackupPlayersQueue}).' player(s) to back up');
 
+	my $osDetails = Slim::Utils::OSDetect::details();
+	my $backupCodepage = getBackupCodepage();
 	print $extBackupOutput "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
 	print $extBackupOutput "<!-- Backup of APC external database tables (e.g. play history) -->\n";
 	print $extBackupOutput "<!-- ".$backuptimestamp." -->\n";
+	print $extBackupOutput "<!-- Created on OS: ".($osDetails->{'osName'} || $^O)."; OS family: ".($osDetails->{'os'} || 'unknown')." -->\n";
+	print $extBackupOutput "<!-- OS-Arch: ".($osDetails->{'osArch'} || 'unknown')."; Perl-Arch: ".($osDetails->{'binArch'} || 'unknown')."; FS: ".($osDetails->{'fsType'} || 'unknown')."; Perl $] -->\n";
 	print $extBackupOutput "<APCExternalData>\n";
+	print $extBackupOutput "\t<backupos>".($osDetails->{'os'} || $^O)."</backupos>\n";
+	print $extBackupOutput "\t<backupcodepage>".($backupCodepage || '')."</backupcodepage>\n";
 	print $extBackupOutput "\t<playhistorycount>".scalar(@{$extBackupPlayHistoryQueue})."</playhistorycount>\n";
 	print $extBackupOutput "\t<playercount>".scalar(@{$extBackupPlayersQueue})."</playercount>\n";
 	print $extBackupOutput "\t<playhistory>\n";
@@ -283,6 +294,18 @@ sub _cleanupBackupFiles {
 	}
 }
 
+sub getBackupCodepage {
+	return undef unless main::ISWINDOWS;
+	my $codepage;
+	eval {
+		require Win32;
+		my $cp = Win32::GetACP();
+		$codepage = 'cp'.$cp if $cp;
+	};
+	main::DEBUGLOG && $log->is_debug && $log->debug('Could not determine Windows codepage: '.$@) if $@;
+	return $codepage;
+}
+
 sub getRelFilePath {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Getting relative file url/path.');
 	my $fullTrackURL = shift;
@@ -301,6 +324,7 @@ sub getRelFilePath {
 			$relFilePath = file($fullTrackPath)->relative($_);
 			$relFilePath = Slim::Utils::Misc::fileURLFromPath($relFilePath);
 			$relFilePath =~ s/^(file:)?\/+//isg;
+			$relFilePath =~ s/^\.\///;
 			main::DEBUGLOG && $log->is_debug && $log->debug('Saving RELATIVE file path: '.$relFilePath);
 			last;
 		}

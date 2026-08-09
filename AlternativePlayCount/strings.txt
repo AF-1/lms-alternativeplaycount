@@ -179,14 +179,6 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_ERROR
 	EN	Backup failed - please check the server log
 	FR	échec de la sauvegarde - veuillez consulter le journal du serveur
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SUCCESS
-	EN	Restore successful
-	FR	Restauration réussie
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_ERROR
-	EN	Restore failed - please check the server log
-	FR	échec de la restauration - veuillez consulter le journal du serveur
-
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_LMSSCANINPROGRESS
 	EN	Active LMS scan detected - backup/restore temporarily disabled
 	FR	Scan LMS actif détecté - sauvegarde/restauration temporairement désactivée
@@ -246,6 +238,72 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_BACKUPMINFILESTOKEEP_DESC
 	EN	Keep at least this number of backup files, regardless of their creation date.<br>If you don't create scheduled or regular manual backups, this will prevent APC from accidentally deleting <b>all</b> of your old backup files.
 	FR	Garder au moins ce nombre de sauvegardes, sans consideration de leur date de création.<br>Si vous ne créez pas de sauvegardes programmées ou manuelles régulières, cela évitera à APC de supprimer accidentellement <b>toutes</b> les sauvegardes.
+
+
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE
+	EN	Restore
+	FR	Restauration
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE
+	EN	Select a backup file to restore APC main table values from
+	FR	Sélectionner une sauvegarde depuis laquelle restaurer votre table principale APC
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE_DESC
+	EN	Select a backup file (created with <i>Alternative Play Count</i>) to restore your main APC table values from.<br> At least one of the two file fields must point to a valid backup file.
+	FR	FR	Sélectionne une sauvegarde (créée avec <i>Nombre de Lectures Alternatif</i>) pour restaurer votre table principale APC.<br>Au moins l'un des deux champs de fichier doit indiquer un fichier de sauvegarde valide.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE
+	EN	External data backup file
+	FR	Fichier de sauvegarde des données externes
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE_DESC
+	EN	Optionally select a separate backup file containing external plugin data (e.g. play history) to restore.<br>At least one of the two file fields must point to a valid backup file.<br>Local history entries are skipped when restoring from a different operating system, as their file paths cannot be resolved here.<br><br>For details on restoring across different operating systems, see <a href="https://github.com/AF-1/sobras/wiki/Restoring-backups-across-operating-systems" target="_blank">this wiki page</a>.
+	FR	Sélectionnez éventuellement un fichier de sauvegarde séparé contenant des données externes du plugin (par ex. l'historique de lecture) à restaurer.<br>Au moins l'un des deux champs de fichier doit indiquer un fichier de sauvegarde valide.<br>Les entrées d'historique locales sont ignorées lors d'une restauration depuis un système d'exploitation différent, car leurs chemins de fichiers ne peuvent pas y être résolus.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW
+	EN	Restore from backup file now
+	FR	Restaurer à partir d'une sauvegarde maintenant
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW_DESC
+	EN	Restore main APC table values from the backup file you chose above.<br><br><b>All main APC table values will be reset to the values of the backup file.</b>
+	FR	Restaure les données de la table principale APC à partir du fichier de sauvegarde sélectionné ci-dessus.<br><br><b>Toutes les données de la table principale APC seront réinitialisées aux valeurs de la sauvegarde.</b>
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_BUTTON
+	EN	Restore now
+	FR	Restaurer maintenant
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE
+	EN	You have to select at least one file first!
+	FR	Vous devez sélectionner au moins un fichier d'abord !
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE
+	EN	Please select a valid XML file created with <i>Alternative Play Count</i> !
+	FR	Merci de sélectionner un ficher XML valide créé avec <i>Nombre de Lectures Alternatif</i> !
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SUCCESS
+	EN	Restore successful
+	FR	Restauration réussie
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_ERROR
+	EN	Restore failed - please check the server log
+	FR	échec de la restauration - veuillez consulter le journal du serveur
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_PARTIAL
+	EN	Restore completed but some tracks were skipped - please check the server log
+	FR	Restauration terminée mais certaines pistes ont été ignorées - veuillez consulter le journal du serveur
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGRESS
+	EN	restoring
+	FR	restauration
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE
+	EN	Clear all main APC table values<br>before restoring
+	FR	Vider toute la table principale APC<br>avant de restaurer
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE_DESC
+	EN	This will clear all values in the main APC table before starting the restore process. All current values in your main APC table will be reset to the values from the backup. In other words, values not contained in the backup will be lost.
+	FR	Cela va vider toutes les valeurs dans la table principale APC avant de démarrer le processus de restauration. Toutes les valeurs courantes de la table principale APC seront remises aux valeurs de la sauvegarde. En d'autres mots, les valeurs non sauvegardées seront perdues.
 
 
 
@@ -321,8 +379,6 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_DPSV_INITIALVALS_RATINGS
 	EN	Use track ratings
 	FR	Utiliser les notes
 
-
-
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_CLEAR_APCDATABASE
 	EN	Reset <i>complete</i> main APC table
 	FR	Réinitialiser la table principale APC
@@ -363,7 +419,6 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_MINPLAYCOUNT_DESC
 	EN	Unlike <i>Alternative Play Count</i>, LMS also increments the play count of a track when you skip it.<br>When APC populates its <i>empty</i> database with current <i>play count</i> values from the LMS persistent database, you can <b>limit the copied LMS play counts</b> to higher values and skip lower play counts that may have been caused by skipping tracks.
 	FR	Contrairement à <i>Nombre de Lectures Alternatif</i>, LMS augmente aussi le nombre de lectures des morceaux <b>sautés</b>.<br>Quand APC remplit sa base de données <i>vide</i> avec les nombre de lectures courants de la base LMS, vous pouvez limiter la copie des nombres de lectures aux grandes valeurs et sauter les valeurs basses qui peuvent avoir été causées par des sauts de morceaux.
 
-
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS
 	EN	Reset <i>LMS tracks_persistent</i> values<br>to APC values
 
@@ -375,59 +430,6 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_BU
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_INPROGRESS
 	EN	resetting LMS to APC values...
-
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE
-	EN	Restore
-	FR	Restauration
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE
-	EN	Select a backup file to restore APC main table values from
-	FR	Sélectionner une sauvegarde depuis laquelle restaurer votre table principale APC
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTFILE_DESC
-	EN	Select a backup file (created with <i>Alternative Play Count</i>) to restore your main APC table values from.<br> At least one of the two file fields must point to a valid backup file.
-	FR	FR	Sélectionne une sauvegarde (créée avec <i>Nombre de Lectures Alternatif</i>) pour restaurer votre table principale APC.<br>Au moins l'un des deux champs de fichier doit indiquer un fichier de sauvegarde valide.
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE
-	EN	External data backup file
-	FR	Fichier de sauvegarde des données externes
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE_DESC
-	EN	Optionally select a separate backup file containing external plugin data (e.g. play history) to restore.<br>At least one of the two file fields must point to a valid backup file.
-	FR	Sélectionnez éventuellement un fichier de sauvegarde séparé contenant des données externes du plugin (par ex. l'historique de lecture) à restaurer.<br>Au moins l'un des deux champs de fichier doit indiquer un fichier de sauvegarde valide.
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW
-	EN	Restore from backup file now
-	FR	Restaurer à partir d'une sauvegarde maintenant
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW_DESC
-	EN	Restore main APC table values from the backup file you chose above.<br><br><b>All main APC table values will be reset to the values of the backup file.</b>
-	FR	Restaure les données de la table principale APC à partir du fichier de sauvegarde sélectionné ci-dessus.<br><br><b>Toutes les données de la table principale APC seront réinitialisées aux valeurs de la sauvegarde.</b>
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_BUTTON
-	EN	Restore now
-	FR	Restaurer maintenant
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_MISSINGFILE
-	EN	You have to select at least one file first!
-	FR	Vous devez sélectionner au moins un fichier d'abord !
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE
-	EN	Please select a valid XML file created with <i>Alternative Play Count</i> !
-	FR	Merci de sélectionner un ficher XML valide créé avec <i>Nombre de Lectures Alternatif</i> !
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_INPROGRESS
-	EN	restoring
-	FR	restauration
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE
-	EN	Clear all main APC table values<br>before restoring
-	FR	Vider toute la table principale APC<br>avant de restaurer
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_CLEARALLBEFORE_DESC
-	EN	This will clear all values in the main APC table before starting the restore process. All current values in your main APC table will be reset to the values from the backup. In other words, values not contained in the backup will be lost.
-	FR	Cela va vider toutes les valeurs dans la table principale APC avant de démarrer le processus de restauration. Toutes les valeurs courantes de la table principale APC seront remises aux valeurs de la sauvegarde. En d'autres mots, les valeurs non sauvegardées seront perdues.
 
 
 
@@ -466,7 +468,6 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR_DELTA
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR_DELTA_DESC
 	EN	Set the value by which the rating of a track changes when a track is marked as played or skipped. The value can range from 1 to 10 (= a half-star).
-
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE

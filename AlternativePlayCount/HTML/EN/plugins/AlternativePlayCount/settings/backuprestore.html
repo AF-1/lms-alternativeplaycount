@@ -7,6 +7,7 @@
 .apcstatus{color:var(--apc-status-main-color) !important;font-size:calc(1em + 2px);}
 .apcsuccess{color:green !important;font-size:calc(1em + 2px);}
 .apcerror{color:red !important;font-size:calc(1em + 2px);}
+.apcwarning{color:#b8860b !important;font-size:calc(1em + 2px);}
 .apcscanstatus:after{font-size:180%;content:' .';animation:apcdots 1.8s steps(5,end)infinite}
 @keyframes apcdots{0%,20%{color:var(--apc-status-text-shadow-color);text-shadow:.25em 0 0 var(--apc-status-text-shadow-color),.5em 0 0 var(--apc-status-text-shadow-color)}40%{color:var(--apc-status-main-color);text-shadow:.25em 0 0 var(--apc-status-text-shadow-color),.5em 0 0 var(--apc-status-text-shadow-color)}60%{text-shadow:.25em 0 0 var(--apc-status-main-color),.5em 0 0 var(--apc-status-text-shadow-color)}80%,100%{text-shadow:.25em 0 0 var(--apc-status-main-color),.5em 0 0 var(--apc-status-main-color)}}
 .error{color:red;}
@@ -121,7 +122,7 @@
 	function apcShowStatus(text, cssClasses) {
 		var el = document.getElementById('apcbackuprestorestatus');
 		el.innerHTML = text;
-		el.classList.remove('apcstatus', 'apcscanstatus', 'apcsuccess', 'apcerror');
+		el.classList.remove('apcstatus', 'apcscanstatus', 'apcsuccess', 'apcerror', 'apcwarning');
 		if (cssClasses) {
 			cssClasses.split(' ').forEach(function(c) { el.classList.add(c); });
 		}
@@ -196,6 +197,9 @@
 					setTimeout(apcGetPrefVal, 3000, 'backuprestoreresult', '0');
 				} else if (value == 4) {
 					apcShowStatus('[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_ERROR" | string %]', 'apcerror');
+					setTimeout(apcGetPrefVal, 3000, 'backuprestoreresult', '0');
+				} else if (value == 5) {
+					apcShowStatus('[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_PARTIAL" | string %]', 'apcwarning');
 					setTimeout(apcGetPrefVal, 3000, 'backuprestoreresult', '0');
 				}
 			}

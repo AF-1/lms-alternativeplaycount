@@ -26,6 +26,7 @@ use POSIX qw(strftime floor ceil);
 use Scalar::Util qw(blessed);
 use XML::Parser;
 use HTML::Entities;
+use Unicode::Normalize;
 
 use Plugins::AlternativePlayCount::Common ':all';
 use Plugins::AlternativePlayCount::Importer;
@@ -38,10 +39,16 @@ my $log = Slim::Utils::Log->addLogCategory({
 my $serverPrefs = preferences('server');
 my $prefs = preferences('plugin.alternativeplaycount');
 
-my ($ratingslight_enabled, %restoreitem, $currentKey, $inTrack, $inValue, $backupFH, $backupParser, $backupParserNB, $restorestarted, %itemNames, $restoreTotalCount, $restoreCombinedItemsDone, $restoreCombinedTotal, $restoreDone);
-my ($opened, $restoreCount, $restoreErrors) = (0, 0, 0);
-my (%extRestoreItem, $extCurrentKey, $extInEntry, $extInPlayer, $extInValue, $extRestoreFH, $extRestoreParser, $extRestoreParserNB, $extRestoreTotalCount, $extRestoreDone);
-my ($extOpened, $extRestoreCount, $extRestoreErrors) = (0, 0, 0);
+my (%restoreitem, $currentKey, $inTrack, $inValue, $backupFH, $backupParser, $backupParserNB, $restorestarted);
+my ($restoreTotalCount, $restoreCombinedItemsDone, $restoreCombinedTotal, $restoreDone, $opened);
+my ($restoreCount, $restoreErrors, $unidentifiableCount, $unmatchedCount, $backupSourceOS, $backupSourceCodepage, $preferCodepageFirst) = (0, 0, 0, 0, undef, undef, 0);
+my @unmatchedTrackURLs;
+
+my (%extRestoreItem, $extCurrentKey, $extInEntry, $extInPlayer, $extInValue, $extRestoreFH, $extRestoreParser, $extRestoreParserNB, $extRestoreTotalCount, $extPlayHistoryTotalCount, $extRestoreDone);
+my ($extOpened, $extPlayHistoryRestoredCount, $extPlayerRestoredCount, $extRestoreErrors, $extSkippedCount, $extBackupSourceOS, $extPlayerTotalCount) = (0, 0, 0, 0, 0, undef, 0);
+
+my $ratingslight_enabled;
+my %itemNames;
 
 sub initPlugin {
 	my $class = shift;
@@ -131,7 +138,7 @@ sub initPlugin {
 sub postinitPlugin {
 	my $class = shift;
 	if (Slim::Schema::hasLibrary() && !Slim::Music::Import->stillScanning) {
-		initDatabase();
+		initDatabase(1);
 	}
 	$ratingslight_enabled = Slim::Utils::PluginManager->isEnabled('Plugins::RatingsLight::Plugin');
 	main::DEBUGLOG && $log->is_debug && $log->debug('Plugin "Ratings Light" is enabled') if $ratingslight_enabled;
@@ -755,14 +762,17 @@ sub resetValues {
 		} elsif ($objectType eq 'playlist') {
 			eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 join playlist_track on playlist_track.track = tracks.url where playlist_track.playlist = ?)", undef, $objectID) };
 		} elsif ($objectType eq 'year') {
-			eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where ifnull(tracks.year, 0) = ?)", undef, $objectID) };
+			my $yearValue = $objectID + 0;
+			eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where ifnull(tracks.year, 0) = $yearValue)") };
 		} elsif ($objectType eq 'decade') {
-			eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where ifnull(tracks.year, 0) >= ? and ifnull(tracks.year, 0) <= (? + 9))", undef, $objectID, $objectID) };
+			my $decadeStart = $objectID + 0;
+			eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where ifnull(tracks.year, 0) >= $decadeStart and ifnull(tracks.year, 0) <= ($decadeStart + 9))") };
 		}
 		if ($@) { $log->error("Database error: $@"); }
 	}
 	main::DEBUGLOG && $log->is_debug && $log->debug("Finished resetting $infoItem for $objectType with ID: ".$objectID);
 }
+
 
 ## mark as played or skipped
 
@@ -1160,7 +1170,7 @@ sub _setDynamicPlayedSkippedValue {
 
 sub _setAutoRatingValue {
 	my ($client, $track, $action, $baselineRatingPlayCount) = @_;
-	return if (!$track || !$action || !$client);
+	return if (!$track || !$action);
 
 	# can't rate non-library remote tracks
 	if ((Slim::Music::Info::isRemoteURL($track->url) == 1) && (!defined($track->extid))) {
@@ -1243,7 +1253,8 @@ sub _setAutoRatingValue {
 	# set new rating
 	main::INFOLOG && $log->is_info && $log->info($logActionPrefix.' rating value from '.$curRating.' to '.$newRating.' for track with url: '.$track->url."\n\n");
 
-	Slim::Control::Request::executeRequest($client, ['ratingslight', 'setratingpercent', 'track_id:'.$track->id, $newRating]);
+	my $ratingslightCommand = $client ? 'setratingpercent' : 'setratingpercentnoclient';
+	Slim::Control::Request::executeRequest($client, ['ratingslight', $ratingslightCommand, 'track_id:'.$track->id, $newRating]);
 }
 
 sub _skipWithoutCount {
@@ -1360,18 +1371,35 @@ sub restoreFromBackup {
 	$opened = 0;
 	$backupParserNB = undef;
 	$backupParser = undef;
+	if ($extRestoreFH) {
+		close($extRestoreFH);
+		$extRestoreFH = undef;
+	}
+	$extOpened = 0;
+	$extRestoreParserNB = undef;
+	$extRestoreParser = undef;
 	$restoreCount = 0;
 	$restoreErrors = 0;
 	$restoreCombinedItemsDone = 0;
-	$extRestoreCount = 0;
+	$extPlayHistoryRestoredCount = 0;
+	$extPlayerRestoredCount = 0;
 	$extRestoreErrors = 0;
+	$extSkippedCount = 0;
+	$extBackupSourceOS = undef;
+	$unidentifiableCount = 0;
+	$unmatchedCount = 0;
+	@unmatchedTrackURLs = ();
 	$restorestarted = time();
 	my $restorefile = $prefs->get('restorefile');
 	my $restoreexternalfile = $prefs->get('restoreexternalfile');
 
 	if ($restorefile || $restoreexternalfile) {
 		$restoreTotalCount = $restorefile ? _getAPCBackupTrackCount($restorefile) : 0;
-		$extRestoreTotalCount = $restoreexternalfile ? _getExternalBackupCount($restoreexternalfile) : 0;
+		($backupSourceOS, $backupSourceCodepage) = $restorefile ? _getAPCBackupSourceInfo($restorefile) : (undef, undef);
+		my $currentOSDetails = Slim::Utils::OSDetect::details();
+		$preferCodepageFirst = (defined $backupSourceOS && $backupSourceOS eq 'Windows' && ($currentOSDetails->{'os'} || '') ne 'Windows') ? 1 : 0;
+		($extPlayHistoryTotalCount, $extPlayerTotalCount) = $restoreexternalfile ? _getExternalBackupCount($restoreexternalfile) : (0, 0);
+		$extRestoreTotalCount = $extPlayHistoryTotalCount + $extPlayerTotalCount;
 		$restoreCombinedTotal = $restoreTotalCount + $extRestoreTotalCount;
 
 		if ($restorefile) {
@@ -1389,6 +1417,32 @@ sub restoreFromBackup {
 		$prefs->set('backuprestoreresult', 4);
 		$prefs->set('status_backuprestore', 0);
 	}
+}
+
+sub _getAPCBackupSourceInfo {
+	my $xmlFile = shift;
+	my ($sourceOS, $sourceCodepage);
+
+	open(my $fh, '<', $xmlFile) or do {
+		$log->warn("Could not open backup file to detect its source OS: $xmlFile ($!)");
+		return (undef, undef);
+	};
+	for (1..15) {
+		my $line = <$fh>;
+		last unless defined $line;
+		if ($line =~ /<backupos>(.*?)<\/backupos>/) {
+			$sourceOS = $1 || undef;
+		}
+		if ($line =~ /<backupcodepage>(.*?)<\/backupcodepage>/) {
+			$sourceCodepage = $1 || undef;
+		}
+		last if defined $sourceOS && defined $sourceCodepage;
+	}
+	close($fh);
+
+	main::INFOLOG && $log->is_info && $log->info('Backup source OS: '.($sourceOS || 'unknown (pre-dates this field)').', codepage: '.($sourceCodepage || 'n/a'));
+
+	return ($sourceOS, $sourceCodepage);
 }
 
 sub _getAPCBackupTrackCount {
@@ -1424,7 +1478,7 @@ sub _getExternalBackupCount {
 	my $xmlFile = shift;
 	my ($playHistoryCount, $playerCount);
 
-	open(my $fh, '<', $xmlFile) or return 0;
+	open(my $fh, '<', $xmlFile) or return (0, 0);
 	for (1..15) {
 		my $line = <$fh>;
 		last unless defined $line;
@@ -1440,7 +1494,7 @@ sub _getExternalBackupCount {
 
 	if (!defined $playHistoryCount || !defined $playerCount) {
 		main::DEBUGLOG && $log->is_debug && $log->debug('playhistorycount/playercount element not found in external backup file - falling back to counting <entry>/<player> occurrences');
-		open(my $fh2, '<', $xmlFile) or return 0;
+		open(my $fh2, '<', $xmlFile) or return (0, 0);
 		$playHistoryCount = 0;
 		$playerCount = 0;
 		while (my $line = <$fh2>) {
@@ -1452,7 +1506,7 @@ sub _getExternalBackupCount {
 		close($fh2);
 	}
 
-	return ($playHistoryCount || 0) + ($playerCount || 0);
+	return (($playHistoryCount || 0), ($playerCount || 0));
 }
 
 sub initRestore {
@@ -1497,21 +1551,22 @@ sub restoreScanFunction {
 	}
 
 	if (defined $backupParserNB) {
-		local $/ = '>';
-		my $line;
-
-		for (my $i = 0; $i < 25;) {
-			my $singleLine = <$backupFH>;
-			if (defined($singleLine)) {
-				$line .= $singleLine;
-				if ($singleLine =~ /(<\/track>)$/) {
-					$i++;
+		my ($line, $reachedEOF);
+		{
+			local $/ = '>';
+			for (my $i = 0; $i < 25;) {
+				my $singleLine = <$backupFH>;
+				if (defined($singleLine)) {
+					$line .= $singleLine;
+					if ($singleLine =~ /(<\/track>)$/) {
+						$i++;
+					}
+				} else {
+					last;
 				}
-			} else {
-				last;
 			}
+			$reachedEOF = eof($backupFH);
 		}
-		my $reachedEOF = eof($backupFH);
 		$line //= '';
 		$line =~ s/&#(\d*);/escape(chr($1))/ge;
 		eval { $backupParserNB->parse_more($line) };
@@ -1552,6 +1607,27 @@ sub doneScanning {
 	$backupFH = undef;
 
 	main::INFOLOG && $log->is_info && $log->info('APC table restore completed after '.(time() - $restorestarted).' seconds. Restored '.$restoreCount.($restoreCount == 1 ? ' track.' : ' tracks.'));
+	if ($unidentifiableCount || $unmatchedCount) {
+		if (!$restoreCount) {
+			$log->error("APC table restore matched 0 of $restoreTotalCount track(s) in the backup to a track in the alternativeplaycount table - nothing was restored.");
+		}
+		if ($unidentifiableCount) {
+			$log->error("APC table restore: $unidentifiableCount of $restoreTotalCount track(s) had no usable identifier (no urlmd5, url or musicbrainz id) in the backup entry itself and were skipped - this usually indicates a corrupted or unusually old backup file. Enable INFO level logging before the next restore for a per-track list.");
+		}
+		if ($unmatchedCount) {
+			writeUnmatchedTracksToFile();
+			my $unmatchedMsg = "APC table restore: $unmatchedCount of $restoreTotalCount track(s) had a valid identifier in the backup but no matching track was found in the alternativeplaycount table and those values were skipped - this can happen if those tracks were since deleted, moved or renamed. See APC_Restore-Unmatched-Tracks.txt in the AlternativePlayCount folder for the full list.";
+			my $currentOS = Slim::Utils::OSDetect::details()->{'os'} || '';
+			if (defined $backupSourceOS && $backupSourceOS ne $currentOS) {
+				$unmatchedMsg .= " This backup was created on a different operating system ($backupSourceOS) than this server is currently running on ($currentOS), which can prevent some tracks from being matched.";
+				if ($currentOS eq 'Windows') {
+					$unmatchedMsg .= " Windows in particular forbids several characters in file and folder names (< > : \" | ? *) that are valid on $backupSourceOS - tracks using these characters cannot exist under their original name on this system and will remain unmatched.";
+				}
+			}
+			$log->error($unmatchedMsg);
+		}
+	}
+	@unmatchedTrackURLs = ();
 
 	_finishOrStartExternalRestore();
 }
@@ -1590,60 +1666,122 @@ sub handleEndElement {
 		$inTrack = 0;
 
 		my $curTrack = \%restoreitem;
-		my ($trackURL, $trackURLmd5);
-		my $fullTrackURL = $curTrack->{'url'};
+		my $fullTrackURLraw = $curTrack->{'url'};
 		my $backupTrackURLmd5 = $isTSlegacyBackupFile ? undef : $curTrack->{'urlmd5'};
 		my $isRemote = $isTSlegacyBackupFile ? undef : $curTrack->{'remote'};
-		my $relTrackURL = $isTSlegacyBackupFile ? undef : $curTrack->{'relurl'};
+		my $relTrackURLraw = $isTSlegacyBackupFile ? undef : $curTrack->{'relurl'};
 		my $trackMBID = $isTSlegacyBackupFile ? $curTrack->{'musicbrainzId'} : $curTrack->{'musicbrainzid'};
 
-		# for local tracks only: check if FULL file url is valid
-		# Otherwise, try RELATIVE file URL with current media dirs
-		$fullTrackURL = Encode::decode('utf8', unescape($fullTrackURL));
-		$relTrackURL = Encode::decode('utf8', unescape($relTrackURL)) if $relTrackURL;
+		my $fullTrackURL = Encode::decode('utf8', unescape($fullTrackURLraw));
 
-		if ($isRemote && $isRemote == 1) {
-			main::DEBUGLOG && $log->is_debug && $log->debug('is remote track. URL = '.Data::Dump::dump($fullTrackURL));
-			$trackURL = $fullTrackURL;
-			$trackURLmd5 = $backupTrackURLmd5;
-		} else {
-			main::DEBUGLOG && $log->is_debug && $log->debug('is local track. URL = '.Data::Dump::dump($fullTrackURL));
-			my $fullTrackPath = pathForItem($fullTrackURL);
-			if ($fullTrackPath && -f $fullTrackPath) {
-				main::DEBUGLOG && $log->is_debug && $log->debug("found file at url \"$fullTrackPath\"");
-				$trackURL = $fullTrackURL;
-				$trackURLmd5 = $backupTrackURLmd5 unless $isTSlegacyBackupFile;
-			} else {
-				main::DEBUGLOG && $log->is_debug && $log->debug("** Couldn't find file for FULL file url. Will try with RELATIVE file url and current LMS media folders.");
-				if (!$relTrackURL) {
-					main::DEBUGLOG && $log->is_debug && $log->debug("** Couldn't find RELATIVE file url.");
-				} else {
-					my $lmsmusicdirs = getMusicDirs();
-					main::DEBUGLOG && $log->is_debug && $log->debug('Valid LMS music dirs = '.Data::Dump::dump($lmsmusicdirs));
+		# encode_locale() matches whatever byte encoding this LMS instance itself used when it scanned
+		# local files (UTF-8 on Linux/macOS, the active ANSI codepage on Windows) - falls back to plain UTF-8 encoding on LMS versions that lack this function
+		my $encodeForLocalPath = Slim::Utils::Unicode->can('encode_locale') ? \&Slim::Utils::Unicode::encode_locale : sub { return Encode::encode('utf8', $_[0]); };
 
-					foreach (@{$lmsmusicdirs}) {
-						my $dirSep = File::Spec->canonpath("/");
-						my $mediaDirURL = Slim::Utils::Misc::fileURLFromPath($_.$dirSep);
-						main::DEBUGLOG && $log->is_debug && $log->debug('Trying LMS music dir url: '.$mediaDirURL);
+		# a Windows source backup names its own codepage; without that field, still try the common
+		# Western default unless the source is positively known to be non-Windows (Darwin/Linux)
+		my $sourceCodepage = $backupSourceCodepage || ((!defined $backupSourceOS || $backupSourceOS eq 'Windows') ? 'cp1252' : undef);
 
-						my $newFullTrackURL = $mediaDirURL.$relTrackURL;
-						my $newFullTrackPath = pathForItem($newFullTrackURL);
-						main::DEBUGLOG && $log->is_debug && $log->debug('Trying with new full track path: '.$newFullTrackPath);
+		# builds NFC and NFD variants from already-decoded text, re-encoded for this machine's locale;
+		# $isFullURL also runs the result back through fileURLFromPath/pathFromFileURL for full URLs
+		my $buildNfcNfdVariants = sub {
+			my ($decodedText, $isFullURL) = @_;
+			return (undef, undef) unless defined $decodedText;
+			my $nfc = $encodeForLocalPath->(Unicode::Normalize::NFC($decodedText));
+			my $nfd = $encodeForLocalPath->(Unicode::Normalize::NFD($decodedText));
+			if ($isFullURL) {
+				$nfc = Slim::Utils::Misc::fileURLFromPath(Slim::Utils::Misc::pathFromFileURL($nfc));
+				$nfd = Slim::Utils::Misc::fileURLFromPath(Slim::Utils::Misc::pathFromFileURL($nfd));
+			}
+			return ($nfc, $nfd);
+		};
 
-						if (-f $newFullTrackPath) {
-							$trackURL = Slim::Utils::Misc::fileURLFromPath($newFullTrackURL);
-							main::DEBUGLOG && $log->is_debug && $log->debug('Found file at new full file url: '.$trackURL);
-							main::DEBUGLOG && $log->is_debug && $log->debug('OLD full file url was: '.$fullTrackURL);
-							last;
-						}
-					}
+		my ($fullTrackURLnfc, $fullTrackURLnfd, $fullTrackURLcpNfc, $fullTrackURLcpNfd);
+		if ($fullTrackURLraw) {
+			my $fullTrackURLrawBytes = unescape(unescape($fullTrackURLraw));
+
+			($fullTrackURLnfc, $fullTrackURLnfd) = $buildNfcNfdVariants->(Encode::decode('utf8', $fullTrackURLrawBytes), 1);
+
+			# a Windows source may have written its own file:// URL using the active ANSI codepage
+			# instead of UTF-8 (e.g. a single 0xE3 byte for one accented character) - decode with that codepage instead of UTF-8,
+			# then build the same NFC/NFD variants as above
+			if ($sourceCodepage) {
+				my $fullTrackURLcpDecoded = eval { Encode::decode($sourceCodepage, $fullTrackURLrawBytes) };
+				main::DEBUGLOG && $log->is_debug && $log->debug("Could not decode full track URL as $sourceCodepage: $@") if $@;
+				($fullTrackURLcpNfc, $fullTrackURLcpNfd) = $buildNfcNfdVariants->($fullTrackURLcpDecoded, 1) if defined $fullTrackURLcpDecoded;
+			}
+		}
+
+		my ($relTrackURL, $relTrackURLnfc, $relTrackURLnfd, $relTrackURLcpNfc, $relTrackURLcpNfd);
+		if ($relTrackURLraw) {
+			$relTrackURL = Encode::decode('utf8', unescape($relTrackURLraw));
+			$relTrackURL =~ s/^\.\///;
+
+			# second unescape pass fully resolves double-encoded backup entries down to raw bytes;
+			# NFC/NFD-normalizes to cover both migration directions (macOS decomposes, most other
+			# filesystems compose), re-encoded for this machine's locale for a consistent fileURLFromPath() call
+			my $relTrackURLrawBytes = unescape(unescape($relTrackURLraw));
+			my $relTrackURLdecoded = Encode::decode('utf8', $relTrackURLrawBytes);
+			$relTrackURLdecoded =~ s/^\.\///;
+
+			($relTrackURLnfc, $relTrackURLnfd) = $buildNfcNfdVariants->($relTrackURLdecoded, 0);
+
+			# same Windows-codepage fallback as above, applied to the relative path
+			if ($sourceCodepage) {
+				my $relTrackURLcpDecoded = eval { Encode::decode($sourceCodepage, $relTrackURLrawBytes) };
+				main::DEBUGLOG && $log->is_debug && $log->debug("Could not decode relative track URL as $sourceCodepage: $@") if $@;
+				if (defined $relTrackURLcpDecoded) {
+					$relTrackURLcpDecoded =~ s/^\.\///;
+					($relTrackURLcpNfc, $relTrackURLcpNfd) = $buildNfcNfdVariants->($relTrackURLcpDecoded, 0);
 				}
 			}
 		}
 
-		if (!$trackURL && !$trackURLmd5 && !$trackMBID) {
-			$log->warn("No valid urlmd5, url or musicbrainz id for this track. Can't restore values for file with restore URL = ".Data::Dump::dump($fullTrackURL));
-			$restoreErrors++;
+		# build every plausible current URL for this track (the full backup URL + one reconstruction per configured media folder for local tracks) and check them against the APC table
+		my @candidateURLs;
+		my %seenFullURL;
+		for my $candidate ($preferCodepageFirst ? ($fullTrackURLcpNfc, $fullTrackURLcpNfd, $fullTrackURL, $fullTrackURLnfc, $fullTrackURLnfd) : ($fullTrackURL, $fullTrackURLnfc, $fullTrackURLnfd, $fullTrackURLcpNfc, $fullTrackURLcpNfd)) {
+			next unless $candidate;
+			next if $seenFullURL{$candidate}++;
+			push @candidateURLs, $candidate;
+		}
+
+		if (!($isRemote && $isRemote == 1) && $relTrackURL) {
+			my $lmsmusicdirs = getMusicDirs();
+			my $dirSep = File::Spec->canonpath("/");
+			my %seenRawRelPath;
+			my @rawRelPathVariants;
+			for my $relPath ($preferCodepageFirst ? ($relTrackURLcpNfc, $relTrackURLcpNfd, $relTrackURLnfc, $relTrackURLnfd) : ($relTrackURLnfc, $relTrackURLnfd, $relTrackURLcpNfc, $relTrackURLcpNfd)) {
+				next unless $relPath;
+				next if $seenRawRelPath{$relPath}++;
+				push @rawRelPathVariants, $relPath;
+			}
+			foreach my $mediaDir (@{$lmsmusicdirs}) {
+				if ($preferCodepageFirst) {
+					push @candidateURLs, map { Slim::Utils::Misc::fileURLFromPath($mediaDir.$dirSep.$_) } @rawRelPathVariants;
+					push @candidateURLs, Slim::Utils::Misc::fileURLFromPath($mediaDir.$dirSep).$relTrackURL;
+				} else {
+					push @candidateURLs, Slim::Utils::Misc::fileURLFromPath($mediaDir.$dirSep).$relTrackURL;
+					push @candidateURLs, map { Slim::Utils::Misc::fileURLFromPath($mediaDir.$dirSep.$_) } @rawRelPathVariants;
+				}
+			}
+		}
+		main::DEBUGLOG && $log->is_debug && $log->debug('Candidate URLs for this track: '.Data::Dump::dump(\@candidateURLs));
+
+		my @urlmd5Candidates;
+		push @urlmd5Candidates, $backupTrackURLmd5 if $backupTrackURLmd5;
+		for my $candidateURL (@candidateURLs) {
+			my $freshUrlmd5 = md5_hex($candidateURL);
+			push @urlmd5Candidates, $freshUrlmd5 unless grep { $_ eq $freshUrlmd5 } @urlmd5Candidates;
+			if (Slim::Utils::Misc->can('safe_md5_hex')) {
+				my $freshSafeUrlmd5 = Slim::Utils::Misc::safe_md5_hex($candidateURL);
+				push @urlmd5Candidates, $freshSafeUrlmd5 unless grep { $_ eq $freshSafeUrlmd5 } @urlmd5Candidates;
+			}
+		}
+
+		if (!@urlmd5Candidates && !$trackMBID) {
+			$unidentifiableCount++;
+			$log->error("No valid urlmd5, url or musicbrainz id for this track - can't restore values. fullTrackURLraw=".Data::Dump::dump($fullTrackURLraw)." ## relTrackURLraw=".Data::Dump::dump($relTrackURLraw)." ## backupTrackURLmd5=".Data::Dump::dump($backupTrackURLmd5)." ## trackMBID=".Data::Dump::dump($trackMBID)." ## candidateURLs count=".scalar(@candidateURLs));
 		} else {
 			my $dbh = Slim::Schema->dbh;
 			my (@bindVals, $setClause);
@@ -1671,17 +1809,6 @@ sub handleEndElement {
 				$setClause = "set playCount = ?, lastPlayed = ?, skipCount = ?, lastSkipped = ?, dynPSval = ?";
 				@bindVals = ($playCount, $lastPlayed, $skipCount, $lastSkipped, $dynPSval);
 				main::DEBUGLOG && $log->is_debug && $log->debug("Setting these values for track: playCount = ".($playCount // 'NULL').", lastPlayed = ".($lastPlayed // 'NULL').", skipCount = ".($skipCount // 'NULL').", lastSkipped = ".($lastSkipped // 'NULL').", dynPSval = ".($dynPSval // 'NULL')."\n");
-			}
-
-			my @urlmd5Candidates;
-			push @urlmd5Candidates, $trackURLmd5 if $trackURLmd5;
-			if ($trackURL) {
-				my $freshUrlmd5 = md5_hex($trackURL);
-				push @urlmd5Candidates, $freshUrlmd5 unless grep { $_ eq $freshUrlmd5 } @urlmd5Candidates;
-				if (Slim::Utils::Misc->can('safe_md5_hex')) {
-					my $freshSafeUrlmd5 = Slim::Utils::Misc::safe_md5_hex($trackURL);
-					push @urlmd5Candidates, $freshSafeUrlmd5 unless grep { $_ eq $freshSafeUrlmd5 } @urlmd5Candidates;
-				}
 			}
 
 			my $updated = 0;
@@ -1713,7 +1840,11 @@ sub handleEndElement {
 				}
 			}
 
-			$restoreErrors++ unless $updated;
+			unless ($updated) {
+				$unmatchedCount++;
+				push @unmatchedTrackURLs, $fullTrackURL || '(no URL in backup entry)';
+				main::DEBUGLOG && $log->is_debug && $log->debug("Could not find a matching track in alternativeplaycount table for this track - tried urlmd5 candidates: ".Data::Dump::dump(\@urlmd5Candidates)." ## musicbrainz id: ".Data::Dump::dump($trackMBID)." ## backup URL was: ".Data::Dump::dump($fullTrackURL));
+			}
 		}
 
 		$restoreCombinedItemsDone++;
@@ -1727,6 +1858,59 @@ sub handleEndElement {
 	}
 }
 
+sub writeUnmatchedTracksToFile {
+	my $filename = catfile($prefs->get('apcfolderpath'), 'APC_Restore-Unmatched-Tracks.txt');
+	my $output = FileHandle->new($filename, '>:utf8') or do {
+		$log->error('Could not open '.$filename.' for writing. Does the AlternativePlayCount folder exist? Does LMS have read/write permissions (755) for the (parent) folder?');
+		return;
+	};
+	print $output strftime("%Y-%m-%d -- %H:%M:%S", localtime time)."\n";
+	print $output scalar(@unmatchedTrackURLs)." track(s) could not be matched during the last restore:\n\n";
+	print $output $_."\n" foreach @unmatchedTrackURLs;
+	close $output;
+}
+
+sub _finalizeRestore {
+	my $totalCount = $restoreCount + $extPlayHistoryRestoredCount + $extPlayerRestoredCount;
+	my $totalHardErrors = $restoreErrors + $extRestoreErrors;
+	my $mainSkipped = $unidentifiableCount + $unmatchedCount;
+	my $historySkipped = $extSkippedCount;
+	my $totalSkipped = $mainSkipped + $historySkipped;
+	my $elapsedSeconds = time() - $restorestarted;
+	my $itemsWord = $totalCount == 1 ? 'item' : 'items';
+	my $wikiURL = 'https://github.com/AF-1/sobras/wiki/Restoring-backups-across-operating-systems';
+
+	my @summaryParts;
+	push @summaryParts, "$restoreCount of $restoreTotalCount APC track(s)" if $restoreTotalCount;
+	push @summaryParts, "$extPlayHistoryRestoredCount of $extPlayHistoryTotalCount history item(s)" if $extPlayHistoryTotalCount;
+	push @summaryParts, "$extPlayerRestoredCount of $extPlayerTotalCount player(s)" if $extPlayerTotalCount;
+	my $summary = @summaryParts ? ': '.join(', ', @summaryParts) : '';
+
+	if ($totalHardErrors) {
+		my $errorMsg = "Restore completed after $elapsedSeconds seconds with errors. Restored $totalCount $itemsWord$summary, $totalHardErrors item(s) failed to import due to a parsing or database error";
+		$errorMsg .= " and $totalSkipped item(s) were skipped (unmatched, unidentifiable, or from an incompatible source)" if $totalSkipped;
+		$errorMsg .= " - check the server log for details. More info: $wikiURL\n\n";
+		$log->error($errorMsg);
+	} elsif ($totalSkipped) {
+		if ($mainSkipped && $historySkipped) {
+			$log->error("Restore completed after $elapsedSeconds seconds. Restored $totalCount $itemsWord$summary, with $mainSkipped of $restoreTotalCount track(s) skipped (unmatched or unidentifiable) and $historySkipped of $extPlayHistoryTotalCount history item(s) skipped. More info: $wikiURL\n\n");
+		} elsif ($historySkipped) {
+			$log->error("Restore completed after $elapsedSeconds seconds. Restored $totalCount $itemsWord$summary, with $historySkipped of $extPlayHistoryTotalCount history item(s) skipped. More info: $wikiURL\n\n");
+		} else {
+			$log->error("Restore completed after $elapsedSeconds seconds. Restored $totalCount $itemsWord$summary, with $mainSkipped of $restoreTotalCount track(s) skipped (unmatched or unidentifiable). More info: $wikiURL\n\n");
+		}
+	} else {
+		main::INFOLOG && $log->is_info && $log->info("Restore completed after $elapsedSeconds seconds. Restored $totalCount $itemsWord$summary.\n\n");
+	}
+
+	$prefs->set('isTSlegacyBackupFile', 0);
+	$prefs->set('backuprestoreprogresspercentage', 100);
+	$prefs->set('backuprestoreresult', ($totalHardErrors > 0 || ($totalSkipped && !$totalCount)) ? 4 : ($totalSkipped ? 5 : 3));
+	$prefs->set('restorefile', '');
+	$prefs->set('restoreexternalfile', '');
+	$prefs->set('status_backuprestore', 0);
+}
+
 sub _finishOrStartExternalRestore {
 	if ($prefs->get('restoreexternalfile') && $extRestoreTotalCount) {
 		_startExternalRestore();
@@ -1735,17 +1919,11 @@ sub _finishOrStartExternalRestore {
 	}
 }
 
-sub _finalizeRestore {
-	my $totalCount = $restoreCount + $extRestoreCount;
-	my $totalErrors = $restoreErrors + $extRestoreErrors;
-	main::INFOLOG && $log->is_info && $log->info('Restore completed after '.(time() - $restorestarted).' seconds. Restored '.$totalCount.($totalCount == 1 ? ' item.' : ' items.').' Restore count listed here may be slightly higher (e.g. +1) than the correct number stated in the backup file(s).');
-	$prefs->set('isTSlegacyBackupFile', 0);
-	$prefs->set('backuprestoreprogresspercentage', 100);
-	$prefs->set('backuprestoreresult', $totalErrors > 0 ? 4 : 3);
-	$prefs->set('status_backuprestore', 0);
-}
-
 sub _startExternalRestore {
+	$extSkippedCount = 0;
+	my $restoreexternalfile = $prefs->get('restoreexternalfile');
+	($extBackupSourceOS) = $restoreexternalfile ? _getAPCBackupSourceInfo($restoreexternalfile) : (undef);
+
 	if (defined($extRestoreParserNB)) {
 		eval {$extRestoreParserNB->parse_done};
 		$extRestoreParserNB = undef;
@@ -1791,22 +1969,22 @@ sub externalRestoreScanFunction {
 	}
 
 	if (defined $extRestoreParserNB) {
-		local $/ = '>';
-		my $line;
-
-		for (my $i = 0; $i < 25;) {
-			my $singleLine = <$extRestoreFH>;
-			if (defined($singleLine)) {
-				$line .= $singleLine;
-				if ($singleLine =~ /(<\/entry>|<\/player>)$/) {
-					$i++;
+		my ($line, $reachedEOF);
+		{
+			local $/ = '>';
+			for (my $i = 0; $i < 25;) {
+				my $singleLine = <$extRestoreFH>;
+				if (defined($singleLine)) {
+					$line .= $singleLine;
+					if ($singleLine =~ /(<\/entry>|<\/player>)$/) {
+						$i++;
+					}
+				} else {
+					last;
 				}
-			} else {
-				last;
 			}
+			$reachedEOF = eof($extRestoreFH);
 		}
-
-		my $reachedEOF = eof($extRestoreFH);
 		$line //= '';
 		$line =~ s/&#(\d*);/escape(chr($1))/ge;
 		eval { $extRestoreParserNB->parse_more($line) };
@@ -1849,7 +2027,10 @@ sub _doneExternalScanning {
 	require Plugins::AlternativePlayCount::Storage;
 	Plugins::AlternativePlayCount::Storage->trimPlayHistory();
 
-	main::INFOLOG && $log->is_info && $log->info('External data restore completed. Restored '.$extRestoreCount.($extRestoreCount == 1 ? ' item.' : ' items.'));
+	main::INFOLOG && $log->is_info && $log->info("External data restore completed. Restored $extPlayHistoryRestoredCount of $extPlayHistoryTotalCount history item(s) and $extPlayerRestoredCount of $extPlayerTotalCount player(s).");
+	if ($extSkippedCount) {
+		$log->error("External data restore: $extSkippedCount local play history item(s) were skipped because this backup's origin (".($extBackupSourceOS || 'unknown, older or corrupted backup file').") does not match this server's operating system - their file paths cannot be resolved here. Remote entries that are part of the library were not affected.");
+	}
 
 	_finalizeRestore();
 }
@@ -1886,16 +2067,27 @@ sub handleExternalEndElement {
 		$extInEntry = 0;
 
 		my $curEntry = \%extRestoreItem;
-		my $imported = Plugins::AlternativePlayCount::Storage->importPlayHistoryEntry({
-			url => Encode::decode('utf8', unescape($curEntry->{'url'})),
-			urlmd5 => $curEntry->{'urlmd5'},
-			musicbrainz_id => $curEntry->{'musicbrainzid'} || undef,
-			played => $curEntry->{'played'},
-			rating => $curEntry->{'rating'} || undef,
-			remote => $curEntry->{'remote'} || 0,
-			client_id => $curEntry->{'clientid'} ? Encode::decode('utf8', unescape($curEntry->{'clientid'})) : undef,
-		});
-		if ($imported) { $extRestoreCount++; } else { $extRestoreErrors++; }
+		my $isLocalEntry = !($curEntry->{'remote'} || 0);
+		my $currentOS = Slim::Utils::OSDetect::details()->{'os'} || '';
+		my $isCrossOS = !defined($extBackupSourceOS) || $extBackupSourceOS ne $currentOS;
+
+		if ($isLocalEntry && $isCrossOS) {
+			# This entry's URL is a local file path from a different OS. It cannot be resolved against tracks on this system.
+			# So importing it would only leave an orphaned & unusable play_history row.
+			# Remote entries that are part of the library are unaffected and still imported below.
+			$extSkippedCount++;
+		} else {
+			my $imported = Plugins::AlternativePlayCount::Storage->importPlayHistoryEntry({
+				url => Encode::decode('utf8', unescape($curEntry->{'url'})),
+				urlmd5 => $curEntry->{'urlmd5'},
+				musicbrainz_id => $curEntry->{'musicbrainzid'} || undef,
+				played => $curEntry->{'played'},
+				rating => $curEntry->{'rating'} || undef,
+				remote => $curEntry->{'remote'} || 0,
+				client_id => $curEntry->{'clientid'} ? Encode::decode('utf8', unescape($curEntry->{'clientid'})) : undef,
+			});
+			if ($imported) { $extPlayHistoryRestoredCount++; } else { $extRestoreErrors++; }
+		}
 
 		$restoreCombinedItemsDone++;
 		if ($restoreCombinedTotal) {
@@ -1915,7 +2107,7 @@ sub handleExternalEndElement {
 				model => $curPlayer->{'model'} ? Encode::decode('utf8', unescape($curPlayer->{'model'})) : undef,
 				last_seen => $curPlayer->{'lastseen'},
 			});
-			$extRestoreCount++;
+			$extPlayerRestoredCount++;
 		} else {
 			$log->warn('External backup file: skipping player entry without a MAC address');
 			$extRestoreErrors++;
@@ -2497,7 +2689,7 @@ sub checkCustomSkipFilterType {
 }
 
 
-# auto-increase DPSV
+## auto-increase DPSV
 
 sub autoIncDpsvScheduler {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Checking autoIncDPSV scheduler');
@@ -2531,7 +2723,7 @@ sub autoIncDpsvScheduler {
 }
 
 
-# playlist history
+## playlist history
 
 sub initPlayHistoryDB {
 	require Plugins::AlternativePlayCount::Storage;
@@ -3117,8 +3309,7 @@ sub purgeInvalidPlayHistory {
 }
 
 
-
-# title formats
+## title formats
 
 sub getTitleFormat {
 	my $track = shift;
@@ -3180,7 +3371,10 @@ sub addTitleFormat {
 
 
 
+## misc
+
 sub initDatabase {
+	my $skipRefresh = shift;
 	if (Slim::Music::Import->stillScanning) {
 		$log->warn("Warning: can't initialize table until library scan is completed");
 		return;
@@ -3219,7 +3413,14 @@ sub initDatabase {
 
 		populateAPCtable();
 	}
-	refreshDatabase();
+
+	# pruning dead tracks / adding new tracks only makes sense after a real library rescan
+	if ($skipRefresh) {
+		setTimers();
+	} else {
+		refreshDatabase();
+	}
+
 	my $ended = time() - $started;
 	main::DEBUGLOG && $log->is_debug && $log->debug('DB init completed after '.$ended.' seconds.');
 }
@@ -3297,11 +3498,11 @@ sub populateAPCtable {
 	if (!$isRestore && $prefs->get('dbpoplmsvalues')) {
 		# populate table with playCount + lastPlayed values from tracks_persistent
 		main::DEBUGLOG && $log->is_debug && $log->debug('Populating empty APC table with values from LMS persistent database.');
-		my $minPlayCount = $prefs->get('dbpoplmsminplaycount');
-		my $sth = $dbh->prepare("INSERT INTO alternativeplaycount (url,playCount,lastPlayed,urlmd5,remote,musicbrainz_id) select tracks.url,case when ifnull(tracks_persistent.playCount, 0) >= ? then tracks_persistent.playCount else null end,case when ifnull(tracks_persistent.playCount, 0) >= ? then tracks_persistent.lastPlayed else null end,tracks.urlmd5,tracks.remote,tracks.musicbrainz_id from tracks left join tracks_persistent on tracks.urlmd5=tracks_persistent.urlmd5 left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio = 1 and tracks.content_type != \"cpl\" and tracks.content_type != \"src\" and tracks.content_type != \"ssp\" and tracks.content_type != \"dir\" and tracks.content_type is not null and (tracks.remote = 0 or tracks.extid is not null) and alternativeplaycount.urlmd5 is null;");
+		my $minPlayCount = ($prefs->get('dbpoplmsminplaycount') || 1) + 0;
+		my $sth = $dbh->prepare("INSERT INTO alternativeplaycount (url,playCount,lastPlayed,urlmd5,remote,musicbrainz_id) select tracks.url,case when ifnull(tracks_persistent.playCount, 0) >= $minPlayCount then tracks_persistent.playCount else null end,case when ifnull(tracks_persistent.playCount, 0) >= $minPlayCount then tracks_persistent.lastPlayed else null end,tracks.urlmd5,tracks.remote,tracks.musicbrainz_id from tracks left join tracks_persistent on tracks.urlmd5=tracks_persistent.urlmd5 left join alternativeplaycount on tracks.urlmd5 = alternativeplaycount.urlmd5 where tracks.audio = 1 and tracks.content_type != \"cpl\" and tracks.content_type != \"src\" and tracks.content_type != \"ssp\" and tracks.content_type != \"dir\" and tracks.content_type is not null and (tracks.remote = 0 or tracks.extid is not null) and alternativeplaycount.urlmd5 is null;");
 		my $count = 0;
 		eval {
-			$count = $sth->execute($minPlayCount, $minPlayCount);
+			$count = $sth->execute();
 			if ($count eq '0E0') {
 				$count = 0;
 			}
