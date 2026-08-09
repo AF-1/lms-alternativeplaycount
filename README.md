@@ -103,7 +103,7 @@ If you have your own plugin, you can use APC methods to get a track's play histo
 </p></details><br>
 
 <details><summary>»<b>Some tracks were skipped when restoring a backup. Is that a bug?</b>«</summary><br><p>
-Usually not. The most common reason is that a track was deleted, moved or renamed since the backup was made. The server log names the exact cause for each skipped track. If you're restoring a backup created on a different OS (macOS/Linux/Windows), a handful of tracks can also remain unmatched due to filesystem differences beyond the plugin's control. See <a href="https://github.com/AF-1/sobras/wiki/Restoring-backups-across-operating-systems">Restoring backups across operating systems</a> for details.
+Usually not. The most common reason is that a track no longer matches anything in your current library, e.g. because it was deleted, moved or renamed since the backup was made. The server log lists the affected tracks, though the plugin can't determine the exact cause for a given track. If you're restoring a backup created on a different OS (macOS/Linux/Windows), a handful of tracks can also remain unmatched due to filesystem differences beyond the plugin's control. See <a href="https://github.com/AF-1/sobras/wiki/Restoring-backups-across-operating-systems">Restoring backups across operating systems</a> for details.
 </p></details><br>
 
 <details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> values?</b>«</summary><br><p>
