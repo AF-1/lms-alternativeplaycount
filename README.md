@@ -102,6 +102,10 @@ If you have your own plugin, you can use APC methods to get a track's play histo
 	`Plugins::AlternativePlayCount::Storage->getPlayHistoryForClient('aa:bb:cc:dd:ee:ff', 50)`<br>
 </p></details><br>
 
+<details><summary>»<b>Some tracks were skipped when restoring a backup — is that a bug?</b>«</summary><br><p>
+Usually not. The most common reason is that a track was deleted, moved, or renamed since the backup was made — the server log names the exact cause for each skipped track. If you're restoring a backup created on a different OS (macOS/Linux/Windows), a handful of tracks can also remain unmatched due to filesystem differences beyond the plugin's control. See <a href="https://github.com/AF-1/sobras/wiki/Restoring-backups-across-operating-systems">Restoring backups across operating systems</a> for details.
+</p></details><br>
+
 <details><summary>»<b>Can I <i>reset</i> <i>play count</i>, <i>skip count</i> or <i>DPSV</i> values?</b>«</summary><br><p>
 You can <b>reset play count</b>, <b>skip count</b> and / or <b>DPSV</b> values for a single track or for a selected artist, album, genre, year, decade or static playlist by clicking on the corresponding item in the <b>context menu</b>.<br><br>
 If you want to reset <ins><b>all</b></ins> APC play count, skip count or DPSV values or even the <i>complete</i> database, you can do so on this page: <i>LMS Settings > Advanced > Alternative Play Count > Reset</i>.
