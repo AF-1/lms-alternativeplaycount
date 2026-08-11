@@ -940,7 +940,7 @@ sub markAsPlayed {
 			urlmd5 => $trackURLmd5,
 			musicbrainz_id => $trackMBID,
 			played => $lastPlayed,
-			rating => $track->rating,
+			rating => _getCurrentRatingValue($track),
 			remote => (Slim::Music::Info::isRemoteURL($trackURL) ? 1 : 0),
 			client_id => $client->id,
 		});
@@ -1179,7 +1179,7 @@ sub _setAutoRatingValue {
 	}
 
 	# get current track rating
-	my $curRating = $track->rating || 0;
+	my $curRating = _getCurrentRatingValue($track);
 	main::DEBUGLOG && $log->is_debug && $log->debug('Current track rating = '.Data::Dump::dump($curRating));
 
 	# calculate new rating value
@@ -3716,6 +3716,19 @@ sub normaliseTrackTitle {
 	$title =~ s/((bonus|deluxe|12“|live|extended|instrumental|edit|interlude|alt\.|alternate|alternative|album|single|ep|maxi)+[ -]*(version|remix|mix|take|track))//ig; # delete some common words
 	$title = uc(Slim::Utils::Text::ignoreCase($title, 1));
 	return $title;
+}
+
+sub _getCurrentRatingValue {
+	my $track = shift;
+	if ($ratingslight_enabled) {
+		my $ratingpercentage = eval { Slim::Control::Request::executeRequest(undef, ['ratingslight', 'getrating', 'track_id:'.$track->id])->getResult('ratingpercentage') };
+		if ($@) {
+			$log->error("Error querying RatingsLight for current rating, falling back to LMS accessor: $@");
+		} elsif (defined $ratingpercentage) {
+			return $ratingpercentage;
+		}
+	}
+	return $track->rating || 0;
 }
 
 sub getAppendedRatingText {
