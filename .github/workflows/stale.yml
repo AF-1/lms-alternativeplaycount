@@ -11,4 +11,3 @@ jobs:
     uses: AF-1/.github/.github/workflows/close-inactive-issues.yml@main
     permissions:
       issues: write
-name: Close inactive issues
