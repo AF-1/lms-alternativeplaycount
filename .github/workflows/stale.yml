@@ -1,6 +1,8 @@
 name: Stale issues
 
 on:
+  workflow_dispatch:
+
   schedule:
     - cron: "32 1 * * *"
 
@@ -9,3 +11,4 @@ jobs:
     uses: AF-1/.github/.github/workflows/close-inactive-issues.yml@main
     permissions:
       issues: write
+name: Close inactive issues
