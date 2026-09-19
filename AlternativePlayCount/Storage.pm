@@ -15,7 +15,7 @@ use Slim::Utils::Prefs;
 use Slim::Utils::SQLiteHelper;
 use Scalar::Util qw(looks_like_number);
 use DBI;
-use File::Spec::Functions qw(catdir catfile);
+use File::Spec;
 
 my $log = logger('plugin.alternativeplaycount');
 my $prefs = preferences('plugin.alternativeplaycount');
@@ -46,13 +46,17 @@ sub init {
 	};
 	if ($@) {
 		$log->error("Failed to connect to database: $@");
+		$dbh = undef;
 		return 0;
 	}
 
-	$dbh->do("PRAGMA journal_mode = WAL");
-	$dbh->do("PRAGMA synchronous = NORMAL");
-	$dbh->do("PRAGMA temp_store = MEMORY");
-	$dbh->do("PRAGMA cache_size = 10000");
+	eval {
+		$dbh->do("PRAGMA journal_mode = WAL");
+		$dbh->do("PRAGMA synchronous = NORMAL");
+		$dbh->do("PRAGMA temp_store = MEMORY");
+		$dbh->do("PRAGMA cache_size = 10000");
+	};
+	$log->error("Failed to set PRAGMAs: $@") if $@;
 
 	if ($prefs->get('playhistory_contextmenu') || $prefs->get('playhistory_homemenu')) {
 		my $lmsDbFile = Slim::Utils::SQLiteHelper->dbFile('library');
@@ -141,7 +145,7 @@ sub createTables {
 	return 1;
 }
 
-sub _currentSchemaVersion { return 2 }
+sub _currentSchemaVersion { return 3 }
 
 sub _migrateSchema {
 	my $class = shift;
@@ -209,6 +213,7 @@ sub _migrateSchema {
 			}
 			$sth->finish();
 		};
+		$log->error("play_history schema migration: failed to read existing indices: $@") if $@;
 
 		for my $idx (sort keys %expectedIndices) {
 			unless ($existingIndices{$idx}) {
@@ -241,6 +246,41 @@ sub _migrateSchema {
 			$log->error("APC external schema migration v2: failed to create players table: $@");
 		} else {
 			main::DEBUGLOG && $log->is_debug && $log->debug('APC external schema migration v2 complete.');
+		}
+	}
+
+	if ($installedVersion < 3) {
+		# musicbrainz_id must be compared case-insensitively because tagging tool can write MBIDs upper- or lowercase
+		# To avoid breaking of fallback matching in getPlayHistory let's rebuild the table with musicbrainz_id COLLATE NOCASE
+		eval {
+			$dbh->begin_work;
+			$dbh->do("DROP TABLE IF EXISTS play_history_v3new");
+			$dbh->do("CREATE TABLE play_history_v3new (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				url TEXT NOT NULL COLLATE NOCASE,
+				urlmd5 CHAR(32) NOT NULL DEFAULT '0',
+				musicbrainz_id VARCHAR(40) COLLATE NOCASE,
+				played INT(10) NOT NULL,
+				rating INTEGER,
+				remote BOOL DEFAULT '0',
+				client_id TEXT
+			)");
+			$dbh->do("INSERT INTO play_history_v3new (id, url, urlmd5, musicbrainz_id, played, rating, remote, client_id)
+				SELECT id, url, urlmd5, musicbrainz_id, played, rating, remote, client_id
+				FROM play_history");
+			$dbh->do("DROP TABLE play_history");
+			$dbh->do("ALTER TABLE play_history_v3new RENAME TO play_history");
+			$dbh->do("CREATE INDEX IF NOT EXISTS urlmd5Idx ON play_history (urlmd5)");
+			$dbh->do("CREATE INDEX IF NOT EXISTS playedIdx ON play_history (played)");
+			$dbh->do("CREATE INDEX IF NOT EXISTS mbidIdx ON play_history (musicbrainz_id)");
+			$dbh->do("CREATE INDEX IF NOT EXISTS clientIdx ON play_history (client_id)");
+			$dbh->commit;
+		};
+		if ($@) {
+			$log->error("APC external schema migration v3: failed to rebuild play_history table: $@");
+			eval { $dbh->rollback; };
+		} else {
+			main::DEBUGLOG && $log->is_debug && $log->debug('APC external schema migration v3 complete.');
 		}
 	}
 

@@ -262,8 +262,8 @@ sub initPrefs {
 	}, 'playhistory_contextmenu', 'playhistory_homemenu');
 
 	# migrate alternativeplaycount database schema to the latest version
-	$prefs->migrate(2, sub {
-		_migrateAPCschema(2);
+	$prefs->migrate(3, sub {
+		_migrateAPCschema(3);
 		return 1;
 	});
 }
@@ -755,7 +755,7 @@ sub resetValues {
 	} elsif ($objectType eq 'genre') {
 		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join genre_track on genre_track.track = tracks.id where genre_track.genre = ?) or alternativeplaycount.url in (select tracks.url from tracks join genre_track on genre_track.track = tracks.id where genre_track.genre = ?)", undef, $objectID, $objectID) };
 	} elsif ($objectType eq 'playlist') {
-		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join playlist_track on playlist_track.track = tracks.url where playlist_track.playlist = ?) or alternativeplaycount.url in (select tracks.url from tracks join playlist_track on playlist_track.track = tracks.url where playlist_track.playlist = ?)", undef, $objectID, $objectID) };
+		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join playlist_track on playlist_track.track = tracks.id where playlist_track.playlist = ?) or alternativeplaycount.url in (select tracks.url from tracks join playlist_track on playlist_track.track = tracks.id where playlist_track.playlist = ?)", undef, $objectID, $objectID) };
 	} elsif ($objectType eq 'year') {
 		my $yearValue = $objectID + 0;
 		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks where ifnull(tracks.year, 0) = $yearValue) or alternativeplaycount.url in (select tracks.url from tracks where ifnull(tracks.year, 0) = $yearValue)") };
@@ -3627,6 +3627,89 @@ sub _migrateAPCschema {
 		$log->error("APC schema migration: failed to remove non-library remote tracks: $@") if $@;
 	}
 
+	# de-duplicate rows sharing the same urlmd5, then enforce uniqueness going forward
+	if ($fromVersion < 3) {
+		my $dupSth = $dbh->prepare("SELECT urlmd5 FROM alternativeplaycount GROUP BY urlmd5 HAVING COUNT(*) > 1");
+		my @dupUrlmd5s;
+		eval {
+			$dupSth->execute();
+			while (my ($dupUrlmd5) = $dupSth->fetchrow_array()) {
+				push(@dupUrlmd5s, $dupUrlmd5);
+			}
+		};
+		$log->error("APC schema migration: failed to check for duplicate urlmd5 values: $@") if $@;
+		$dupSth->finish();
+
+		if (@dupUrlmd5s) {
+			$log->warn("APC schema migration: found " . scalar(@dupUrlmd5s) . " duplicate urlmd5 value(s) in alternativeplaycount, cleaning up before adding a UNIQUE index");
+
+			my $rowSth = $dbh->prepare_cached("SELECT rowid, playCount, skipCount, lastPlayed, lastSkipped FROM alternativeplaycount WHERE urlmd5 = ?");
+			my $deleteSth = $dbh->prepare_cached("DELETE FROM alternativeplaycount WHERE rowid = ?");
+
+			foreach my $dupUrlmd5 (@dupUrlmd5s) {
+				eval {
+					$rowSth->execute($dupUrlmd5);
+					my $rows = $rowSth->fetchall_arrayref({});
+
+					# normalize NULLs and precompute each row's most recent activity timestamp
+					foreach my $row (@$rows) {
+						$row->{'playCount'} ||= 0;
+						$row->{'skipCount'} ||= 0;
+						$row->{'lastActivity'} = (sort { $b <=> $a } (($row->{'lastPlayed'} || 0), ($row->{'lastSkipped'} || 0)))[0];
+					}
+
+					# keep the row with the highest playCount, then skipCount, then most recent activity
+					my ($keeper, @losers) = sort {
+						$b->{'playCount'} <=> $a->{'playCount'}
+						|| $b->{'skipCount'} <=> $a->{'skipCount'}
+						|| $b->{'lastActivity'} <=> $a->{'lastActivity'}
+					} @$rows;
+
+					foreach my $row (@losers) {
+						main::DEBUGLOG && $log->is_debug && $log->debug("APC schema migration: dropping duplicate row (rowid $row->{'rowid'}) for urlmd5 $dupUrlmd5, keeping rowid $keeper->{'rowid'}");
+						$deleteSth->execute($row->{'rowid'});
+					}
+				};
+				$log->error("APC schema migration: failed to clean up duplicate urlmd5 $dupUrlmd5: $@") if $@;
+			}
+
+			$rowSth->finish();
+			$deleteSth->finish();
+			$log->warn("APC schema migration: duplicate cleanup complete.");
+		}
+
+		# musicbrainz_id must be compared case-insensitively because tagging tool can write MBIDs upper- or lowercase
+		# To avoid mismatches in _relinkRenamedTracks let's rebuild the table with musicbrainz_id COLLATE NOCASE
+		eval {
+			$dbh->begin_work;
+			$dbh->do("DROP TABLE IF EXISTS persistentdb.alternativeplaycount_v3new");
+			$dbh->do("CREATE TABLE persistentdb.alternativeplaycount_v3new (
+				url text NOT NULL COLLATE NOCASE,
+				playCount int(10),
+				lastPlayed int(10),
+				skipCount int(10),
+				lastSkipped int(10),
+				dynPSval int(10),
+				remote bool default '0',
+				urlmd5 char(32) not null default '0',
+				musicbrainz_id varchar(40) COLLATE NOCASE
+			)");
+			$dbh->do("INSERT INTO alternativeplaycount_v3new (url, playCount, lastPlayed, skipCount, lastSkipped, dynPSval, remote, urlmd5, musicbrainz_id)
+				SELECT url, playCount, lastPlayed, skipCount, lastSkipped, dynPSval, remote, urlmd5, musicbrainz_id
+				FROM alternativeplaycount");
+			$dbh->do("DROP TABLE alternativeplaycount");
+			$dbh->do("ALTER TABLE persistentdb.alternativeplaycount_v3new RENAME TO alternativeplaycount");
+			$dbh->do("CREATE UNIQUE INDEX IF NOT EXISTS persistentdb.cpurlmd5UniqueIndex ON alternativeplaycount (urlmd5)");
+			$dbh->do("CREATE INDEX IF NOT EXISTS persistentdb.cpmbidIndex ON alternativeplaycount (musicbrainz_id)");
+			$dbh->do("CREATE INDEX IF NOT EXISTS persistentdb.cpurlIndex ON alternativeplaycount (url)");
+			$dbh->commit;
+		};
+		if ($@) {
+			$log->error("APC schema migration: failed to rebuild alternativeplaycount with case-insensitive musicbrainz_id, rolling back: $@");
+			eval { $dbh->rollback; };
+		}
+	}
+
 	main::DEBUGLOG && $log->is_debug && $log->debug("APC schema migration v$migrationVersion complete.");
 }
 
@@ -3638,10 +3721,41 @@ sub populateAPCtable {
 		# populate table with playCount + lastPlayed values from tracks_persistent
 		main::DEBUGLOG && $log->is_debug && $log->debug('Populating empty APC table with values from LMS persistent database.');
 		my $minPlayCount = ($prefs->get('dbpoplmsminplaycount') || 1) + 0;
-		my $sth = $dbh->prepare("INSERT INTO alternativeplaycount (url,playCount,lastPlayed,urlmd5,remote,musicbrainz_id) select tracks.url,case when ifnull(tracks_persistent.playCount, 0) >= $minPlayCount then tracks_persistent.playCount else null end,case when ifnull(tracks_persistent.playCount, 0) >= $minPlayCount then tracks_persistent.lastPlayed else null end,tracks.urlmd5,tracks.remote,tracks.musicbrainz_id from tracks left join tracks_persistent on (tracks.urlmd5=tracks_persistent.urlmd5 or tracks.url=tracks_persistent.url) left join alternativeplaycount on (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) where tracks.audio = 1 and tracks.content_type != \"cpl\" and tracks.content_type != \"src\" and tracks.content_type != \"ssp\" and tracks.content_type != \"dir\" and tracks.content_type is not null and (tracks.remote = 0 or tracks.extid is not null) and alternativeplaycount.urlmd5 is null;");
+		my $sth = $dbh->prepare("with pop_source as (
+			select
+				tracks.url as srcUrl,
+				tracks.urlmd5 as srcUrlmd5,
+				tracks.remote as srcRemote,
+				tracks.musicbrainz_id as srcMbid,
+				coalesce(
+					(select tp.playCount from tracks_persistent tp where tp.urlmd5 = tracks.urlmd5 limit 1),
+					(select tp.playCount from tracks_persistent tp where tp.url = tracks.url limit 1)
+				) as srcPlayCount,
+				coalesce(
+					(select tp.lastPlayed from tracks_persistent tp where tp.urlmd5 = tracks.urlmd5 limit 1),
+					(select tp.lastPlayed from tracks_persistent tp where tp.url = tracks.url limit 1)
+				) as srcLastPlayed
+			from tracks
+			where tracks.audio = 1
+			and tracks.content_type != 'cpl'
+			and tracks.content_type != 'src'
+			and tracks.content_type != 'ssp'
+			and tracks.content_type != 'dir'
+			and tracks.content_type is not null
+			and (tracks.remote = 0 or tracks.extid is not null)
+			and not exists (select 1 from alternativeplaycount where alternativeplaycount.urlmd5 = tracks.urlmd5)
+			and not exists (select 1 from alternativeplaycount where alternativeplaycount.url = tracks.url)
+		)
+		insert into alternativeplaycount (url, playCount, lastPlayed, urlmd5, remote, musicbrainz_id)
+		select
+			srcUrl,
+			case when ifnull(srcPlayCount, 0) >= ? then srcPlayCount else null end,
+			case when ifnull(srcPlayCount, 0) >= ? then srcLastPlayed else null end,
+			srcUrlmd5, srcRemote, srcMbid
+		from pop_source");
 		my $count = 0;
 		eval {
-			$count = $sth->execute();
+			$count = $sth->execute($minPlayCount, $minPlayCount);
 			if ($count eq '0E0') {
 				$count = 0;
 			}
@@ -3653,7 +3767,18 @@ sub populateAPCtable {
 	} else {
 		# insert only values for track url, urlmd5 & musicbrainz_id
 		main::DEBUGLOG && $log->is_debug && $log->debug('Copying values for url, urlmd5 and musicbrainz id to empty APC table.');
-		my $sth = $dbh->prepare("INSERT INTO alternativeplaycount (url, urlmd5, remote, musicbrainz_id) select tracks.url, tracks.urlmd5, tracks.remote, tracks.musicbrainz_id from tracks left join alternativeplaycount on (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) where tracks.audio = 1 and tracks.content_type != \"cpl\" and tracks.content_type != \"src\" and tracks.content_type != \"ssp\" and tracks.content_type != \"dir\" and tracks.content_type is not null and (tracks.remote = 0 or tracks.extid is not null) and alternativeplaycount.urlmd5 is null;");
+		my $sth = $dbh->prepare("insert into alternativeplaycount (url, urlmd5, remote, musicbrainz_id)
+			select tracks.url, tracks.urlmd5, tracks.remote, tracks.musicbrainz_id
+			from tracks
+			where tracks.audio = 1
+			and tracks.content_type != 'cpl'
+			and tracks.content_type != 'src'
+			and tracks.content_type != 'ssp'
+			and tracks.content_type != 'dir'
+			and tracks.content_type is not null
+			and (tracks.remote = 0 or tracks.extid is not null)
+			and not exists (select 1 from alternativeplaycount where alternativeplaycount.urlmd5 = tracks.urlmd5)
+			and not exists (select 1 from alternativeplaycount where alternativeplaycount.url = tracks.url)");
 		eval {
 			$sth->execute();
 		};
@@ -3749,20 +3874,38 @@ sub refreshDatabase {
 		return;
 	}
 
+	_relinkRenamedTracks();
+
 	removeDeadTracks();
 
 	my $dbh = Slim::Schema->dbh;
 
 	# add new tracks
 	main::DEBUGLOG && $log->is_debug && $log->debug('Add new tracks to the APC table.');
-	eval { $dbh->do("INSERT INTO alternativeplaycount (url, urlmd5, remote, musicbrainz_id) select tracks.url, tracks.urlmd5, tracks.remote, tracks.musicbrainz_id from tracks left join alternativeplaycount on (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) where tracks.audio = 1 and tracks.content_type != \"cpl\" and tracks.content_type != \"src\" and tracks.content_type != \"ssp\" and tracks.content_type != \"dir\" and tracks.content_type is not null and (tracks.remote = 0 or tracks.extid is not null) and alternativeplaycount.urlmd5 is null;") };
+	eval { $dbh->do("insert into alternativeplaycount (url, urlmd5, remote, musicbrainz_id)
+		select tracks.url, tracks.urlmd5, tracks.remote, tracks.musicbrainz_id
+		from tracks
+		where tracks.audio = 1
+		and tracks.content_type != 'cpl'
+		and tracks.content_type != 'src'
+		and tracks.content_type != 'ssp'
+		and tracks.content_type != 'dir'
+		and tracks.content_type is not null
+		and (tracks.remote = 0 or tracks.extid is not null)
+		and not exists (select 1 from alternativeplaycount where alternativeplaycount.urlmd5 = tracks.urlmd5)
+		and not exists (select 1 from alternativeplaycount where alternativeplaycount.url = tracks.url)") };
 	if ($@) {
 		$log->error("Database error: $@\n");
 	}
 
 	# refresh Musicbrainz IDs in APC table
 	main::DEBUGLOG && $log->is_debug && $log->debug('Refreshing Musicbrainz IDs.');
-	eval { $dbh->do("update alternativeplaycount set musicbrainz_id = (select tracks.musicbrainz_id from tracks where (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) and tracks.audio = 1 and tracks.content_type != \"ssp\");") };
+	eval { $dbh->do("update alternativeplaycount set musicbrainz_id = (
+		select tracks.musicbrainz_id from tracks where (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) and tracks.audio = 1 and tracks.content_type != 'ssp'
+	)
+	where (
+		select count(*) from tracks where (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) and tracks.audio = 1 and tracks.content_type != 'ssp'
+	) = 1;") };
 	if ($@) {
 		$log->error("Database error: $@\n");
 	}
@@ -3777,6 +3920,55 @@ sub refreshDatabase {
 sub setTimers {
 	Slim::Utils::Timers::setTimer(undef, time() + 2, \&autoIncDpsvScheduler) if $prefs->get('autoincdpsv_interval');
 	Slim::Utils::Timers::setTimer(undef, time() + 10, \&backupScheduler);
+}
+
+sub _relinkRenamedTracks {
+	my $dbh = Slim::Schema->dbh;
+	main::DEBUGLOG && $log->is_debug && $log->debug('Trying to relink APC rows for renamed/moved tracks via musicbrainz_id before dead tracks are removed.');
+
+	eval {
+		my $candidateSth = $dbh->prepare("select rowid, musicbrainz_id from alternativeplaycount
+			where musicbrainz_id is not null and musicbrainz_id != ''
+			and urlmd5 not in (select urlmd5 from tracks)
+			and url not in (select url from tracks)");
+		$candidateSth->execute();
+		my $rows = $candidateSth->fetchall_arrayref({});
+		$candidateSth->finish();
+
+		if (@$rows) {
+			my $targetSth = $dbh->prepare_cached("select url, urlmd5 from tracks where musicbrainz_id = ? COLLATE NOCASE");
+			my $sourceCountSth = $dbh->prepare_cached("select count(*) from alternativeplaycount where musicbrainz_id = ?");
+			my $targetTakenSth = $dbh->prepare_cached("select count(*) from alternativeplaycount where urlmd5 = ?");
+			my $updateSth = $dbh->prepare_cached("update alternativeplaycount set url = ?, urlmd5 = ? where rowid = ?");
+
+			foreach my $row (@$rows) {
+				$targetSth->execute($row->{'musicbrainz_id'});
+				my $targets = $targetSth->fetchall_arrayref({});
+				next if scalar(@$targets) != 1;
+
+				$sourceCountSth->execute($row->{'musicbrainz_id'});
+				my ($sourceCount) = $sourceCountSth->fetchrow_array();
+				next if $sourceCount != 1;
+
+				$targetTakenSth->execute($targets->[0]->{'urlmd5'});
+				my ($targetTaken) = $targetTakenSth->fetchrow_array();
+				next if $targetTaken;
+
+				main::DEBUGLOG && $log->is_debug && $log->debug("Relinking rowid $row->{'rowid'} (mbid $row->{'musicbrainz_id'}) to $targets->[0]->{'url'}");
+				$updateSth->execute($targets->[0]->{'url'}, $targets->[0]->{'urlmd5'}, $row->{'rowid'});
+			}
+
+			$targetSth->finish();
+			$sourceCountSth->finish();
+			$targetTakenSth->finish();
+			$updateSth->finish();
+		}
+	};
+	if ($@) {
+		$log->error("Database error while relinking renamed tracks via musicbrainz_id: $@\n");
+	}
+
+	main::DEBUGLOG && $log->is_debug && $log->debug('Finished relinking renamed tracks.');
 }
 
 sub removeDeadTracks {
@@ -3794,7 +3986,10 @@ sub resetLMSvalues {
 	my $dbh = Slim::Schema->dbh;
 	main::DEBUGLOG && $log->is_debug && $log->debug('Resetting play count and date last played values of the LMS tracks_persistent table to APC values');
 
-	eval { $dbh->do("update tracks_persistent set playCount = (select alternativeplaycount.playCount from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 or tracks_persistent.url = alternativeplaycount.url), lastPlayed = (select round(alternativeplaycount.lastPlayed,0) from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 or tracks_persistent.url = alternativeplaycount.url)") };
+	eval { $dbh->do("update tracks_persistent set
+		playCount = (select alternativeplaycount.playCount from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 or tracks_persistent.url = alternativeplaycount.url),
+		lastPlayed = (select round(alternativeplaycount.lastPlayed,0) from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 or tracks_persistent.url = alternativeplaycount.url)
+		where (select count(*) from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 or tracks_persistent.url = alternativeplaycount.url) = 1") };
 	if ($@) {
 		$log->error("Database error: $@\n");
 	}
