@@ -3987,9 +3987,9 @@ sub resetLMSvalues {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Resetting play count and date last played values of the LMS tracks_persistent table to APC values');
 
 	eval { $dbh->do("update tracks_persistent set
-		playCount = (select alternativeplaycount.playCount from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 or tracks_persistent.url = alternativeplaycount.url),
-		lastPlayed = (select round(alternativeplaycount.lastPlayed,0) from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 or tracks_persistent.url = alternativeplaycount.url)
-		where (select count(*) from alternativeplaycount where tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 or tracks_persistent.url = alternativeplaycount.url) = 1") };
+		playCount = (select alternativeplaycount.playCount from alternativeplaycount where alternativeplaycount.urlmd5 = tracks_persistent.urlmd5 or alternativeplaycount.url = tracks_persistent.url),
+		lastPlayed = (select round(alternativeplaycount.lastPlayed,0) from alternativeplaycount where alternativeplaycount.urlmd5 = tracks_persistent.urlmd5 or alternativeplaycount.url = tracks_persistent.url)
+		where (select count(*) from alternativeplaycount where alternativeplaycount.urlmd5 = tracks_persistent.urlmd5 or alternativeplaycount.url = tracks_persistent.url) = 1") };
 	if ($@) {
 		$log->error("Database error: $@\n");
 	}
