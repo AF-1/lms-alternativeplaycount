@@ -755,7 +755,7 @@ sub resetValues {
 	} elsif ($objectType eq 'genre') {
 		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join genre_track on genre_track.track = tracks.id where genre_track.genre = ?) or alternativeplaycount.url in (select tracks.url from tracks join genre_track on genre_track.track = tracks.id where genre_track.genre = ?)", undef, $objectID, $objectID) };
 	} elsif ($objectType eq 'playlist') {
-		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join playlist_track on playlist_track.track = tracks.id where playlist_track.playlist = ?) or alternativeplaycount.url in (select tracks.url from tracks join playlist_track on playlist_track.track = tracks.id where playlist_track.playlist = ?)", undef, $objectID, $objectID) };
+		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join playlist_track on tracks.url = playlist_track.track where playlist_track.playlist = ?) or alternativeplaycount.url in (select tracks.url from tracks join playlist_track on tracks.url = playlist_track.track where playlist_track.playlist = ?)", undef, $objectID, $objectID) };
 	} elsif ($objectType eq 'year') {
 		my $yearValue = $objectID + 0;
 		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks where ifnull(tracks.year, 0) = $yearValue) or alternativeplaycount.url in (select tracks.url from tracks where ifnull(tracks.year, 0) = $yearValue)") };
@@ -3898,13 +3898,13 @@ sub refreshDatabase {
 		$log->error("Database error: $@\n");
 	}
 
-	# refresh Musicbrainz IDs in APC table
+	# refresh Musicbrainz IDs in APC table (unary plus on tracks.audio to prevent full table scan per APC row if table statistics are missing)
 	main::DEBUGLOG && $log->is_debug && $log->debug('Refreshing Musicbrainz IDs.');
 	eval { $dbh->do("update alternativeplaycount set musicbrainz_id = (
-		select tracks.musicbrainz_id from tracks where (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) and tracks.audio = 1 and tracks.content_type != 'ssp'
+		select tracks.musicbrainz_id from tracks where (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) and +tracks.audio = 1 and tracks.content_type != 'ssp'
 	)
 	where (
-		select count(*) from tracks where (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) and tracks.audio = 1 and tracks.content_type != 'ssp'
+		select count(*) from tracks where (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) and +tracks.audio = 1 and tracks.content_type != 'ssp'
 	) = 1;") };
 	if ($@) {
 		$log->error("Database error: $@\n");
@@ -3936,14 +3936,24 @@ sub _relinkRenamedTracks {
 		$candidateSth->finish();
 
 		if (@$rows) {
-			my $targetSth = $dbh->prepare_cached("select url, urlmd5 from tracks where musicbrainz_id = ? COLLATE NOCASE");
+			# tracks.musicbrainz_id has no index: look up all candidate MBIDs in a few chunked scans instead of one scan per candidate
+			my %targets;
+			my @candidateMBIDs = keys %{{map { lc($_->{'musicbrainz_id'}) => 1 } @$rows}};
+			while (my @chunk = splice(@candidateMBIDs, 0, 500)) {
+				my $targetSth = $dbh->prepare('select musicbrainz_id, url, urlmd5 from tracks where musicbrainz_id collate nocase in ('.join(',', ('?') x @chunk).')');
+				$targetSth->execute(@chunk);
+				while (my ($targetMBID, $targetUrl, $targetUrlmd5) = $targetSth->fetchrow_array()) {
+					push @{$targets{lc($targetMBID)}}, {url => $targetUrl, urlmd5 => $targetUrlmd5};
+				}
+				$targetSth->finish();
+			}
+
 			my $sourceCountSth = $dbh->prepare_cached("select count(*) from alternativeplaycount where musicbrainz_id = ?");
 			my $targetTakenSth = $dbh->prepare_cached("select count(*) from alternativeplaycount where urlmd5 = ?");
 			my $updateSth = $dbh->prepare_cached("update alternativeplaycount set url = ?, urlmd5 = ? where rowid = ?");
 
 			foreach my $row (@$rows) {
-				$targetSth->execute($row->{'musicbrainz_id'});
-				my $targets = $targetSth->fetchall_arrayref({});
+				my $targets = $targets{lc($row->{'musicbrainz_id'})} || [];
 				next if scalar(@$targets) != 1;
 
 				$sourceCountSth->execute($row->{'musicbrainz_id'});
@@ -3958,7 +3968,6 @@ sub _relinkRenamedTracks {
 				$updateSth->execute($targets->[0]->{'url'}, $targets->[0]->{'urlmd5'}, $row->{'rowid'});
 			}
 
-			$targetSth->finish();
 			$sourceCountSth->finish();
 			$targetTakenSth->finish();
 			$updateSth->finish();
