@@ -134,7 +134,7 @@ sub writeBackupChunk {
 		my $BACKUPskipCount = $APCTrack->{'skipcount'} // '';
 		my $BACKUPlastSkipped = toIntTimestamp($APCTrack->{'lastskipped'}) // '';
 		my $BACKUPdynPSval = $APCTrack->{'dynpsval'} // '';
-		my $BACKUPremote = $APCTrack->{'remote'};
+		my $BACKUPremote = $APCTrack->{'remote'} || (Slim::Music::Info::isFileURL($APCTrack->{'url'}) ? 0 : 1);
 		my $BACKUPrelFilePath = ($BACKUPremote == 0 ? getRelFilePath($BACKUPtrackURL) : '');
 		my $BACKUPtrackMBID = $APCTrack->{'musicbrainzid'} || '';
 
@@ -309,14 +309,15 @@ sub getBackupCodepage {
 sub getRelFilePath {
 	main::DEBUGLOG && $log->is_debug && $log->debug('Getting relative file url/path.');
 	my $fullTrackURL = shift;
+	return unless Slim::Music::Info::isFileURL($fullTrackURL);
 	my $relFilePath;
 	my $lmsmusicdirs = getMusicDirs();
 	main::DEBUGLOG && $log->is_debug && $log->debug('Valid LMS music dirs = '.Data::Dump::dump($lmsmusicdirs));
+	my $fullTrackPath = Slim::Utils::Misc::pathFromFileURL($fullTrackURL);
+	my $dirSep = File::Spec->canonpath("/");
 
 	foreach (@{$lmsmusicdirs}) {
-		my $dirSep = File::Spec->canonpath("/");
 		my $mediaDirPath = $_.$dirSep;
-		my $fullTrackPath = Slim::Utils::Misc::pathFromFileURL($fullTrackURL);
 		my $match = checkInFolder($fullTrackPath, $mediaDirPath);
 
 		main::DEBUGLOG && $log->is_debug && $log->debug("Full file path \"$fullTrackPath\" is".($match == 1 ? "" : " NOT")." part of media dir \"".$mediaDirPath."\"");

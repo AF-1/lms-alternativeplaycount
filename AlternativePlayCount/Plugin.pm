@@ -1821,14 +1821,14 @@ sub handleEndElement {
 		# Western default unless the source is positively known to be non-Windows (Darwin/Linux)
 		my $sourceCodepage = $backupSourceCodepage || ((!defined $backupSourceOS || $backupSourceOS eq 'Windows') ? 'cp1252' : undef);
 
-		# builds NFC and NFD variants from already-decoded text, re-encoded for this machine's locale;
+		# builds NFC and NFD variants from already-decoded text, re-encoded for this machine's locale.
 		# $isFullURL also runs the result back through fileURLFromPath/pathFromFileURL for full URLs
 		my $buildNfcNfdVariants = sub {
 			my ($decodedText, $isFullURL) = @_;
 			return (undef, undef) unless defined $decodedText;
 			my $nfc = $encodeForLocalPath->(Unicode::Normalize::NFC($decodedText));
 			my $nfd = $encodeForLocalPath->(Unicode::Normalize::NFD($decodedText));
-			if ($isFullURL) {
+			if ($isFullURL && Slim::Music::Info::isFileURL($nfc)) {
 				$nfc = Slim::Utils::Misc::fileURLFromPath(Slim::Utils::Misc::pathFromFileURL($nfc));
 				$nfd = Slim::Utils::Misc::fileURLFromPath(Slim::Utils::Misc::pathFromFileURL($nfd));
 			}
@@ -1841,9 +1841,8 @@ sub handleEndElement {
 
 			($fullTrackURLnfc, $fullTrackURLnfd) = $buildNfcNfdVariants->(Encode::decode('utf8', $fullTrackURLrawBytes), 1);
 
-			# a Windows source may have written its own file:// URL using the active ANSI codepage
-			# instead of UTF-8 (e.g. a single 0xE3 byte for one accented character) - decode with that codepage instead of UTF-8,
-			# then build the same NFC/NFD variants as above
+			# a Windows source may have written its own file:// URL using the active ANSI codepage instead of UTF-8 (e.g. a single 0xE3 byte for one accented character)
+			# decode with that codepage instead of UTF-8, then build the same NFC/NFD variants as above
 			if ($sourceCodepage) {
 				my $fullTrackURLcpDecoded = eval { Encode::decode($sourceCodepage, $fullTrackURLrawBytes) };
 				main::DEBUGLOG && $log->is_debug && $log->debug("Could not decode full track URL as $sourceCodepage: $@") if $@;
@@ -1856,9 +1855,9 @@ sub handleEndElement {
 			$relTrackURL = Encode::decode('utf8', unescape($relTrackURLraw));
 			$relTrackURL =~ s/^\.\///;
 
-			# second unescape pass fully resolves double-encoded backup entries down to raw bytes;
-			# NFC/NFD-normalizes to cover both migration directions (macOS decomposes, most other
-			# filesystems compose), re-encoded for this machine's locale for a consistent fileURLFromPath() call
+			# second unescape pass fully resolves double-encoded backup entries down to raw bytes
+			# NFC/NFD-normalizes to cover both migration directions (macOS decomposes, most other filesystems compose)
+			# re-encoded for this machine's locale for a consistent fileURLFromPath() call
 			my $relTrackURLrawBytes = unescape(unescape($relTrackURLraw));
 			my $relTrackURLdecoded = Encode::decode('utf8', $relTrackURLrawBytes);
 			$relTrackURLdecoded =~ s/^\.\///;
@@ -3509,8 +3508,7 @@ sub addTitleFormat {
 }
 
 
-
-## misc
+## DB
 
 sub initDatabase {
 	my $skipRefresh = shift;
@@ -3990,6 +3988,9 @@ sub removeDeadTracks {
 
 	main::DEBUGLOG && $log->is_debug && $log->debug('Finished removing dead tracks from APC database table.');
 }
+
+
+## misc
 
 sub resetLMSvalues {
 	my $dbh = Slim::Schema->dbh;
