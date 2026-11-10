@@ -49,6 +49,7 @@ my ($extOpened, $extPlayHistoryRestoredCount, $extPlayerRestoredCount, $extResto
 
 my $ratingslight_enabled;
 my %itemNames;
+my %nonTrackContentTypes = map {$_ => 1} qw(ssp cpl src dir); # content types of non-playable rows in the tracks table
 
 sub initPlugin {
 	my $class = shift;
@@ -276,6 +277,7 @@ sub trackInfoHandler {
 		main::DEBUGLOG && $log->is_debug && $log->debug('Track is remote but not part of LMS library. Track URL: '.$url);
 		return;
 	}
+	return if _isNonTrackRow($track);
 
 	my $alwaysDisplayVals = $prefs->get('alwaysdisplayvals');
 	my $returnVal = 0;
@@ -785,7 +787,7 @@ sub _APCcommandCB {
 	}
 
 	my $clientID = $client->id();
-	main::DEBUGLOG && $log->is_debug && $log->debug('Received command "'.$request->getRequestString().'" from client "'.$clientID.'"');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Received command "'.$request->getRequestString().'" from client "'.$client->name.'" - "'.$clientID.'" (source: '.($request->source // 'undef').')');
 	my $track = Slim::Player::Playlist::track($client);
 
 	if (defined $track) {
@@ -799,6 +801,7 @@ sub _APCcommandCB {
 			main::DEBUGLOG && $log->is_debug && $log->debug('Track is remote but not part of LMS library. Track URL: '.$track->url);
 			return;
 		}
+		return if _isNonTrackRow($track);
 
 		my $currentTrackURL = $track->url;
 		my $currentTrackURLmd5 = $track->urlmd5 || md5_hex($currentTrackURL);
@@ -807,10 +810,11 @@ sub _APCcommandCB {
 		my $previousTrackURLmd5 = $client->pluginData('currentTrackURLmd5');
 		my $previousTrackMBID = $client->pluginData('currentTrackMBID');
 
-		main::DEBUGLOG && $log->is_debug && $log->debug('Current track on client "'.$clientID.'" is '.$currentTrackURL.' with urlmd5 = '.$currentTrackURLmd5.' and Musicbrainz ID = '.Data::Dump::dump($currentTrackMBID));
-		main::DEBUGLOG && $log->is_debug && $log->debug('Previous track on client "'.$clientID.'" is '.Data::Dump::dump($previousTrackURL).' with urlmd5 = '.Data::Dump::dump($previousTrackURLmd5).' and Musicbrainz ID = '.Data::Dump::dump($previousTrackMBID));
+		main::DEBUGLOG && $log->is_debug && $log->debug('Current track on client "'.$clientID.'" is '.$currentTrackURL.' with urlmd5 = '.$currentTrackURLmd5.' and MusicBrainz ID = '.Data::Dump::dump($currentTrackMBID));
+		main::DEBUGLOG && $log->is_debug && $log->debug('Previous track on client "'.$clientID.'" is '.Data::Dump::dump($previousTrackURL).' with urlmd5 = '.Data::Dump::dump($previousTrackURLmd5).' and MusicBrainz ID = '.Data::Dump::dump($previousTrackMBID));
+		main::DEBUGLOG && $log->is_debug && $log->debug('Current song on client "'.$clientID.'": title = "'.($track->title // '').'" - index = '.Slim::Player::Source::playingSongIndex($client).' - markedAsPlayed = '.Data::Dump::dump($client->pluginData('markedAsPlayed')));
 
-		# skip requested by CustomSkip3 ?
+		# check if CustomSkip3 requested this skip
 		if ($prefs->get('ignoreCS3skiprequests') && $request->getRequestString() && $request->getRequestString() =~ 'playlist deleteitem' && $request->source && $request->source =~ 'PLUGIN_CUSTOMSKIP3') {
 			if ($request->getParamsCopy()->{'lastCustomSkippedTrackURLmd5'}) {
 				main::DEBUGLOG && $log->is_debug && $log->debug("skip requested by CustomSkip3 plugin for track: ".$previousTrackURL);
@@ -820,78 +824,94 @@ sub _APCcommandCB {
 
 		## newsong
 		if ($request->isCommand([['playlist'],['newsong']])) {
-			main::DEBUGLOG && $log->is_debug && $log->debug('Received "newsong" cb.');
-			# stop old timer for this client
+			main::DEBUGLOG && $log->is_debug && $log->debug('Received "newsong" callback.');
+			# stop the previous timer for this client
 			Slim::Utils::Timers::killTimers($client, \&markAsPlayed);
 
-			# check current track urlmd5 against previous track urlmd5 because jumping inside a track also triggers newsong event
+			my $currentSongID = Scalar::Util::refaddr(Slim::Player::Source::playingSong($client)) // '';
+			my $previousSongID = $client->pluginData('currentSongID') // '';
+
+			main::DEBUGLOG && $log->is_debug && $log->debug('songID = '.($currentSongID || 'undef').' - previous songID = '.($previousSongID || 'undef'));
+
+			if (defined($previousTrackURLmd5) && $currentTrackURLmd5 eq $previousTrackURLmd5) {
+				if ($currentSongID ne $previousSongID) {
+					# same track played again (new song object, e.g. repeat one), so it may be counted as played again
+					main::DEBUGLOG && $log->is_debug && $log->debug('Same track but new song object (e.g. repeat one or restart). Can be counted as played again. markedAsPlayed was '.Data::Dump::dump($client->pluginData('markedAsPlayed')));
+					_clearPluginData($client, 'markedAsPlayed', 'lastCustomSkippedTrackURLmd5', 'skipWithoutCountTrackURLmd5');
+				} else {
+					main::DEBUGLOG && $log->is_debug && $log->debug('Same track and same song object, probably an in-song jump. Not a new play.');
+				}
+			}
+
+			# compare the urlmd5 of the current track with the previous one because jumping inside a track also triggers a newsong event
 			if (!defined($previousTrackURLmd5) || ($currentTrackURLmd5 ne $previousTrackURLmd5)) {
-				# if previous song wasn't marked as played, mark as skipped
 				main::DEBUGLOG && $log->is_debug && $log->debug('previousTrackURL = '.Data::Dump::dump($previousTrackURL));
 				main::DEBUGLOG && $log->is_debug && $log->debug('previousTrackURLmd5 = '.Data::Dump::dump($previousTrackURLmd5).' -- lastCustomSkippedTrackURLmd5 = '.Data::Dump::dump($client->pluginData('lastCustomSkippedTrackURLmd5')));
 
+				# if the previous track was not marked as played, mark it as skipped (unless an exception applies)
 				if (defined($previousTrackURLmd5) && (!defined($client->pluginData('markedAsPlayed')) || $client->pluginData('markedAsPlayed') ne $previousTrackURLmd5)) {
-					# DFS request to ignore skip count
+					# DFS requested that this skip is not counted
 					if ($client->pluginData('skipWithoutCountTrackURLmd5') && $client->pluginData('skipWithoutCountTrackURLmd5') eq $previousTrackURLmd5) {
-						main::INFOLOG && $log->is_info && $log->info("skip requested by DarkFlat - don't mark this track as skipped in db: ".$previousTrackURL);
-						$client->pluginData('skipWithoutCountTrackURLmd5' => undef);
-					# CS request to ignore skip count
+						main::INFOLOG && $log->is_info && $log->info("DarkFlatSkin requested to skip without counting. Not marking this track as skipped in the database: ".$previousTrackURL);
+						_clearPluginData($client, 'skipWithoutCountTrackURLmd5');
+					# do not count the skip if the APC preference to ignore CustomSkip3 skips is enabled
 					} elsif ($prefs->get('ignoreCS3skiprequests') && $client->pluginData('lastCustomSkippedTrackURLmd5') && $client->pluginData('lastCustomSkippedTrackURLmd5') eq $previousTrackURLmd5) {
-						main::INFOLOG && $log->is_info && $log->info("skip requested by CustomSkip3 - don't mark this track as skipped in db: ".$previousTrackURL);
-						$client->pluginData('lastCustomSkippedTrackURLmd5' => undef);
+						main::INFOLOG && $log->is_info && $log->info("Ignoring skip requested by CustomSkip3 (APC preference). Not marking this track as skipped in the database: ".$previousTrackURL);
+						_clearPluginData($client, 'lastCustomSkippedTrackURLmd5');
 					} else {
 						markAsSkipped($client, $previousTrackURL, $previousTrackURLmd5, $previousTrackMBID);
 					}
+				} elsif (defined($previousTrackURLmd5)) {
+					main::DEBUGLOG && $log->is_debug && $log->debug('Previous track was already marked as played, so it is not marked as skipped.');
 				}
 
-				$client->pluginData('markedAsPlayed' => undef);
+				_clearPluginData($client, 'markedAsPlayed', 'lastCustomSkippedTrackURLmd5', 'skipWithoutCountTrackURLmd5');
 				$client->pluginData('currentTrackURL' => $currentTrackURL);
 				$client->pluginData('currentTrackURLmd5' => $currentTrackURLmd5);
 				$client->pluginData('currentTrackMBID' => $currentTrackMBID);
 			}
 
+			$client->pluginData('currentSongID' => $currentSongID);
 			startPlayCountTimer($client, $track);
 		}
 
 		## play
 		if (($request->isCommand([['playlist'],['play']])) || ($request->isCommand([['mode','play']]))) {
-			main::DEBUGLOG && $log->is_debug && $log->debug('Received "play" or "mode play" cb.');
-			startPlayCountTimer($client, $track);
+			main::DEBUGLOG && $log->is_debug && $log->debug('Received "play" or "mode play" callback. playmode = '.Slim::Player::Source::playmode($client));
+			_resumePlayCountTimer($client, $track, $currentTrackURLmd5);
 		}
 
 		## pause
 		if ($request->isCommand([['pause']]) || $request->isCommand([['mode'],['pause']])) {
-			main::DEBUGLOG && $log->is_debug && $log->debug('Received "pause" or "mode pause" cb.');
+			main::DEBUGLOG && $log->is_debug && $log->debug('Received "pause" or "mode pause" callback.');
 			my $playmode = Slim::Player::Source::playmode($client);
 			main::DEBUGLOG && $log->is_debug && $log->debug('playmode = '.$playmode);
 
 			if ($playmode eq 'pause') {
 				Slim::Utils::Timers::killTimers($client, \&markAsPlayed);
 			} elsif ($playmode eq 'play') {
-				startPlayCountTimer($client, $track);
+				_resumePlayCountTimer($client, $track, $currentTrackURLmd5);
 			}
 		}
 
 		## stop
-		if ($request->isCommand([["stop"]]) || $request->isCommand([['mode'],['stop']]) || $request->isCommand([['playlist'],['stop']]) || $request->isCommand([['playlist'],['sync']]) || $request->isCommand([['playlist'],['clear']]) || $request->isCommand([['power']])) {
-			main::DEBUGLOG && $log->is_debug && $log->debug('Received "stop", "clear", "power" or "sync" cb.');
+		if ($request->isCommand([["stop"]]) || $request->isCommand([['mode'],['stop']]) || $request->isCommand([['playlist'],['stop']]) || $request->isCommand([['playlist'],['clear']]) || $request->isCommand([['power']])) {
+			main::DEBUGLOG && $log->is_debug && $log->debug('Received "stop", "clear" or "power" callback. Stopping the timer and clearing the song ID. The track state is kept for skip detection. markedAsPlayed = '.Data::Dump::dump($client->pluginData('markedAsPlayed')).' - currentTrackURLmd5 = '.Data::Dump::dump($client->pluginData('currentTrackURLmd5')).' - currentSongID = '.Data::Dump::dump($client->pluginData('currentSongID')));
 			Slim::Utils::Timers::killTimers($client, \&markAsPlayed);
-			$client->pluginData('markedAsPlayed' => undef);
-			$client->pluginData('currentTrackURL' => undef);
-			$client->pluginData('currentTrackURLmd5' => undef);
-			$client->pluginData('currentTrackMBID' => undef);
-			$client->pluginData('lastCustomSkippedTrackURLmd5' => undef);
-			$client->pluginData('skipWithoutCountTrackURLmd5' => undef);
+			_clearPluginData($client, 'currentSongID');
 		}
 	}
 }
 
+
 sub startPlayCountTimer {
 	my ($client, $track) = @_;
 
-	# check if track has been marked as played already
+	main::DEBUGLOG && $log->is_debug && $log->debug('startPlayCountTimer for "'.($track->title // '').'" - urlmd5 = '.Data::Dump::dump($track->urlmd5).' - markedAsPlayed = '.Data::Dump::dump($client->pluginData('markedAsPlayed')));
+
+	# check whether the track has already been marked as played
 	if ($client->pluginData('markedAsPlayed') && $client->pluginData('markedAsPlayed') eq $track->urlmd5) {
-		main::DEBUGLOG && $log->is_debug && $log->debug('Song has already been marked as played in this session.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Song has already been marked as played in this session. No timer started.');
 		return;
 	}
 
@@ -900,15 +920,27 @@ sub startPlayCountTimer {
 	main::DEBUGLOG && $log->is_debug && $log->debug('playedThreshold_percent = '.($playedThreshold_percent * 100).'% -- songProgress so far = '.(sprintf "%.1f", ($songProgress * 100)).'%');
 
 	if ($songProgress >= $playedThreshold_percent) {
-		main::DEBUGLOG && $log->is_debug && $log->debug('songProgress > playedThreshold_percent. Will mark song as played.');
+		main::DEBUGLOG && $log->is_debug && $log->debug('songProgress >= playedThreshold_percent. Will mark song as played.');
 		markAsPlayed($client, $track);
 	} else {
 		my $songDuration = $track->secs;
 		my $remainingThresholdTime = $songDuration * $playedThreshold_percent - $songDuration * $songProgress;
 		main::DEBUGLOG && $log->is_debug && $log->debug('songDuration = '.$songDuration.' seconds -- remainingThresholdTime = '.(sprintf "%.1f", $remainingThresholdTime).' seconds');
 
-		# Start timer for new song
+		# start the timer for the current song
 		Slim::Utils::Timers::setTimer($client, time() + $remainingThresholdTime, \&markAsPlayed, $track);
+	}
+}
+
+sub _resumePlayCountTimer {
+	my ($client, $track, $trackURLmd5) = @_;
+
+	# the progress is only reliable if the playing song is the one being tracked
+	my $playingSongID = Scalar::Util::refaddr(Slim::Player::Source::playingSong($client)) // '';
+	if ($playingSongID && $playingSongID eq ($client->pluginData('currentSongID') // '') && $trackURLmd5 eq ($client->pluginData('currentTrackURLmd5') // '')) {
+		startPlayCountTimer($client, $track);
+	} else {
+		main::DEBUGLOG && $log->is_debug && $log->debug('Playing song is not the tracked song. Progress is unreliable here, so the newsong callback will start the play count timer.');
 	}
 }
 
@@ -967,7 +999,7 @@ sub markAsPlayed {
 			$trackMBID = '';
 		}
 		if ($trackMBID) {
-			main::DEBUGLOG && $log->is_debug && $log->debug('Updating APC play count for ALL tracks with Musicbrainz ID = '.Data::Dump::dump($trackMBID));
+			main::DEBUGLOG && $log->is_debug && $log->debug('Updating APC play count for ALL tracks with MusicBrainz ID = '.Data::Dump::dump($trackMBID));
 			eval { $dbh->do("update alternativeplaycount set playCount = ifnull(playCount, 0) + 1, lastPlayed = ? where musicbrainz_id = ?", undef, $lastPlayed, $trackMBID) };
 			if ($@) { $log->error("Database error: $@"); }
 		} else {
@@ -996,7 +1028,7 @@ sub markAsSkipped {
 			$trackMBID = '';
 		}
 		if ($trackMBID) {
-			main::DEBUGLOG && $log->is_debug && $log->debug('Updating APC skip count for ALL tracks with Musicbrainz ID = '.Data::Dump::dump($trackMBID));
+			main::DEBUGLOG && $log->is_debug && $log->debug('Updating APC skip count for ALL tracks with MusicBrainz ID = '.Data::Dump::dump($trackMBID));
 			eval { $dbh->do("update alternativeplaycount set skipCount = ifnull(skipCount, 0) + 1, lastSkipped = ? where musicbrainz_id = ?", undef, $lastSkipped, $trackMBID) };
 			if ($@) { $log->error("Database error: $@"); }
 		} else {
@@ -1056,7 +1088,7 @@ sub undoLastSkipCountIncrement {
 					$trackMBID = '';
 				}
 				if ($trackMBID) {
-					main::DEBUGLOG && $log->is_debug && $log->debug("Reducing skip count (by 1) and dynamic played/skipped value (DPSV) for ALL tracks with Musicbrainz ID = ".Data::Dump::dump($trackMBID));
+					main::DEBUGLOG && $log->is_debug && $log->debug("Reducing skip count (by 1) and dynamic played/skipped value (DPSV) for ALL tracks with MusicBrainz ID = ".Data::Dump::dump($trackMBID));
 					eval { $dbh->do("update alternativeplaycount $setClause where musicbrainz_id = ?", undef, $trackMBID) };
 					if ($@) { $log->error("Database error: $@"); }
 				} else {
@@ -1112,8 +1144,12 @@ sub _reportExternalPlayback {
 		return;
 	}
 
-	$playerName = trimStringLength($playerName, 80) if defined $playerName;
+	if (_isNonTrackRow($track)) {
+		$request->setStatusBadParams();
+		return;
+	}
 
+	$playerName = trimStringLength($playerName, 80) if defined $playerName;
 	my $trackURL = $track->url;
 	my $trackURLmd5 = $track->urlmd5;
 	my $trackMBID = getTrackMBID($track) || '';
@@ -1294,7 +1330,7 @@ sub _setDynamicPlayedSkippedValue {
 			$trackMBID = '';
 		}
 		if ($trackMBID) {
-			main::DEBUGLOG && $log->is_debug && $log->debug("Updating dynamic played/skipped value (DPSV) for ALL tracks with Musicbrainz ID = ".Data::Dump::dump($trackMBID));
+			main::DEBUGLOG && $log->is_debug && $log->debug("Updating dynamic played/skipped value (DPSV) for ALL tracks with MusicBrainz ID = ".Data::Dump::dump($trackMBID));
 			eval { $dbh->do("update alternativeplaycount set dynPSval = ? where musicbrainz_id = ?", undef, $newDPSV, $trackMBID) };
 			if ($@) { $log->error("Database error: $@"); }
 		} else {
@@ -3896,8 +3932,8 @@ sub refreshDatabase {
 		$log->error("Database error: $@\n");
 	}
 
-	# refresh Musicbrainz IDs in APC table (unary plus on tracks.audio to prevent full table scan per APC row if table statistics are missing)
-	main::DEBUGLOG && $log->is_debug && $log->debug('Refreshing Musicbrainz IDs.');
+	# refresh MusicBrainz IDs in APC table (unary plus on tracks.audio to prevent full table scan per APC row if table statistics are missing)
+	main::DEBUGLOG && $log->is_debug && $log->debug('Refreshing MusicBrainz IDs.');
 	eval { $dbh->do("update alternativeplaycount set musicbrainz_id = (
 		select tracks.musicbrainz_id from tracks where (tracks.urlmd5 = alternativeplaycount.urlmd5 or tracks.url = alternativeplaycount.url) and +tracks.audio = 1 and tracks.content_type != 'ssp'
 	)
@@ -4087,15 +4123,30 @@ sub getAppendedRatingText {
 		my $ratingstars = $rating100ScaleValue / 20;
 		if ($detecthalfstars == 1) {
 			$ratingstars = floor($ratingstars);
-			$text = $displayratingchar ? ($ratingchar x $ratingstars) . $fractionchar
-			 : ($ratingchar x $ratingstars) . ' ' . $fractionchar;
+			$text = $displayratingchar ? ($ratingchar x $ratingstars) . $fractionchar : ($ratingchar x $ratingstars) . ' ' . $fractionchar;
 		} else {
 			$text = ($ratingchar x $ratingstars);
 		}
-		$text = $displayratingchar ? $nobreakspace . HTML::Entities::decode_entities('&#x2022;') . $nobreakspace . $text
-		 : $nobreakspace . '(' . $text . $nobreakspace . ')';
+		$text = $displayratingchar ? $nobreakspace . HTML::Entities::decode_entities('&#x2022;') . $nobreakspace . $text : $nobreakspace . '(' . $text . $nobreakspace . ')';
 	}
 	return $text;
+}
+
+sub _isNonTrackRow {
+	my $track = shift;
+	my $contentType = blessed($track) ? $track->content_type : undef;
+	return 0 unless $contentType && $nonTrackContentTypes{$contentType};
+	main::DEBUGLOG && $log->is_debug && $log->debug('Ignoring non-track row. Content type: '.$contentType.' ## URL: '.($track->url // 'n/a'));
+	return 1;
+}
+
+sub _clearPluginData {
+	my ($client, @keys) = @_;
+
+	# pluginData() ignores undef values, so the keys have to be deleted
+	my $pluginData = $client->pluginData();
+	return unless $pluginData;
+	delete $pluginData->{$_} foreach @keys;
 }
 
 sub getTrackMBID {
