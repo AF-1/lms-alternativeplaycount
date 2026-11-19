@@ -10,9 +10,13 @@ a {text-decoration: none;}
 </style>
 <br>
 	<div class="wrapper">
+		[% IF unavailablemsg %]
+		[% unavailablemsg | html %]
+		[% ELSE %]
 		<a href="[% webroot %]plugins/AlternativePlayCount/resetvalues?objecttype=[% objecttype %]&amp;objectid=[% objectid %]&amp;infoitem=[% infoitem %][% IF urlmd5 %]&amp;urlmd5=[% urlmd5 %][% END %]&amp;action=1&amp;player=[% playerURI %]" [% IF browserTarget %]target="[% browserTarget %]"[% END %]>
 			[% "PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE" | string %] <span class="rltitlebold">[% name %]</span> [% suffix %]
 		</a>
+		[% END %]
 	</div>
 
 [% IF resetdone %]

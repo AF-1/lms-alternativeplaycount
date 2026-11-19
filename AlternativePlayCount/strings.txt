@@ -28,12 +28,15 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_RESTORE
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING
 	EN	Automatic Rating
+	FR	Notation automatique
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_INFO
 	EN	Requires the <b>Ratings Light</b> plugin to work.
+	FR	Nécessite le plugin <b>Ratings Light</b> pour fonctionner.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY
 	EN	Play History
+	FR	Historique de lecture
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_FAQ_LINK_TEXT
 	EN	Click here for more information (incl. FAQ).
@@ -62,9 +65,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_UNDOSKIPTIMESPAN_DESC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CS3SKIPREQUESTS
 	EN	Count skips requested by CustomSkip
+	FR	Compter les sauts demandés par CustomSkip
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_CS3SKIPREQUESTS_DESC
 	EN	Have APC ignore skips requested by the CustomSkip plugin. They will no longer increase a track's <i>skip count</i>. This way you can limit the skip count to skips that you have made yourself, manually.
+	FR	Faire ignorer par APC les sauts demandés par le plugin CustomSkip. Ils n'augmenteront plus le <i>nombre de sauts</i> d'un morceau. Ainsi, vous pouvez limiter le nombre de sauts à ceux que vous avez effectués vous-même, manuellement.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPATH
 	EN	Location of the<br>Alternative Play Count folder
@@ -74,61 +79,61 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALTERNATIVEPLAYCOUNT_PARENTFOLDERPA
 	EN	Choose a location (<b>parent</b> folder) for the <i>Alternative Play Count</i> folder where this plugin stores (scheduled) backups.
 	FR	Choississez un emplacement (dossier <b>parent</b>) pour le dossier de <i>Nombre de Lectures Alternatif</i> où ce plugin stocke les sauvegardes (programmées).
 
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS
-	EN	Always display APC values<br>on <i>Song Info</i> page
-	FR	Afficher toujours les valeurs APC
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALWAYSDISPLAYVALS_DESC
-	EN	<b>Always</b> display APC values <b><i>or</i></b> display <b>only</b> APC values that are <b>different from the LMS default database values</b> and that are <b>not zero</b>.
-	FR	<b>Toujours</b> afficher les valeurs APC <b><i>ou</i></b> afficher <b>seulement</b> les valeurs d'APC qui sont <b>différentes des valeurs de la base de données LMS</b> et qui ne sont <b>pas à zéro</b>
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_HIDESKIPDPSVTRACKINFO
-	EN	Hide APC values for skips and DPSV <br>on <i>Song Info</i> page
-
-PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_HIDESKIPDPSVTRACKINFO_DESC
-	EN	Hide APC skip values and dynamic played/skipped values <br>on <i>Song Info</i> page. This does not affect values in the database.
-
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS
 	EN	Apply changes to <i>all</i> tracks<br>with the <i>same Musicbrainz ID</i>
+	FR	Appliquer les changements à <i>tous</i> les morceaux<br>ayant le <i>même identifiant Musicbrainz</i>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_ALLMBIDVERSIONS_DESC
 	EN	If you have different versions of the same track (e.g. flac and mp3 versions of the same album track or the same track in a regular album and a compilation), APC can apply changes to the play count, skip count and dynamic played/skipped value to <i>all</i> tracks with the <i>same Musicbrainz ID.</i><br>This does <b>not</b> apply to <i>auto-rating</i> because that's a setting of the <i>Ratings Light</i> plugin.<br><br><b>It only makes sense to enable this if you know that you have <i>multiple</i> tracks with the <i>same</i> Musicbrainz ID in your library.</b>
+	FR	Si vous avez différentes versions d'un même morceau (par ex. des versions flac et mp3 du même morceau d'un album, ou le même morceau dans un album classique et dans une compilation), APC peut appliquer les changements du nombre de lectures, du nombre de sauts et de la valeur dynamique joués/sautés à <i>tous</i> les morceaux ayant le <i>même identifiant Musicbrainz.</i><br>Cela ne s'applique <b>pas</b> à la <i>notation automatique</i>, car il s'agit d'un réglage du plugin <i>Ratings Light</i>.<br><br><b>Il n'est utile d'activer cette option que si vous savez que votre bibliothèque contient <i>plusieurs</i> morceaux avec le <i>même</i> identifiant Musicbrainz.</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV
 	EN	Automatically increase<br>negative DPSV values
+	FR	Augmenter automatiquement<br>les valeurs DPSV négatives
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_DESC
 	EN	Automatically increase <i>negative</i> DPSV values of tracks over time so that they reappear at some point in dynamic playlist mixes with a minimum DPSV limit, for example.<br><br>Select how often (<b>intervals</b>) and by what <b>value</b> you want negative DPSV values to be automatically increased.<br><br>APC only checks every 6 hours whether the process needs to be triggered. It has a low priority, so the intervals should be considered approximate times.
+	FR	Augmenter automatiquement au fil du temps les valeurs DPSV <i>négatives</i> des morceaux afin qu'ils réapparaissent à un moment donné dans les mix de listes de lecture dynamiques avec une limite DPSV minimale, par exemple.<br><br>Choisissez à quelle fréquence (<b>intervalles</b>) et de quelle <b>valeur</b> les valeurs DPSV négatives doivent être augmentées automatiquement.<br><br>APC vérifie seulement toutes les 6 heures si le processus doit être déclenché. Il a une priorité basse, les intervalles sont donc à considérer comme approximatifs.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVALS
 	EN	Intervals
+	FR	Intervalles
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_DISABLED
 	EN	Disabled
+	FR	Désactivé
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_1WEEK
 	EN	1 week
+	FR	1 semaine
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_2WEEKS
 	EN	2 weeks
+	FR	2 semaines
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_3WEEKS
 	EN	3 weeks
+	FR	3 semaines
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_4WEEKS
 	EN	4 weeks
+	FR	4 semaines
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_2MONTHS
 	EN	2 months
+	FR	2 mois
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_3MONTHS
 	EN	3 months
+	FR	3 mois
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_INTERVAL_6MONTHS
 	EN	6 months
+	FR	6 mois
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_AUTOINCDPSV_VALUE
 	EN	Value
+	FR	Valeur
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_VARIOUS_POSTSCANSCHEDULEDELAY
 	EN	Post-Scan Delay
@@ -146,6 +151,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_LASTBACKUP
 	EN	Last backup
+	FR	Dernière sauvegarde
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP
 	EN	Manual Backup
@@ -164,8 +170,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_INCLUDEEXTERNALDATA
 	FR	Inclure les données externes
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_INCLUDEEXTERNALDATA_DESC
-	EN	Also back up the plugin's additional data (e.g. play history) stored in its external database file to a separate backup file.
-	FR	Sauvegarder également les données supplémentaires du plugin (par ex. l'historique de lecture) stockées dans son fichier de base de données externe dans un fichier de sauvegarde séparé.
+	EN	Also back up the plugin's additional data (e.g. play history) stored in its external database file to a separate backup file.<br>This option requires play history to be enabled. You can enable it in the <i>Play history</i> settings.
+	FR	Sauvegarder également les données supplémentaires du plugin (par ex. l'historique de lecture) stockées dans son fichier de base de données externe dans un fichier de sauvegarde séparé.<br>Cette option nécessite que l'historique de lecture soit activé. Vous pouvez l'activer dans les réglages <i>Historique de lecture</i>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_INPROGRESS
 	EN	creating backup
@@ -258,8 +264,8 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE
 	FR	Fichier de sauvegarde des données externes
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE_DESC
-	EN	Optionally select a separate backup file containing external plugin data (e.g. play history) to restore.<br>At least one of the two file fields must point to a valid backup file.<br>Local history entries are skipped when restoring from a different operating system, as their file paths cannot be resolved here.<br><br>For details on restoring across different operating systems, see <a href="https://github.com/AF-1/sobras/wiki/Restoring-backups-across-operating-systems" target="_blank">this wiki page</a>.
-	FR	Sélectionnez éventuellement un fichier de sauvegarde séparé contenant des données externes du plugin (par ex. l'historique de lecture) à restaurer.<br>Au moins l'un des deux champs de fichier doit indiquer un fichier de sauvegarde valide.<br>Les entrées d'historique locales sont ignorées lors d'une restauration depuis un système d'exploitation différent, car leurs chemins de fichiers ne peuvent pas y être résolus.
+	EN	Optionally select a separate backup file containing external plugin data (e.g. play history) to restore.<br>At least one of the two file fields must point to a valid backup file.<br>Local history entries are skipped when restoring from a different operating system, as their file paths cannot be resolved here.<br>This option requires play history to be enabled. You can enable it in the <i>Play history</i> settings.<br><br>For details on restoring across different operating systems, see <a href="https://github.com/AF-1/sobras/wiki/Restoring-backups-across-operating-systems" target="_blank">this wiki page</a>.
+	FR	Sélectionnez éventuellement un fichier de sauvegarde séparé contenant des données externes du plugin (par ex. l'historique de lecture) à restaurer.<br>Au moins l'un des deux champs de fichier doit indiquer un fichier de sauvegarde valide.<br>Les entrées d'historique locales sont ignorées lors d'une restauration depuis un système d'exploitation différent, car leurs chemins de fichiers ne peuvent pas y être résolus.<br>Cette option nécessite que l'historique de lecture soit activé. Vous pouvez l'activer dans les réglages <i>Historique de lecture</i>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOW
 	EN	Restore from backup file now
@@ -421,53 +427,69 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_MINPLAYCOUNT_DESC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS
 	EN	Reset <i>LMS tracks_persistent</i> values<br>to APC values
+	FR	Réinitialiser les valeurs de <i>LMS tracks_persistent</i><br>aux valeurs APC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_DESC
 	EN	This will reset <i>play count</i> and <i>last played</i> values of tracks in the LMS <b>tracks_persistent</b> table to APC values.<br><br><b>Do not use this unless you're know what you're doing and you have a backup of the LMS <i>persist.db</i> file.</b>
+	FR	Cela réinitialisera le <i>nombre de lectures</i> et la valeur <i>dernière lecture</i> des morceaux dans la table LMS <b>tracks_persistent</b> aux valeurs APC.<br><br><b>N'utilisez cette option que si vous savez ce que vous faites et que vous disposez d'une sauvegarde du fichier LMS <i>persist.db</i>.</b>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_BUTTON
 	EN	Reset LMS to APC values now
+	FR	Réinitialiser LMS aux valeurs APC maintenant
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESET_ADV_RESETRACKS_PERSISTENTTOAPCVALS_INPROGRESS
 	EN	resetting LMS to APC values...
+	FR	réinitialisation de LMS aux valeurs APC...
 
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_ENABLE
 	EN	Enable automatic rating
+	FR	Activer la notation automatique
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_ENABLE_DESC
 	EN	If you enable this, APC will change the <i>rating value</i> of a track when it's marked as played or skipped. When a track has been played long enough to count as played, the rating value increases, just as it decreases if the track is skipped.<br><br><b>Dynamic rating</b><br>The closer the current track rating is to the middle of the scale (50), the greater the increase/decrease. Conversely, ratings close to 100 or 0, i.e. tracks that have been played or skipped very often, change less and will therefore have to be played or skipped more often to move away from the end of the scale. Also, skipping a track decreases its rating up to twice as much as playing it increases it (this is hard-coded and not a user setting).<br><br><b>Linear rating</b><br>Enable this if you prefer <b>constant/linear</b> rating changes. If a track is then marked as played or skipped, the rating value is always increased or decreased by a <b>constant</b> value that you can set below.
+	FR	Si vous activez cette option, APC modifiera la <i>note</i> d'un morceau lorsqu'il est marqué comme joué ou sauté. Lorsqu'un morceau a été écouté suffisamment longtemps pour compter comme joué, la note augmente, tout comme elle diminue si le morceau est sauté.<br><br><b>Notation dynamique</b><br>Plus la note actuelle du morceau est proche du milieu de l'échelle (50), plus l'augmentation/la diminution est importante. À l'inverse, les notes proches de 100 ou de 0, c'est-à-dire les morceaux très souvent joués ou sautés, changent moins et devront donc être joués ou sautés plus souvent pour s'éloigner de l'extrémité de l'échelle. De plus, sauter un morceau diminue sa note jusqu'à deux fois plus que le jouer ne l'augmente (ceci est codé en dur et ne peut pas être modifié).<br><br><b>Notation linéaire</b><br>Activez cette option si vous préférez des changements de note <b>constants/linéaires</b>. Lorsqu'un morceau est alors marqué comme joué ou sauté, la note est toujours augmentée ou diminuée d'une valeur <b>constante</b> que vous pouvez définir ci-dessous.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DISABLED
 	EN	Disabled
+	FR	Désactivée
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DYNAMIC
 	EN	Dynamic rating
+	FR	Notation dynamique
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR
 	EN	Linear rating
+	FR	Notation linéaire
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DYNAMICFACTOR
 	EN	Dynamic automatic rating change
+	FR	Changement de note automatique dynamique
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_DYNAMICFACTOR_DESC
 	EN	This value gives you <i>some</i> control over how much the rating of a track changes when it is marked as played or skipped. It has an effect on how the rating changes are <i>calculated</i>. It is <b>not</b> the <i>actual</i> value by which track ratings will change.<br><br>The <b>smaller</b> the value you set here, the <b>bigger</b> the rating change.<br><br>Only applies to the <b>dynamic</b> rating method.
+	FR	Cette valeur vous donne un certain contrôle sur l'ampleur du changement de note d'un morceau lorsqu'il est marqué comme joué ou sauté. Elle influence la façon dont les changements de note sont <i>calculés</i>. Ce n'est <b>pas</b> la valeur <i>réelle</i> de la variation des notes.<br><br>Plus la valeur définie ici est <b>petite</b>, plus le changement de note est <b>grand</b>.<br><br>S'applique uniquement à la méthode de notation <b>dynamique</b>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_BASELINERATING
 	EN	Initial baseline rating
+	FR	Note de base initiale
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_BASELINERATING_DESC
 	EN	Set an optional baseline rating that's applied to <b>un</b>played tracks when they're marked as played for the <b>first</b> time. Applies only to the <b>dynamic</b> automatic rating method. Set to 0 to disable it.
+	FR	Définit une note de base facultative appliquée aux morceaux <b>jamais</b> joués lorsqu'ils sont marqués comme joués pour la <b>première</b> fois. S'applique uniquement à la méthode de notation automatique <b>dynamique</b>. Mettre 0 pour la désactiver.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_BASELINERATING_STARS
 	EN	star(s)
+	FR	étoile(s)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR_DELTA
 	EN	Linear automatic rating change
+	FR	Changement de note automatique linéaire
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_AUTORATING_LINEAR_DELTA_DESC
 	EN	Set the value by which the rating of a track changes when a track is marked as played or skipped. The value can range from 1 to 10 (= a half-star).
+	FR	Définit la valeur dont la note d'un morceau change lorsqu'il est marqué comme joué ou sauté. La valeur peut aller de 1 à 10 (= une demi-étoile).
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE
@@ -490,139 +512,195 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_CB
 	EN	Reset successful.
 	FR	Réinitialisation réussie.
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_SCANNING
+	EN	Resetting values is not available during a library scan.
+	FR	La réinitialisation des valeurs n'est pas disponible pendant un scan de la bibliothèque.
+
 
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_ENABLED
 	EN	Record play history for players
+	FR	Enregistrer l'historique de lecture des lecteurs
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_ENABLED_DESC
-	EN	The plugin records for each player in an <i>external</i> database file which track from the LMS database was played when (incl. its rating value at the time).<br><br><b>Please note:</b> The external database file is <i>not</i> part of the APC backup.
+	EN	The plugin records for each player in an <i>external</i> database file which track from the LMS database was played when (incl. its rating value at the time).<br><br><b>Please note:</b> The external database file is <i>not</i> part of the APC backup.<br><br>If you turn this off, the external database is closed, the play history menu entries are removed and the play history can no longer be backed up, restored or cleaned up. Existing data is kept.
+	FR	Le plugin enregistre, pour chaque lecteur, dans un fichier de base de données <i>externe</i>, quel morceau de la base de données LMS a été lu et quand (y compris sa note à ce moment-là).<br><br><b>Remarque :</b> le fichier de base de données externe ne fait <i>pas</i> partie de la sauvegarde APC.<br><br>Si vous désactivez cette option, la base de données externe est fermée, les entrées de menu de l'historique de lecture sont supprimées et l'historique de lecture ne peut plus être sauvegardé, restauré ni nettoyé. Les données existantes sont conservées.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_SCANNING
+	EN	Play history is not available during a library scan.
+	FR	L'historique de lecture n'est pas disponible pendant un scan de la bibliothèque.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISABLEDHINT
+	EN	Play history is disabled.
+	FR	L'historique de lecture est désactivé.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CONTEXTMENU
 	EN	Show play history in <i>context</i> menus
+	FR	Afficher l'historique de lecture dans les menus <i>contextuels</i>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CONTEXTMENU_DESC
-	EN	Show a play history list in the context menu of tracks, albums and artists. Changes take effect after restarting LMS.
+	EN	Show a play history list in the context menu of tracks, albums and artists.
+	FR	Afficher une liste de l'historique de lecture dans le menu contextuel des morceaux, albums et artistes.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_HOMEMENU
 	EN	Show play history in LMS <i>home</i> menu
+	FR	Afficher l'historique de lecture dans le menu <i>principal</i> de LMS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_HOMEMENU_DESC
-	EN	Add a play history entry to the LMS home menu (My Music) showing the play history of <i>all</i> tracks. Changes take effect after restarting LMS.
+	EN	Add a play history entry to the LMS home menu (My Music) showing the play history of <i>all</i> tracks.
+	FR	Ajouter une entrée d'historique de lecture au menu principal de LMS (Ma musique) affichant l'historique de lecture de <i>tous</i> les morceaux.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDISPLAYITEMS
 	EN	Max. number of items in play history lists
+	FR	Nombre max. d'éléments dans les listes d'historique de lecture
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDISPLAYITEMS_DESC
 	EN	Sets the maximum number of entries displayed in play history lists (context menus and home menu).
+	FR	Définit le nombre maximal d'entrées affichées dans les listes d'historique de lecture (menus contextuels et menu principal).
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDBENTRIES
 	EN	Max. number of play history<br><i>database</i> entries (0 = unlimited)
+	FR	Nombre max. d'entrées de l'historique de lecture<br>dans la <i>base de données</i> (0 = illimité)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDBENTRIES_DESC
 	EN	Automatically delete the oldest play history entries when the total number exceeds this limit. Set to 0 to keep all entries.
+	FR	Supprimer automatiquement les entrées les plus anciennes de l'historique de lecture lorsque leur nombre total dépasse cette limite. Mettre 0 pour conserver toutes les entrées.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_JIVEEXTRALINELENGTH
 	EN	Max. line length for play history<br>entries (jivelite, Material)
+	FR	Longueur max. de ligne pour les entrées<br>de l'historique de lecture (jivelite, Material)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_JIVEEXTRALINELENGTH_DESC
 	EN	Set the maximum character length of the line that displays artist name and album title for play history entries.<br>Applies only to <b>jivelite</b> players and Material.
+	FR	Définit la longueur maximale, en caractères, de la ligne affichant le nom de l'artiste et le titre de l'album pour les entrées de l'historique de lecture.<br>S'applique uniquement aux lecteurs <b>jivelite</b> et à Material.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR
 	EN	Rating character
+	FR	Caractère de note
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_DESC
 	EN	Character used to display current ratings in the play history.<br><br><b>*** IMPORTANT, please read ***</b><br><br>SB <b>Touch</b>, SB <b>Radio</b>, <b>piCorePlayer</b>, <b>Squeezeplay</b> and other players running jivelite <b>do not support displaying the unicode blackstar character out of the box</b>.<br>This character is not part of their <i>default</i> font. If you want to display this character on these devices you'll have to <b>replace the default font</b> on these devices with a font that contains this character or simply install the <a href="https://github.com/AF-1" target="_blank" rel="noopener noreferrer"><i>Dark Flat Skin</i></a> applet.
+	FR	Caractère utilisé pour afficher les notes actuelles dans l'historique de lecture.<br><br><b>*** IMPORTANT, à lire ***</b><br><br>Les SB <b>Touch</b>, SB <b>Radio</b>, <b>piCorePlayer</b>, <b>Squeezeplay</b> et les autres lecteurs exécutant jivelite <b>ne prennent pas en charge l'affichage du caractère Unicode étoile pleine par défaut</b>.<br>Ce caractère ne fait pas partie de leur police <i>par défaut</i>. Si vous souhaitez l'afficher sur ces appareils, vous devrez <b>remplacer la police par défaut</b> par une police contenant ce caractère ou simplement installer l'applet <a href="https://github.com/AF-1" target="_blank" rel="noopener noreferrer"><i>Dark Flat Skin</i></a>.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_TEXT
 	EN	* (text)
+	FR	* (texte)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR_STAR
 	EN	★ (Unicode)
+	FR	★ (Unicode)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWRAWRATING
 	EN	Append exact <i>rating at play</i> value
+	FR	Ajouter la valeur exacte de la <i>note à la lecture</i>
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWRAWRATING_DESC
 	EN	By default, only the <i>rounded</i> half-star value is shown, e.g. 3.5. If enabled, APC will append the exact (raw) LMS rating value in brackets, e.g. 3.5 (68).
+	FR	Par défaut, seule la valeur <i>arrondie</i> en demi-étoiles est affichée, par ex. 3,5. Si activé, APC ajoute entre parenthèses la valeur brute exacte de la note LMS, par ex. 3,5 (68).
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWCLIENTID
 	EN	Show client ID for unknown players<br>in play history lists (jivelite, Material)
+	FR	Afficher l'ID client des lecteurs inconnus<br>dans les listes d'historique de lecture (jivelite, Material)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWCLIENTID_DESC
 	EN	If enabled, the client ID is shown in brackets after unknown players in play history lists, e.g. Unknown Player (ab:cd:ef:12:34:56).<br>This only applies to jivelite players (e.g. SqueezePlay, piCorePlayer) and Material. If disabled, only "Unknown Player" is shown, saving space for artist and album information.<br>Note: the client ID is always shown in the player selection menu regardless of this setting.
+	FR	Si activé, l'ID client est affiché entre parenthèses après les lecteurs inconnus dans les listes d'historique de lecture, par ex. Lecteur inconnu (ab:cd:ef:12:34:56).<br>S'applique uniquement aux lecteurs jivelite (par ex. SqueezePlay, piCorePlayer) et à Material. Si désactivé, seul « Lecteur inconnu » est affiché, ce qui laisse plus de place aux informations sur l'artiste et l'album.<br>Remarque : l'ID client est toujours affiché dans le menu de sélection du lecteur, quel que soit ce réglage.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM
 	EN	APC Play History
+	FR	Historique de lecture APC
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM_ALBUM
 	EN	Play History (tracks of this album)
+	FR	Historique de lecture (morceaux de cet album)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM_ARTIST
 	EN	Play History (tracks by this artist)
+	FR	Historique de lecture (morceaux de cet artiste)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_ALLPLAYERS
 	EN	All players
+	FR	Tous les lecteurs
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NOENTRIES
 	EN	No play history entries found
+	FR	Aucune entrée d'historique de lecture trouvée
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNNAMEDPLAYER
 	EN	Unnamed player
+	FR	Lecteur sans nom
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER
 	EN	Unknown player
+	FR	Lecteur inconnu
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_RATINGATPLAY
 	EN	Rtg. at play
+	FR	Note à la lect.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_PLAYNOW
 	EN	Play now
+	FR	Lire maintenant
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_PLAYNEXT
 	EN	Play next
+	FR	Lire ensuite
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_APPEND
 	EN	Append to queue
+	FR	Ajouter à la file d'attente
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MOREINFO
 	EN	More information
+	FR	Plus d'informations
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_TRACK_INVALID
 	EN	Track not available in current library
+	FR	Morceau non disponible dans la bibliothèque actuelle
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWINVALIDTRACKS
 	EN	Show tracks not in current library
+	FR	Afficher les morceaux absents de la bibliothèque actuelle
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_SHOWINVALIDTRACKS_DESC
 	EN	Show play history entries for tracks that are no longer in the current library. These tracks cannot be played.
+	FR	Afficher les entrées de l'historique de lecture des morceaux qui ne figurent plus dans la bibliothèque actuelle. Ces morceaux ne peuvent pas être lus.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP
 	EN	Clean up play history
+	FR	Nettoyer l'historique de lecture
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_DESC
 	EN	Remove all play history entries for tracks that are no longer in the current library.
+	FR	Supprimer toutes les entrées de l'historique de lecture des morceaux qui ne figurent plus dans la bibliothèque actuelle.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_BUTTON
 	EN	Clean up now
+	FR	Nettoyer maintenant
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_INPROGRESS
 	EN	cleaning up APC play history...
+	FR	nettoyage de l'historique de lecture APC...
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL
 	EN	Clear play history
+	FR	Effacer l'historique de lecture
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_DESC
 	EN	Permanently delete all play history entries and all remembered player names from the external database file. This cannot be undone.
+	FR	Supprimer définitivement toutes les entrées de l'historique de lecture et tous les noms de lecteurs mémorisés du fichier de base de données externe. Cette action est irréversible.
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_BUTTON
 	EN	Clear now
+	FR	Effacer maintenant
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_CONFIRM
 	EN	This will permanently delete all play history entries and all remembered player names. This cannot be undone. Continue?
+	FR	Cette action supprimera définitivement toutes les entrées de l’historique de lecture et tous les noms de lecteurs mémorisés. Cette action est irréversible. Continuer ?
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_INPROGRESS
 	EN	clearing play history...
+	FR	effacement de l'historique de lecture...
 
 
 
@@ -684,9 +762,11 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_TRACKSRECENTLYSKIPPED_PARAM_NAME
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RACKSRECENTLYPLAYEDSIMILARBYSAMEARTIST_NAME
 	EN	Recently played & similar track titles by same artist (APC)
+	FR	Morceaux récemment joués et titres similaires du même artiste (APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_RACKSRECENTLYPLAYEDSIMILARBYSAMEARTIST_DESC
 	EN	Skip recently played songs by the same artist<br>with similar track titles (according to the main APC table)
+	FR	Sauter les morceaux récemment joués du même artiste<br>dont les titres sont similaires (d'après la table principale APC)
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_CUSTOMSKIP_HIGHAPCSKIPCOUNT_NAME
 	EN	High APC skip count
@@ -769,6 +849,7 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_SONGS
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DECADE
 	EN	decade
+	FR	décennie
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_WEEK
 	EN	week

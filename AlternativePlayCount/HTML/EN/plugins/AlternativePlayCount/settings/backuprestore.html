@@ -35,10 +35,11 @@
 	<input name="backup" type="submit" class="stdclick" id="apcbackupbutton" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_MANUAL_BACKUP_BUTTON" | string %]"[% IF activebackuprestore || activelmsscan %] disabled[% END %]>
 [% END %]
 
-[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_INCLUDEEXTERNALDATA" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_INCLUDEEXTERNALDATA_DESC" %]
-	<select class="stdedit" name="pref_backupexternaldata" id="backupexternaldata">
-		<option [% IF NOT prefs.backupexternaldata %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
-		<option [% IF prefs.backupexternaldata %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+[% extBackupTitle = BLOCK %][% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_INCLUDEEXTERNALDATA" | getstring %][% IF NOT playhistoryenabled %]<br><span class="error" style="font-weight:normal;text-transform:none;">[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISABLEDHINT" | getstring %]</span>[% END %][% END %]
+[% WRAPPER setting title=extBackupTitle desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_BACKUP_INCLUDEEXTERNALDATA_DESC" %]
+	<select class="stdedit" name="pref_backupexternaldata" id="backupexternaldata"[% IF NOT playhistoryenabled %] disabled[% END %]>
+		<option [% IF NOT (prefs.backupexternaldata AND playhistoryenabled) %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.backupexternaldata AND playhistoryenabled %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
 	</select>
 [% END %]
 <br>
@@ -88,8 +89,13 @@
 [% END %]
 <br>
 
-[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE_DESC" %]
+[% extRestoreTitle = BLOCK %][% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE" | getstring %][% IF NOT playhistoryenabled %]<br><span class="error" style="font-weight:normal;text-transform:none;">[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISABLEDHINT" | getstring %]</span>[% END %][% END %]
+[% WRAPPER setting title=extRestoreTitle desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_SELECTEXTERNALFILE_DESC" %]
+	[% IF playhistoryenabled %]
 	<input type="text" class="stdedit selectFile_xml" name="pref_restoreexternalfile" id="restoreexternalfile" value="[% restoreexternalfilefolder %]" size="40">
+	[% ELSE %]
+	<input type="text" class="stdedit" name="pref_restoreexternalfile" id="restoreexternalfile" value="" size="40" disabled>
+	[% END %]
 	[% IF restoreexternalmissingfile == 2 %]<br><br><span class='error'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_NOXMLFILE" | string %]</span>[% END %]
 	<br><br>
 	<input name="restore" type="submit" class="stdclick" id="apcrestorebutton" value="[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_RESTORE_BUTTON" | string %]"[% IF activebackuprestore || activelmsscan %] disabled[% END %]>

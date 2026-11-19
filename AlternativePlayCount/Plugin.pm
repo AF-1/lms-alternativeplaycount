@@ -45,11 +45,15 @@ my ($restoreCount, $restoreErrors, $unidentifiableCount, $unmatchedCount, $backu
 my @unmatchedTrackURLs;
 
 my (%extRestoreItem, $extCurrentKey, $extInEntry, $extInPlayer, $extInValue, $extRestoreFH, $extRestoreParser, $extRestoreParserNB, $extRestoreTotalCount, $extPlayHistoryTotalCount, $extRestoreDone);
+my $jiveHomeMenuActive = 0;
 my ($extOpened, $extPlayHistoryRestoredCount, $extPlayerRestoredCount, $extRestoreErrors, $extSkippedCount, $extBackupSourceOS, $extPlayerTotalCount) = (0, 0, 0, 0, 0, undef, 0);
 
 my $ratingslight_enabled;
 my %itemNames;
 my %nonTrackContentTypes = map {$_ => 1} qw(ssp cpl src dir); # content types of non-playable rows in the tracks table
+my %resetObjectTypes = map {$_ => 1} qw(track album artist genre playlist year decade);
+my %resetInfoItems = map {$_ => 1} qw(playCount skipCount dynPSval all);
+my %resetInfoItemsLC = map {lc($_) => $_} keys %resetInfoItems;
 
 sub initPlugin {
 	my $class = shift;
@@ -70,14 +74,7 @@ sub initPlugin {
 		Plugins::AlternativePlayCount::Settings::PlayHistory->new($class);
 
 		Slim::Web::Pages->addPageFunction('resetvalues', \&resetValuesWeb);
-		if ($prefs->get('playhistory') && ($prefs->get('playhistory_contextmenu') || $prefs->get('playhistory_homemenu'))) {
-			Slim::Web::Pages->addPageFunction('playhistory', \&playHistoryWeb);
-		}
-		if ($prefs->get('playhistory') && $prefs->get('playhistory_homemenu')) {
-			Slim::Plugin::Base->addWeight('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM', 85);
-			Slim::Web::Pages->addPageLinks('browse', {'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM' => 'plugins/AlternativePlayCount/playhistory?objecttype=all'});
-			Slim::Web::Pages->addPageLinks('icons', {'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM' => 'plugins/AlternativePlayCount/html/images/apc_icon_svg.png'});
-		}
+		Slim::Web::Pages->addPageFunction('playhistory', \&playHistoryWeb);
 	}
 
 	Slim::Menu::TrackInfo->registerInfoProvider(zzzz_apcplaycount => (
@@ -106,7 +103,6 @@ sub initPlugin {
 	));
 
 	registerBatchResetContextMenus();
-	registerPlayHistoryContextMenus();
 
 	Slim::Music::Import->addImporter('Plugins::AlternativePlayCount::Importer', {
 		'type' => 'post',
@@ -126,12 +122,15 @@ sub initPlugin {
 
 	Slim::Control::Request::addDispatch(['alternativeplaycount','resetvalueschoice'], [0, 1, 1, \&resetValuesChoiceJive]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount','resetvalues'], [0, 1, 1, \&resetValuesJive]);
+	Slim::Control::Request::addDispatch(['alternativeplaycount','trackvalues'], [0, 1, 1, \&_trackValuesQuery]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount','skipwithoutcount','_trackid'], [1, 1, 1, \&_skipWithoutCount]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount', 'jiveplayhistoryclientsel', '_type', '_objectid', '_objectname', '_urlmd5'], [1, 0, 1, \&_jivePlayHistoryClientSel]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount', 'jiveplayhistoryitems', '_type', '_objectid', '_clientid'], [1, 0, 1, \&_jivePlayHistoryItems]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount', 'jiveplayhistoryall'], [1, 0, 1, \&_jivePlayHistoryAll]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount', 'jiveplayhistoryactions', '_type', '_trackid'], [1, 0, 1, \&_jivePlayHistoryActions]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount', 'reportplayback', '_mac', '_playername', '_trackid', '_percentplayed'], [0, 0, 1, \&_reportExternalPlayback]);
+	Slim::Control::Request::addDispatch(['alternativeplaycount','playhistory'], [0, 1, 1, \&_playHistoryQuery]);
+	Slim::Control::Request::addDispatch(['alternativeplaycount','playhistoryplayers'], [0, 1, 1, \&_playHistoryPlayersQuery]);
 
 	Slim::Control::Request::subscribe(\&_setRefreshCBTimer, [['rescan'], ['done']]);
 	Slim::Control::Request::subscribe(\&_APCcommandCB,[['mode', 'play', 'stop', 'pause', 'playlist']]);
@@ -150,7 +149,7 @@ sub postinitPlugin {
 		Slim::Control::Request::subscribe(\&_ratingsLightChangedCB, [['ratingslight'], ['changedrating']]);
 		main::DEBUGLOG && $log->is_debug && $log->debug('Subscribed to RatingsLight changedrating dispatch for play history rating updates.');
 	}
-	registerPlayHistoryAllJiveMenu($class) if $prefs->get('playhistory') && $prefs->get('playhistory_homemenu');
+	applyPlayHistoryMenus();
 }
 
 sub initPrefs {
@@ -158,7 +157,6 @@ sub initPrefs {
 		apcparentfolderpath => Slim::Utils::OSDetect::dirsFor('prefs'),
 		playedthreshold_percent => 20,
 		undoskiptimespan => 5,
-		alwaysdisplayvals => 1,
 		autoratingdynamicfactor => 8,
 		autoratinglineardelta => 5,
 		dbpopdpsvinitial => 1,
@@ -252,15 +250,13 @@ sub initPrefs {
 				Slim::Control::Request::unsubscribe(\&_ratingsLightChangedCB);
 				Plugins::AlternativePlayCount::Storage->shutdown();
 			}
+			applyPlayHistoryMenus();
 		}, 'playhistory');
 
 	$prefs->setChange(sub {
-		if ($prefs->get('playhistory')) {
-			main::DEBUGLOG && $log->is_debug && $log->debug('Play history menu pref changed. Re-initializing DB to update library.db attach state.');
-			Plugins::AlternativePlayCount::Storage->shutdown();
-			initPlayHistoryDB();
-		}
-	}, 'playhistory_contextmenu', 'playhistory_homemenu');
+			main::DEBUGLOG && $log->is_debug && $log->debug('Pref for play history menus changed. Update menus.');
+			applyPlayHistoryMenus();
+		}, 'playhistory_contextmenu', 'playhistory_homemenu');
 
 	# migrate alternativeplaycount database schema to the latest version
 	$prefs->migrate(3, sub {
@@ -279,61 +275,21 @@ sub trackInfoHandler {
 	}
 	return if _isNonTrackRow($track);
 
-	my $alwaysDisplayVals = $prefs->get('alwaysdisplayvals');
 	my $returnVal = 0;
-	my ($apcPlayCount, $apcLastPlayed, $persistentPlayCount, $persistentLastPlayed, $apcSkipCount, $apcLastSkipped, $dynPSval);
-	my $dbh = Slim::Schema->dbh;
-
 	my $urlmd5 = $track->urlmd5;
-	my $rowFound = 0;
-	my $sth = $dbh->prepare("select ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(alternativeplaycount.dynPSval, 0), ifnull(tracks_persistent.playCount, 0), ifnull(tracks_persistent.lastPlayed, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.urlmd5 = ?");
-	eval {
-		$sth->execute($urlmd5);
-		$sth->bind_columns(undef, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped, \$dynPSval, \$persistentPlayCount, \$persistentLastPlayed);
-		if ($sth->fetch()) {
-			$rowFound = 1;
-		}
-		$sth->finish();
-		if (!$rowFound) {
-			$sth = $dbh->prepare("select ifnull(alternativeplaycount.playCount, 0), ifnull(alternativeplaycount.lastPlayed, 0), ifnull(alternativeplaycount.skipCount, 0), ifnull(alternativeplaycount.lastSkipped, 0), ifnull(alternativeplaycount.dynPSval, 0), ifnull(tracks_persistent.playCount, 0), ifnull(tracks_persistent.lastPlayed, 0) from alternativeplaycount left join tracks_persistent on tracks_persistent.urlmd5 = alternativeplaycount.urlmd5 where alternativeplaycount.url = ?");
-			$sth->execute($url);
-			$sth->bind_columns(undef, \$apcPlayCount, \$apcLastPlayed, \$apcSkipCount, \$apcLastSkipped, \$dynPSval, \$persistentPlayCount, \$persistentLastPlayed);
-			if ($sth->fetch()) {
-				$rowFound = 1;
-			}
-			$sth->finish();
-		}
-	};
-	if ($@) {
-		$log->error("Database error: $@");
+	my ($values, $hadError) = _getAPCTrackValues($urlmd5, $url);
+	if (!$values) {
+		$log->warn("Couldn't retrieve information for this track.\nCould be part of a (client) playlist whose track references are no longer valid after a *rescan*.\nTrack url = ".$url."\nTrack urlmd5 = ".$urlmd5) unless $hadError;
+		return;
 	}
-	my $hadError = $@;
-	main::DEBUGLOG && $log->is_debug && $log->debug('track title = '.substr($track->title, 0, 15).' # apcPlayCount = '.Data::Dump::dump($apcPlayCount).' # persistentPlayCount = '.Data::Dump::dump($persistentPlayCount).' # apcSkipCount = '.Data::Dump::dump($apcSkipCount).' # apcLastPlayed = '.Data::Dump::dump($apcLastPlayed).' # persistentLastPlayed = '.Data::Dump::dump($persistentLastPlayed).' # apcLastSkipped = '.Data::Dump::dump($apcLastSkipped).' # apcdynPSval = '.Data::Dump::dump($dynPSval));
-
-	if (!$rowFound && !$hadError) {
-		my $trackInDB = $dbh->selectrow_array(
-			"select count(*) from alternativeplaycount where urlmd5 = ?",
-			undef, $urlmd5
-		);
-		if (!$trackInDB) {
-			$log->warn("Couldn't retrieve information for this track.\nCould be part of a (client) playlist whose track references are no longer valid after a *rescan*.\nTrack url = ".$url."\nTrack urlmd5 = ".$urlmd5);
-			return;
-		}
-	}
+	my ($apcPlayCount, $apcLastPlayed, $apcSkipCount, $apcLastSkipped, $dynPSval) = @{$values}{qw(apc_playcount apc_lastplayed apc_skipcount apc_lastskipped apc_dpsv)};
+	main::DEBUGLOG && $log->is_debug && $log->debug('track title = '.substr($track->title, 0, 15).' # apcPlayCount = '.Data::Dump::dump($apcPlayCount).' # apcSkipCount = '.Data::Dump::dump($apcSkipCount).' # apcLastPlayed = '.Data::Dump::dump($apcLastPlayed).' # apcLastSkipped = '.Data::Dump::dump($apcLastSkipped).' # apcdynPSval = '.Data::Dump::dump($dynPSval));
 
 	if ($infoItem eq 'playCount') {
-		# Don't display APC play count if values in APC and LMS table are the same or value is zero
-		if ($apcPlayCount == $persistentPlayCount || $apcPlayCount == 0) {
-			return unless $alwaysDisplayVals;
-		}
 		$returnVal = $apcPlayCount;
 	}
 
 	if ($infoItem eq 'lastPlayed') {
-		# Don't display APC date last played if play count OR last played values in APC and LMS table are the same or value is zero
-		if ($apcPlayCount == $persistentPlayCount || $apcLastPlayed == $persistentLastPlayed || $apcLastPlayed == 0) {
-			return unless $alwaysDisplayVals;
-		}
 		if ($apcLastPlayed == 0) {
 			$returnVal = string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_NEVER');
 		} else {
@@ -342,20 +298,10 @@ sub trackInfoHandler {
 	}
 
 	if ($infoItem eq 'skipCount') {
-		return if $prefs->get('hideskipdpsvtrackinfo');
-
-		# Don't display APC skip count if value is zero
-		unless ($alwaysDisplayVals) {
-			return if $apcSkipCount == 0;
-		}
 		$returnVal = $apcSkipCount;
 	}
 
 	if ($infoItem eq 'lastSkipped') {
-		return if $prefs->get('hideskipdpsvtrackinfo');
-		unless ($alwaysDisplayVals) {
-			return if $apcLastSkipped == 0;
-		}
 		if ($apcLastSkipped == 0) {
 			$returnVal = string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_TIME_NEVER');
 		} else {
@@ -364,13 +310,13 @@ sub trackInfoHandler {
 	}
 
 	if ($infoItem eq 'dynPSval') {
-		return if $prefs->get('hideskipdpsvtrackinfo');
 		$returnVal = $dynPSval;
 	}
 
 	my $displayText = $itemNames{$infoItem}.': '.$returnVal;
 
 	if ($infoItem eq 'all') {
+		return if Slim::Music::Import->stillScanning;
 		return if $apcPlayCount == 0 && $apcSkipCount == 0 && $dynPSval == 0;
 		$displayText = string('PLUGIN_ALTERNATIVEPLAYCOUNT_WEB_RESETVALUE').' '.$itemNames{$infoItem}.' '.string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_RESETFORTHIS').' '.lc(string(uc($objectType)));
 	}
@@ -621,7 +567,9 @@ sub resetValuesWeb {
 	$params->{urlmd5} = $urlmd5;
 	main::DEBUGLOG && $log->is_debug && $log->debug('name = '.$itemNames{$infoItem}.' ## objectType = '.$objectType.' ## objectID = '.$objectID.' ## urlmd5 = '.Data::Dump::dump($urlmd5));
 
-	if ($action) {
+	if (Slim::Music::Import->stillScanning) {
+		$params->{unavailablemsg} = string('PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_SCANNING');
+	} elsif ($action) {
 		resetValues($objectType, $objectID, $infoItem, $urlmd5);
 		$params->{resetdone} = 1;
 		main::INFOLOG && $log->is_info && $log->info('Going to reset '.$itemNames{$infoItem}." for $objectType with ID: ".$objectID);
@@ -643,6 +591,12 @@ sub resetValuesChoiceJive {
 		$request->setStatusNeedsClient();
 		return;
 	}
+
+	if (Slim::Music::Import->stillScanning) {
+		_jivePlayHistoryUnavailable($request, 'PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_SCANNING');
+		return;
+	}
+
 	my $objectType = $request->getParam('objecttype');
 	my $objectID = $request->getParam('objectid');
 	my $infoItem = $request->getParam('infoitem');
@@ -688,25 +642,30 @@ sub resetValuesChoiceJive {
 
 sub resetValuesJive {
 	my $request = shift;
-	my $client = $request->client();
 
 	if (!$request->isQuery([['alternativeplaycount'],['resetvalues']])) {
 		$log->warn('incorrect command');
 		$request->setStatusBadDispatch();
 		return;
 	}
-	if (!defined $client) {
-		$log->warn('client required!');
-		$request->setStatusNeedsClient();
-		return;
-	}
-	my $objectType = $request->getParam('objecttype');
-	my $infoItem = $request->getParam('infoitem');
+	my $objectType = lc($request->getParam('objecttype') // '');
+	my $infoItem = $resetInfoItemsLC{lc($request->getParam('infoitem') // '')};
 	my $objectID = $request->getParam('objectid');
 	my $urlmd5 = $request->getParam('urlmd5');
-	main::DEBUGLOG && $log->is_debug && $log->debug('objecttype = '.$objectType.' ## infoItem = '.$infoItem.' ## objectid = '.$objectID.' ## urlmd5 = '.Data::Dump::dump($urlmd5));
+	main::DEBUGLOG && $log->is_debug && $log->debug('objecttype = '.Data::Dump::dump($objectType).' ## infoItem = '.Data::Dump::dump($infoItem).' ## objectid = '.Data::Dump::dump($objectID).' ## urlmd5 = '.Data::Dump::dump($urlmd5));
 
-	resetValues($objectType, $objectID, $infoItem, $urlmd5);
+	if (!$resetObjectTypes{$objectType // ''} || !$resetInfoItems{$infoItem // ''} || !defined($objectID) || $objectID !~ /^\d+$/) {
+		$log->warn('resetvalues: missing or invalid parameters');
+		$request->setStatusBadParams();
+		return;
+	}
+
+	$urlmd5 = undef if defined($urlmd5) && $urlmd5 !~ /^[a-f0-9]{32}$/i;
+
+	return if _apiGuard($request, 'affected', 0, 1);
+
+	my $affected = resetValues($objectType, $objectID, $infoItem, $urlmd5);
+	$request->addResult('affected', $affected // 0);
 
 	$request->setStatusDone();
 }
@@ -717,7 +676,7 @@ sub resetValVFD {
 	main::DEBUGLOG && $log->is_debug && $log->debug('urlmd5 = '.$urlmd5);
 
 	resetValues($objectType, $objectID, $infoItem, $urlmd5);
-	my $cbtext = string('PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_CB');
+	my $cbtext = string(Slim::Music::Import->stillScanning ? 'PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_SCANNING' : 'PLUGIN_ALTERNATIVEPLAYCOUNT_RESETVALUE_CB');
 	$callback->([{
 		type => 'text',
 		name => $cbtext,
@@ -729,7 +688,12 @@ sub resetValVFD {
 sub resetValues {
 	my ($objectType, $objectID, $infoItem, $urlmd5) = @_;
 	main::DEBUGLOG && $log->is_debug && $log->debug('objectType = '.Data::Dump::dump($objectType).' ## objectID = '.Data::Dump::dump($objectID).' ## infoItem = '.Data::Dump::dump($infoItem).' ## url = '.Data::Dump::dump($urlmd5));
+
 	return if (!$objectType || !$objectID || !$infoItem);
+	if (Slim::Music::Import->stillScanning) {
+		$log->warn('Warning: resetting values is not available until library scan is completed');
+		return;
+	}
 
 	my $setClause;
 	if ($infoItem eq 'playCount') {
@@ -744,29 +708,125 @@ sub resetValues {
 	return if !$setClause;
 
 	my $dbh = Slim::Schema->dbh;
+	my $affected;
 
 	if ($objectType eq 'track') {
 		my $track = Slim::Schema->find('Track', $objectID);
 		return unless $track;
 		$urlmd5 = $track->urlmd5 unless $urlmd5 && $urlmd5 =~ /^[a-f0-9]{32}$/i;
-		_updateAPCbyUrlmd5OrUrl($setClause, $urlmd5, $track->url);
+		$affected = _updateAPCbyUrlmd5OrUrl($setClause, $urlmd5, $track->url);
 	} elsif ($objectType eq 'album') {
-		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks where tracks.album = ?) or alternativeplaycount.url in (select tracks.url from tracks where tracks.album = ?)", undef, $objectID, $objectID) };
+		$affected = eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks where tracks.album = ?) or alternativeplaycount.url in (select tracks.url from tracks where tracks.album = ?)", undef, $objectID, $objectID) };
 	} elsif ($objectType eq 'artist') {
-		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join contributor_track on contributor_track.track = tracks.id where contributor_track.role in (1,5,6) and contributor_track.contributor = ?) or alternativeplaycount.url in (select tracks.url from tracks join contributor_track on contributor_track.track = tracks.id where contributor_track.role in (1,5,6) and contributor_track.contributor = ?)", undef, $objectID, $objectID) };
+		$affected = eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join contributor_track on contributor_track.track = tracks.id where contributor_track.role in (1,5,6) and contributor_track.contributor = ?) or alternativeplaycount.url in (select tracks.url from tracks join contributor_track on contributor_track.track = tracks.id where contributor_track.role in (1,5,6) and contributor_track.contributor = ?)", undef, $objectID, $objectID) };
 	} elsif ($objectType eq 'genre') {
-		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join genre_track on genre_track.track = tracks.id where genre_track.genre = ?) or alternativeplaycount.url in (select tracks.url from tracks join genre_track on genre_track.track = tracks.id where genre_track.genre = ?)", undef, $objectID, $objectID) };
+		$affected = eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join genre_track on genre_track.track = tracks.id where genre_track.genre = ?) or alternativeplaycount.url in (select tracks.url from tracks join genre_track on genre_track.track = tracks.id where genre_track.genre = ?)", undef, $objectID, $objectID) };
 	} elsif ($objectType eq 'playlist') {
-		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join playlist_track on tracks.url = playlist_track.track where playlist_track.playlist = ?) or alternativeplaycount.url in (select tracks.url from tracks join playlist_track on tracks.url = playlist_track.track where playlist_track.playlist = ?)", undef, $objectID, $objectID) };
+		$affected = eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks join playlist_track on tracks.url = playlist_track.track where playlist_track.playlist = ?) or alternativeplaycount.url in (select tracks.url from tracks join playlist_track on tracks.url = playlist_track.track where playlist_track.playlist = ?)", undef, $objectID, $objectID) };
 	} elsif ($objectType eq 'year') {
 		my $yearValue = $objectID + 0;
-		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks where ifnull(tracks.year, 0) = $yearValue) or alternativeplaycount.url in (select tracks.url from tracks where ifnull(tracks.year, 0) = $yearValue)") };
+		$affected = eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks where ifnull(tracks.year, 0) = $yearValue) or alternativeplaycount.url in (select tracks.url from tracks where ifnull(tracks.year, 0) = $yearValue)") };
 	} elsif ($objectType eq 'decade') {
 		my $decadeStart = $objectID + 0;
-		eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks where ifnull(tracks.year, 0) >= $decadeStart and ifnull(tracks.year, 0) <= ($decadeStart + 9)) or alternativeplaycount.url in (select tracks.url from tracks where ifnull(tracks.year, 0) >= $decadeStart and ifnull(tracks.year, 0) <= ($decadeStart + 9))") };
+		$affected = eval { $dbh->do("update alternativeplaycount $setClause where alternativeplaycount.urlmd5 in (select tracks.urlmd5 from tracks where ifnull(tracks.year, 0) >= $decadeStart and ifnull(tracks.year, 0) <= ($decadeStart + 9)) or alternativeplaycount.url in (select tracks.url from tracks where ifnull(tracks.year, 0) >= $decadeStart and ifnull(tracks.year, 0) <= ($decadeStart + 9))") };
 	}
 	if ($@) { $log->error("Database error: $@"); }
 	main::DEBUGLOG && $log->is_debug && $log->debug("Finished resetting $infoItem for $objectType with ID: ".$objectID);
+	return ($affected && $affected > 0) ? $affected + 0 : 0;
+}
+
+sub _apiGuard {
+	my ($request, $zeroKey, $needsPlayHistory, $checkScanning) = @_;
+	if ($needsPlayHistory && !$prefs->get('playhistory')) {
+		$request->addResult('playhistory_enabled', 0);
+	} elsif ($checkScanning && Slim::Music::Import->stillScanning) {
+		$request->addResult('scanning', 1);
+	} else {
+		return 0;
+	}
+	$request->addResult($zeroKey, 0);
+	$request->setStatusDone();
+	return 1;
+}
+
+sub _getAPCTrackValues {
+	my ($urlmd5, $url) = @_;
+	my $dbh = Slim::Schema->dbh;
+	my $sql = 'select ifnull(playCount, 0), ifnull(lastPlayed, 0), ifnull(skipCount, 0), ifnull(lastSkipped, 0), ifnull(dynPSval, 0) from alternativeplaycount where ';
+	my $row = eval {
+		my $r = $dbh->selectrow_arrayref($sql.'urlmd5 = ?', undef, $urlmd5);
+		$r = $dbh->selectrow_arrayref($sql.'url = ?', undef, $url) if !$r;
+		$r;
+	};
+	if ($@) {
+		$log->error("Database error: $@");
+		return (undef, 1);
+	}
+	return (undef, 0) unless $row;
+	return ({
+		apc_playcount => $row->[0],
+		apc_lastplayed => $row->[1],
+		apc_skipcount => $row->[2],
+		apc_lastskipped => $row->[3],
+		apc_dpsv => $row->[4],
+	}, 0);
+}
+
+sub _trackValuesQuery {
+	my $request = shift;
+
+	if (!$request->isQuery([['alternativeplaycount'],['trackvalues']])) {
+		$log->warn('incorrect command');
+		$request->setStatusBadDispatch();
+		return;
+	}
+
+	return if _apiGuard($request, 'found', 0, 1);
+
+	my $trackID = $request->getParam('track_id');
+	my $urlmd5Param = $request->getParam('urlmd5');
+	my $track;
+	if (defined($trackID) && $trackID =~ /^\d+$/) {
+		$track = Slim::Schema->find('Track', $trackID);
+	} elsif (defined($urlmd5Param) && $urlmd5Param =~ /^[a-f0-9]{32}$/i) {
+		my ($id) = Slim::Schema->dbh->selectrow_array('select id from tracks where urlmd5 = ?', undef, lc($urlmd5Param));
+		$track = Slim::Schema->find('Track', $id) if $id;
+	} else {
+		$log->warn('trackvalues: track_id or urlmd5 required');
+		$request->setStatusBadParams();
+		return;
+	}
+
+	if (!$track || _isNonTrackRow($track)) {
+		$request->setStatusBadParams();
+		return;
+	}
+
+	my $url = $track->url;
+	if (Slim::Music::Info::isRemoteURL($url) && !defined($track->extid)) {
+		$request->addResult('found', 0);
+		$request->setStatusDone();
+		return;
+	}
+
+	my $urlmd5 = $track->urlmd5;
+	my ($values, $hadError) = _getAPCTrackValues($urlmd5, $url);
+	if ($hadError) {
+		$request->setStatusBadParams();
+		return;
+	}
+
+	$request->addResult('track_id', $track->id);
+	$request->addResult('urlmd5', $urlmd5);
+	if (!$values) {
+		$request->addResult('found', 0);
+		$request->setStatusDone();
+		return;
+	}
+
+	$request->addResult('found', 1);
+	$request->addResult($_, $values->{$_}) foreach qw(apc_playcount apc_lastplayed apc_skipcount apc_lastskipped apc_dpsv);
+	$request->setStatusDone();
 }
 
 
@@ -902,7 +962,6 @@ sub _APCcommandCB {
 		}
 	}
 }
-
 
 sub startPlayCountTimer {
 	my ($client, $track) = @_;
@@ -1111,6 +1170,7 @@ sub _reportExternalPlayback {
 		$request->setStatusBadDispatch();
 		return;
 	}
+	return if _apiGuard($request, 'reported', 0, 1);
 
 	my $mac = _getRequestParamVal($request, 'mac', 1);
 	my $playerName = _getRequestParamVal($request, 'playername', 1);
@@ -1234,6 +1294,7 @@ sub _reportExternalPlayback {
 		_setAutoRatingValue(undef, $track, 2) if $prefs->get('autorating') && $ratingslight_enabled;
 	}
 
+	$request->addResult('reported', 1);
 	$request->setStatusDone();
 }
 
@@ -1446,7 +1507,7 @@ sub _skipWithoutCount {
 		$request->setStatusNeedsClient();
 		return;
 	}
-	my $trackID = $request->getParam('_trackid');
+	my $trackID = _getRequestParamVal($request, 'trackid', 1);
 	if (!$trackID) {
 		$log->warn('track ID required!');
 		$request->setStatusBadParams();
@@ -1460,6 +1521,8 @@ sub _skipWithoutCount {
 		return;
 	}
 	$client->pluginData('skipWithoutCountTrackURLmd5' => $track->urlmd5);
+	$request->addResult('track_id', $track->id + 0);
+	$request->addResult('is_current_track', (($client->pluginData('currentTrackURLmd5') // '') eq ($track->urlmd5 // '')) ? 1 : 0);
 
 	Slim::Control::Request::executeRequest($client, ['playlist', 'index', '+1']);
 
@@ -1567,6 +1630,11 @@ sub restoreFromBackup {
 	$restorestarted = time();
 	my $restorefile = $prefs->get('restorefile');
 	my $restoreexternalfile = $prefs->get('restoreexternalfile');
+
+	if ($restoreexternalfile && !$prefs->get('playhistory')) {
+		main::INFOLOG && $log->is_info && $log->info('Play history is disabled. Ignoring external data backup file.');
+		$restoreexternalfile = '';
+	}
 
 	if ($restorefile || $restoreexternalfile) {
 		$restoreTotalCount = $restorefile ? _getAPCBackupTrackCount($restorefile) : 0;
@@ -2904,6 +2972,36 @@ sub initPlayHistoryDB {
 	Plugins::AlternativePlayCount::Storage->init();
 }
 
+sub applyPlayHistoryMenus {
+	my $enabled = $prefs->get('playhistory');
+	my $contextMenu = $enabled && $prefs->get('playhistory_contextmenu');
+	my $homeMenu = $enabled && $prefs->get('playhistory_homemenu');
+
+	Slim::Menu::TrackInfo->deregisterInfoProvider('zzzz_apcplayhistorytrack');
+	Slim::Menu::AlbumInfo->deregisterInfoProvider('zzzz_apcplayhistoryalbum');
+	Slim::Menu::ArtistInfo->deregisterInfoProvider('zzzz_apcplayhistoryartist');
+	registerPlayHistoryContextMenus() if $contextMenu;
+
+	if (main::WEBUI) {
+		if ($homeMenu) {
+			Slim::Plugin::Base->addWeight('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM', 85);
+			Slim::Web::Pages->addPageLinks('browse', {'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM' => 'plugins/AlternativePlayCount/playhistory?objecttype=all'});
+			Slim::Web::Pages->addPageLinks('icons', {'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM' => 'plugins/AlternativePlayCount/html/images/apc_icon_svg.png'});
+		} else {
+			Slim::Web::Pages->addPageLinks('browse', {'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM' => undef});
+			Slim::Web::Pages->addPageLinks('icons', {'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM' => undef});
+		}
+	}
+
+	if ($homeMenu && !$jiveHomeMenuActive) {
+		registerPlayHistoryAllJiveMenu(__PACKAGE__);
+		$jiveHomeMenuActive = 1;
+	} elsif (!$homeMenu && $jiveHomeMenuActive) {
+		unregisterPlayHistoryAllJiveMenu();
+		$jiveHomeMenuActive = 0;
+	}
+}
+
 sub registerPlayHistoryContextMenus {
 	return unless $prefs->get('playhistory') && $prefs->get('playhistory_contextmenu');
 
@@ -2930,7 +3028,7 @@ sub playHistoryContextMenuHandler {
 	return unless $prefs->get('playhistory_contextmenu');
 
 	if (Slim::Music::Import->stillScanning) {
-		$log->warn('Warning: play history not available during library scan');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Warning: play history not available during library scan');
 		return;
 	}
 
@@ -2988,8 +3086,33 @@ sub playHistoryContextMenuHandler {
 	}
 }
 
+sub _playHistoryUnavailableToken {
+	return 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISABLEDHINT' if !$prefs->get('playhistory');
+	return 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_SCANNING' if Slim::Music::Import->stillScanning;
+	return;
+}
+
+sub _jivePlayHistoryUnavailable {
+	my ($request, $token) = @_;
+	$request->addResultLoop('item_loop', 0, 'type', 'text');
+	$request->addResultLoop('item_loop', 0, 'style', 'itemNoAction');
+	$request->addResultLoop('item_loop', 0, 'text', string($token));
+	$request->addResult('offset', 0);
+	$request->addResult('count', 1);
+	$request->setStatusDone();
+}
+
 sub playHistoryWeb {
 	my ($client, $params) = @_;
+
+	if (my $unavailableToken = _playHistoryUnavailableToken()) {
+		$params->{clientlist} = [];
+		$params->{selectedclient} = '';
+		$params->{historyitems} = undef;
+		$params->{itemcount} = 0;
+		$params->{unavailablemsg} = string($unavailableToken);
+		return Slim::Web::HTTP::filltemplatefile('plugins/AlternativePlayCount/html/playhistorylist.html', $params);
+	}
 
 	my $type = $params->{objecttype};
 	my $objectID = $params->{objectid};
@@ -3052,16 +3175,7 @@ sub playHistoryWeb {
 			$entry->{artworkid} = $artworkid // '';
 
 			# artist fallback: role 1 -> role 6 -> role 5
-			my ($artistName, $artistID) = ('', '');
-			for my $role (1, 6, 5) {
-				my ($n, $i);
-				eval {
-					$sth_artist->execute($trackid, $role);
-					($n, $i) = $sth_artist->fetchrow_array();
-				};
-				if ($@) { $log->error("SQL error: $@"); }
-				if ($n && $n ne '') { $artistName = $n; $artistID = $i // ''; last; }
-			}
+			my ($artistName, $artistID) = _getTrackArtist($sth_artist, $trackid);
 			$entry->{artistname} = Slim::Utils::Unicode::utf8decode(trimStringLength($artistName, 80), 'utf8');
 			$entry->{artistid} = $artistID;
 		} else {
@@ -3102,6 +3216,11 @@ sub _jivePlayHistoryClientSel {
 	}
 	my $client = $request->client();
 	if (!defined $client) { $request->setStatusNeedsClient(); return; }
+
+	if (my $unavailableToken = _playHistoryUnavailableToken()) {
+		_jivePlayHistoryUnavailable($request, $unavailableToken);
+		return;
+	}
 
 	my $type = _getRequestParamVal($request, 'type');
 	my $objectID = _getRequestParamVal($request, 'objectid');
@@ -3154,6 +3273,11 @@ sub _jivePlayHistoryItems {
 	my $client = $request->client();
 	if (!defined $client) { $request->setStatusNeedsClient(); return; }
 
+	if (my $unavailableToken = _playHistoryUnavailableToken()) {
+		_jivePlayHistoryUnavailable($request, $unavailableToken);
+		return;
+	}
+
 	my $type = _getRequestParamVal($request, 'type');
 	my $clientID = _getRequestParamVal($request, 'clientid', 1);
 	my $objectID = _getRequestParamVal($request, 'objectid', 1);
@@ -3177,8 +3301,7 @@ sub _jivePlayHistoryItems {
 		my %clientNames = map { $_->{id} => ($_->{displayname} // $_->{name}) } @{$clientList};
 
 		my $sth = $dbh->prepare_cached('SELECT tracks.title, tracks.id, albums.title, albums.artwork, albums.compilation, ifnull(tracks_persistent.rating, 0) FROM tracks JOIN albums ON tracks.album = albums.id LEFT JOIN tracks_persistent ON tracks_persistent.urlmd5 = tracks.urlmd5 WHERE tracks.urlmd5 = ? LIMIT 1');
-		my $sth_artist = $dbh->prepare_cached('SELECT contributors.name FROM contributor_track JOIN contributors ON contributor_track.contributor = contributors.id WHERE contributor_track.track = ? AND contributor_track.role = ? LIMIT 1');
-
+		my $sth_artist = $dbh->prepare_cached('SELECT contributors.name, contributors.id FROM contributor_track JOIN contributors ON contributor_track.contributor = contributors.id WHERE contributor_track.track = ? AND contributor_track.role = ? LIMIT 1');
 		my $showRawRatingVal = $prefs->get('playhistory_showrawrating');
 		my $showUnknownPlayerClientID = $prefs->get('playhistory_jiveshownonameclientid');
 
@@ -3194,18 +3317,7 @@ sub _jivePlayHistoryItems {
 			next if !$inLibrary && !$prefs->get('playhistory_showinvalidtracks');
 
 			# artist fallback: role 1 -> role 6 -> role 5
-			my $artist = '';
-			if ($inLibrary) {
-				for my $role (1, 6, 5) {
-					my ($n);
-					eval {
-						$sth_artist->execute($trackID, $role);
-						($n) = $sth_artist->fetchrow_array();
-					};
-					if ($@) { $log->error("SQL error: $@"); }
-					if ($n && $n ne '') { $artist = $n; last; }
-				}
-			}
+			my ($artist) = $inLibrary ? _getTrackArtist($sth_artist, $trackID) : ('');
 
 			# line 1
 			my $ratingStars = ($inLibrary && $currentRating && $currentRating > 0) ? getAppendedRatingText($currentRating) : '';
@@ -3306,7 +3418,7 @@ sub registerPlayHistoryAllJiveMenu {
 	my $class = shift;
 	my @menuItems = (
 		{
-			text => Slim::Utils::Strings::string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM'),
+			text => 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MENUITEM',
 			weight => 85,
 			id => 'apcplayhistory',
 			menuIcon => 'plugins/AlternativePlayCount/html/images/apc_icon_svg.png',
@@ -3319,7 +3431,21 @@ sub registerPlayHistoryAllJiveMenu {
 			hide => 'ip3k',
 		},
 	);
-	Slim::Control::Jive::registerPluginMenu(\@menuItems, 'myMusic');
+	my @clients = Slim::Player::Client::clients();
+	if (@clients) {
+		Slim::Control::Jive::registerPluginMenu(\@menuItems, 'myMusic', $_) for @clients;
+	} else {
+		Slim::Control::Jive::registerPluginMenu(\@menuItems, 'myMusic');
+	}
+}
+
+sub unregisterPlayHistoryAllJiveMenu {
+	my @clients = Slim::Player::Client::clients();
+	if (@clients) {
+		Slim::Control::Jive::deleteMenuItem('apcplayhistory', $_) for @clients;
+	} else {
+		Slim::Control::Jive::deleteMenuItem('apcplayhistory');
+	}
 }
 
 sub _jivePlayHistoryAll {
@@ -3331,6 +3457,11 @@ sub _jivePlayHistoryAll {
 	}
 	my $client = $request->client();
 	if (!defined $client) { $request->setStatusNeedsClient(); return; }
+
+	if (my $unavailableToken = _playHistoryUnavailableToken()) {
+		_jivePlayHistoryUnavailable($request, $unavailableToken);
+		return;
+	}
 
 	my $cnt = 0;
 	my $actionsAll = {
@@ -3423,6 +3554,181 @@ sub _jivePlayHistoryActions {
 	$request->addResult('offset', 0);
 	$request->addResult('count', $cnt);
 
+	$request->setStatusDone();
+}
+
+sub _getTrackArtist {
+	my ($sth, $trackID) = @_;
+	for my $role (1, 6, 5) {
+		my ($name, $id);
+		eval {
+			$sth->execute($trackID, $role);
+			($name, $id) = $sth->fetchrow_array();
+			$sth->finish();
+		};
+		if ($@) { $log->error("SQL error: $@"); }
+		return ($name, $id // '') if $name && $name ne '';
+	}
+	return ('', '');
+}
+
+sub _getPlayerNameMap {
+	my %map;
+	for my $playerClient (Slim::Player::Client::clients()) {
+		my $pname = $playerClient->name();
+		$map{$playerClient->id()} = {name => (defined($pname) ? $pname : ''), active => 1};
+	}
+	return \%map;
+}
+
+sub _resolvePlayerName {
+	my ($nameMap, $id) = @_;
+	return '' unless defined($id) && $id ne '';
+	if (!$nameMap->{$id}) {
+		my $storedName = Plugins::AlternativePlayCount::Storage->getPlayerName($id);
+		$nameMap->{$id} = {name => (defined($storedName) ? $storedName : ''), active => 0};
+	}
+	return $nameMap->{$id}->{name};
+}
+
+sub _playHistoryPlayersQuery {
+	my $request = shift;
+
+	if (!$request->isQuery([['alternativeplaycount'],['playhistoryplayers']])) {
+		$log->warn('incorrect command');
+		$request->setStatusBadDispatch();
+		return;
+	}
+
+	return if _apiGuard($request, 'count', 1, 0);
+
+	require Plugins::AlternativePlayCount::Storage;
+	my $nameMap = _getPlayerNameMap();
+	my %ids = map {$_ => 1} (@{Plugins::AlternativePlayCount::Storage->getDistinctClients()}, keys %{$nameMap});
+
+	my $cnt = 0;
+	for my $id (sort keys %ids) {
+		my $pname = _resolvePlayerName($nameMap, $id);
+		$request->addResultLoop('players_loop', $cnt, 'id', $id);
+		$request->addResultLoop('players_loop', $cnt, 'name', $pname);
+		$request->addResultLoop('players_loop', $cnt, 'active', $nameMap->{$id}->{active});
+		$cnt++;
+	}
+
+	$request->addResult('count', $cnt);
+	$request->setStatusDone();
+}
+
+sub _playHistoryQuery {
+	my $request = shift;
+
+	if (!$request->isQuery([['alternativeplaycount'],['playhistory']])) {
+		$log->warn('incorrect command');
+		$request->setStatusBadDispatch();
+		return;
+	}
+
+	return if _apiGuard($request, 'count', 1, 1);
+
+	my $type = lc($request->getParam('type') // 'all');
+	my $roles = lc($request->getParam('roles') // 'artist');
+	my $clientID = $request->getParam('client_id');
+	my $start = $request->getParam('start') // 0;
+	my $perPage = $request->getParam('itemsPerResponse') // 50;
+	$clientID = undef if defined($clientID) && $clientID eq '';
+
+	if ($type !~ /^(?:track|album|artist|all)$/ || $roles !~ /^(?:artist|all)$/ || $start !~ /^\d+$/ || $perPage !~ /^\d+$/ || (defined($clientID) && length($clientID) > 40)) {
+		$log->warn('playhistory: invalid parameters');
+		$request->setStatusBadParams();
+		return;
+	}
+	$perPage = 1 if $perPage < 1;
+	$perPage = 500 if $perPage > 500;
+
+	my $id;
+	if ($type eq 'track') {
+		my $trackIDParam = $request->getParam('track_id');
+		my $urlmd5Param = $request->getParam('urlmd5');
+		if (defined($trackIDParam) && $trackIDParam =~ /^\d+$/) {
+			my $track = Slim::Schema->find('Track', $trackIDParam);
+			$id = $track->urlmd5 if $track;
+		} elsif (defined($urlmd5Param) && $urlmd5Param =~ /^[a-f0-9]{32}$/i) {
+			$id = lc($urlmd5Param);
+		}
+	} elsif ($type ne 'all') {
+		$id = $request->getParam('id') // $request->getParam($type.'_id');
+		undef $id unless defined($id) && $id =~ /^\d+$/;
+	}
+	if ($type ne 'all' && !$id) {
+		$log->warn('playhistory: missing or invalid object id');
+		$request->setStatusBadParams();
+		return;
+	}
+
+	require Plugins::AlternativePlayCount::Storage;
+	if (!Plugins::AlternativePlayCount::Storage::dbh()) {
+		$request->addResult('playhistory_enabled', 0);
+		$request->addResult('count', 0);
+		$request->setStatusDone();
+		return;
+	}
+	if (($type eq 'album' || $type eq 'artist') && !Plugins::AlternativePlayCount::Storage->isLibraryAttached()) {
+		$request->addResult('library_unavailable', 1);
+		$request->addResult('count', 0);
+		$request->setStatusDone();
+		return;
+	}
+
+	my $total = 0;
+	my $history = Plugins::AlternativePlayCount::Storage->getPlayHistory({
+		type => $type,
+		id => $id,
+		client_id => $clientID,
+		roles => $roles,
+		limit => $perPage + 0,
+		offset => $start + 0,
+		total_ref => \$total,
+	});
+
+	my $dbh = Slim::Schema->dbh;
+	my $sth = $dbh->prepare_cached('SELECT tracks.title, tracks.id, albums.title, albums.id FROM tracks JOIN albums ON tracks.album = albums.id WHERE tracks.urlmd5 = ? LIMIT 1');
+	my $sth_artist = $dbh->prepare_cached('SELECT contributors.name, contributors.id FROM contributor_track JOIN contributors ON contributor_track.contributor = contributors.id WHERE contributor_track.track = ? AND contributor_track.role = ? LIMIT 1');
+	my $nameMap = _getPlayerNameMap();
+
+	my $cnt = 0;
+	foreach my $entry (@{$history}) {
+		my ($title, $trackID, $album, $albumID);
+		eval {
+			$sth->execute($entry->{urlmd5});
+			($title, $trackID, $album, $albumID) = $sth->fetchrow_array();
+			$sth->finish();
+		};
+		if ($@) { $log->error("SQL error: $@"); }
+
+		my ($artistName, $artistID) = defined($trackID) ? _getTrackArtist($sth_artist, $trackID) : ('', '');
+
+		my %row = (
+			played => $entry->{played},
+			rating => $entry->{rating} // 0,
+			client_id => $entry->{client_id} // '',
+			player_name => _resolvePlayerName($nameMap, $entry->{client_id}),
+			remote => $entry->{remote} ? 1 : 0,
+			urlmd5 => $entry->{urlmd5} // '',
+			url => $entry->{url} // '',
+			in_library => (defined $trackID ? 1 : 0),
+			track_id => $trackID // '',
+			title => (defined $title ? Slim::Utils::Unicode::utf8decode($title, 'utf8') : ''),
+			album => (defined $album ? Slim::Utils::Unicode::utf8decode($album, 'utf8') : ''),
+			album_id => $albumID // '',
+			artist => Slim::Utils::Unicode::utf8decode($artistName, 'utf8'),
+			artist_id => $artistID,
+		);
+		$request->addResultLoop('history_loop', $cnt, $_, $row{$_}) foreach keys %row;
+		$cnt++;
+	}
+
+	$request->addResult('count', $total);
+	$request->addResult('offset', $start + 0);
 	$request->setStatusDone();
 }
 

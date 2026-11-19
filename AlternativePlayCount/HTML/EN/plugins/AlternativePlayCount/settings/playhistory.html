@@ -85,13 +85,13 @@
 <br><hr><br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_DESC" %]
-	<input style="margin-top:-1px;" name="playhistorycleanup" type="submit" class="stdclick" onClick="inprogress('playhistorycleanupstatus');" value="[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_BUTTON' | string %]">
+	<input style="margin-top:-1px;" name="playhistorycleanup" type="submit" class="stdclick"[% IF NOT prefs.playhistory %] disabled[% END %] onClick="inprogress('playhistorycleanupstatus');" value="[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_BUTTON' | string %]">
 	<span class='status' id='playhistorycleanupstatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEANUP_INPROGRESS" | string %]</span>
 [% END %]
 <br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_DESC" %]
-	<input style="margin-top:-1px;" name="clearplayhistory" type="submit" class="stdclick" onClick="if (!confirm('[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_CONFIRM' | string %]')) { return false; } inprogress('clearplayhistorystatus');" value="[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_BUTTON' | string %]">
+	<input style="margin-top:-1px;" name="clearplayhistory" type="submit" class="stdclick"[% IF NOT prefs.playhistory %] disabled[% END %] onClick="if (!confirm('[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_CONFIRM' | string %]')) { return false; } inprogress('clearplayhistorystatus');" value="[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_BUTTON' | string %]">
 	<span class='status' id='clearplayhistorystatus'>[% "PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_CLEARALL_INPROGRESS" | string %]</span>
 [% END %]
 <br>

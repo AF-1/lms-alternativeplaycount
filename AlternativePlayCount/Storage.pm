@@ -58,20 +58,18 @@ sub init {
 	};
 	$log->error("Failed to set PRAGMAs: $@") if $@;
 
-	if ($prefs->get('playhistory_contextmenu') || $prefs->get('playhistory_homemenu')) {
-		my $lmsDbFile = Slim::Utils::SQLiteHelper->dbFile('library');
-		$lmsDbFile .= '.db' unless $lmsDbFile =~ /\.db$/i;
-		if ($lmsDbFile && -f $lmsDbFile) {
-			eval {
-				$dbh->do("ATTACH DATABASE ? AS library", undef, $lmsDbFile);
-				$libraryAttached = 1;
-			};
-			if ($@) {
-				$log->warn("Could not attach library.db: $@");
-			}
-		} else {
-			$log->warn("library.db not found, album/artist play history will not be available");
+	my $lmsDbFile = Slim::Utils::SQLiteHelper->dbFile('library');
+	$lmsDbFile .= '.db' unless $lmsDbFile =~ /\.db$/i;
+	if ($lmsDbFile && -f $lmsDbFile) {
+		eval {
+			$dbh->do("ATTACH DATABASE ? AS library", undef, $lmsDbFile);
+			$libraryAttached = 1;
+		};
+		if ($@) {
+			$log->warn("Could not attach library.db: $@");
 		}
+	} else {
+		$log->warn("library.db not found, album/artist play history will not be available");
 	}
 
 	my $tableExists = $dbh->selectrow_array("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='play_history'");
@@ -290,12 +288,17 @@ sub _migrateSchema {
 
 sub dbh {
 	return $dbh if $initialized;
+	return unless $prefs->get('playhistory');
 
 	$log->warn('Database not initialized, attempting to initialize now');
 	__PACKAGE__->shutdown() if $dbh; # close any stale connection first
 	__PACKAGE__->init();
 
 	return $dbh;
+}
+
+sub isLibraryAttached {
+	return $libraryAttached;
 }
 
 sub addPlayEntry {
@@ -419,6 +422,8 @@ sub getPlayHistory {
 	my $id = $params->{id}; # urlmd5 (track), album id, or contributor id
 	my $client_id = $params->{client_id}; # optional client filter
 	my $limit = $params->{limit} || 100;
+	my $offset = $params->{offset} || 0;
+	my $roleFilter = (($params->{roles} // 'all') eq 'artist') ? 'AND ct.role IN (1,5,6)' : ''; # artist type only
 
 	my @bind;
 	my $whereClause = '';
@@ -454,11 +459,15 @@ sub getPlayHistory {
 					OR (ph.musicbrainz_id IS NOT NULL AND ph.musicbrainz_id != ''
 						AND ph.musicbrainz_id = lt.musicbrainz_id))
 			JOIN library.contributor_track ct ON ct.track = lt.id
-			WHERE ct.contributor = ?
+			WHERE ct.contributor = ? $roleFilter
 		};
 		push @bind, $id;
+
+	} elsif ($type ne 'all') {
+		$log->warn("getPlayHistory: unsupported type or missing id/library (type=$type)");
+		return [];
 	}
-	# type 'all' or fallback: no WHERE clause, returns entire play history
+	# type 'all': no WHERE clause, returns entire play history
 
 	# optional client filter
 	if ($client_id) {
@@ -467,15 +476,23 @@ sub getPlayHistory {
 		push @bind, $client_id;
 	}
 
-	push @bind, $limit;
+	if (ref($params->{total_ref}) eq 'SCALAR') {
+		eval {
+			my ($total) = $dbh->selectrow_array("SELECT COUNT(DISTINCT ph.id) FROM play_history ph $whereClause", undef, @bind);
+			${$params->{total_ref}} = $total // 0;
+		};
+		if ($@) { $log->error("getPlayHistory count failed (type=$type): $@"); }
+	}
+
+	push @bind, $limit, $offset;
 
 	my $sql = qq{
 		SELECT DISTINCT ph.id, ph.url, ph.urlmd5, ph.musicbrainz_id,
 			ph.played, ph.rating, ph.remote, ph.client_id
 		FROM play_history ph
 		$whereClause
-		ORDER BY ph.played DESC
-		LIMIT ?
+		ORDER BY ph.played DESC, ph.id DESC
+		LIMIT ? OFFSET ?
 	};
 
 	my $history = [];

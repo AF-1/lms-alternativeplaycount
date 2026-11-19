@@ -62,9 +62,11 @@ sub handler {
 		if ($callHandler) {
 			$result = $class->SUPER::handler($client, $paramRef);
 		}
-		require Plugins::AlternativePlayCount::Storage;
-		Plugins::AlternativePlayCount::Storage->clearPlayHistory();
-		Plugins::AlternativePlayCount::Storage->clearPlayers();
+		if ($prefs->get('playhistory')) {
+			require Plugins::AlternativePlayCount::Storage;
+			Plugins::AlternativePlayCount::Storage->clearPlayHistory();
+			Plugins::AlternativePlayCount::Storage->clearPlayers();
+		}
 	} elsif ($callHandler) {
 		$result = $class->SUPER::handler($client, $paramRef);
 	}

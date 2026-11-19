@@ -79,7 +79,7 @@ sub createBackup {
 
 	$extBackupPlayHistoryQueue = [];
 	$extBackupPlayersQueue = [];
-	if ($prefs->get('backupexternaldata')) {
+	if ($prefs->get('backupexternaldata') && $prefs->get('playhistory')) {
 		require Plugins::AlternativePlayCount::Storage;
 		$extBackupPlayHistoryQueue = Plugins::AlternativePlayCount::Storage->getAllPlayHistoryForExport();
 		$extBackupPlayersQueue = Plugins::AlternativePlayCount::Storage->getAllPlayersForExport();

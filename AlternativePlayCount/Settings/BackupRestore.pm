@@ -53,6 +53,7 @@ sub handler {
 	my $result;
 	my $callHandler = 1;
 	$paramRef->{'pref_backuptime'} = trim($paramRef->{'pref_backuptime'} // '');
+	$paramRef->{'pref_backupexternaldata'} = $prefs->get('backupexternaldata') // 0 if !$prefs->get('playhistory');
 
 	if ($paramRef->{'saveSettings'}) {
 		$result = $class->SUPER::handler($client, $paramRef);
@@ -116,6 +117,7 @@ sub beforeRender {
 	$paramRef->{'restoreexternalfilefolder'} = $prefs->get('apcfolderpath');
 	$paramRef->{lastsuccessfulbackup} = Slim::Utils::DateTime::longDateF($prefs->get('lastbackup')).", ".Slim::Utils::DateTime::timeF($prefs->get('lastbackup')) if $prefs->get('lastbackup');
 	$paramRef->{'squeezebox_server_jsondatareq'} = '/jsonrpc.js';
+	$paramRef->{'playhistoryenabled'} = 1 if $prefs->get('playhistory');
 	$paramRef->{'activebackuprestore'} = 1 if $prefs->get('status_backuprestore');
 	$paramRef->{'activelmsscan'} = 1 if (!Slim::Schema::hasLibrary() || Slim::Music::Import->stillScanning);
 }

@@ -42,7 +42,7 @@ sub pages {
 }
 
 sub prefs {
-	return ($prefs, qw(apcparentfolderpath playedthreshold_percent undoskiptimespan ignoreCS3skiprequests alwaysdisplayvals hideskipdpsvtrackinfo allmusicbrainzidversions autoincdpsv_interval autoincdpsv_value postscanscheduledelay));
+	return ($prefs, qw(apcparentfolderpath playedthreshold_percent undoskiptimespan ignoreCS3skiprequests allmusicbrainzidversions autoincdpsv_interval autoincdpsv_value postscanscheduledelay));
 }
 
 sub beforeRender {
