@@ -7,7 +7,7 @@ If you *skip* tracks in a playlist, LMS still increases their *play* counts. Wit
 
 Optionally, APC records a detailed **play history** with timestamps, player and rating at the time of play, with display for individual tracks, albums, artists or all tracks.<br>
 
-You can use APC data in any SQLite query or with other plugins to create/play smart playlists (dynamic playlists), virtual libraries or to skip specific tracks. See [**features**](#features) section for details.
+You can use APC data in any SQLite query or with other plugins to create/play smart playlists (dynamic playlists), virtual libraries or to skip specific tracks. See [**features**](#features) section for details.<br>
 As LMS and APC play counts diverge in the long term, you will benefit from the more accurate quality of the data (e.g. in smart playlists & statistics).<br>
 
 > [!TIP]
