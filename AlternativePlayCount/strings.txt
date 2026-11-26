@@ -574,6 +574,22 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_JIVEEXTRALINELENGTH_DESC
 	EN	Set the maximum character length of the line that displays artist name and album title for play history entries.<br>Applies only to <b>jivelite</b> players and Material.
 	FR	Définit la longueur maximale, en caractères, de la ligne affichant le nom de l'artiste et le titre de l'album pour les entrées de l'historique de lecture.<br>S'applique uniquement aux lecteurs <b>jivelite</b> et à Material.
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_GROUPMINALBUM
+	EN	Min. plays to group by album
+	FR	Nb min. de lectures pour regrouper par album
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_GROUPMINALBUM_DESC
+	EN	Number of consecutive plays of the same album that are shown as one group in the play history.<br>Groups are formed per player, so plays on other players in between do not split a group.
+	FR	Nombre de lectures consécutives du même album affichées sous forme d'un groupe dans l'historique de lecture.<br>Les groupes sont formés par lecteur, les lectures d'autres lecteurs entre-temps ne divisent donc pas un groupe.
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_GROUPMINARTIST
+	EN	Min. plays to group by artist
+	FR	Nb min. de lectures pour regrouper par artiste
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_GROUPMINARTIST_DESC
+	EN	Number of consecutive plays of the same artist that are shown as one group in the play history.<br>Groups are formed per player, so plays on other players in between do not split a group.
+	FR	Nombre de lectures consécutives du même artiste affichées sous forme d'un groupe dans l'historique de lecture.<br>Les groupes sont formés par lecteur, les lectures d'autres lecteurs entre-temps ne divisent donc pas un groupe.
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_DISPLAYRATINGCHAR
 	EN	Rating character
 	FR	Caractère de note
@@ -622,6 +638,42 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_ALLPLAYERS
 	EN	All players
 	FR	Tous les lecteurs
 
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPBYROW
+	EN	%s (click to switch)
+	FR	%s (cliquer pour changer)
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPMODE_NONE
+	EN	Not grouped
+	FR	Non regroupé
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPMODE_ALBUM
+	EN	Grouped by album
+	FR	Regroupé par album
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPMODE_ARTIST
+	EN	Grouped by artist
+	FR	Regroupé par artiste
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPPLAYS
+	EN	%s plays
+	FR	%s lectures
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_ONEPLAY
+	EN	1 play
+	FR	1 lecture
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_BROWSEBYDATE
+	EN	Browse by date
+	FR	Parcourir par date
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NEWESTOF
+	EN	Newest %s of %s plays
+	FR	%s dernières lectures sur %s
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_ALLPLAYS
+	EN	All plays
+	FR	Toutes les lectures
+
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NOENTRIES
 	EN	No play history entries found
 	FR	Aucune entrée d'historique de lecture trouvée
@@ -653,6 +705,10 @@ PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_APPEND
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_MOREINFO
 	EN	More information
 	FR	Plus d'informations
+
+PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_INFOTITLE
+	EN	Information
+	FR	Informations
 
 PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_TRACK_INVALID
 	EN	Track not available in current library

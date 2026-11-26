@@ -13,6 +13,7 @@
 	flex: 0 0 50px;
 }
 .cover img { height: 50px; }
+.aphchild { margin-left: 30px; }
 .textwrapper {
 	padding-left: 20px;
 	vertical-align: middle;
@@ -110,13 +111,44 @@
 [% PROCESS pageheader.html %]
 
 <script type="text/javascript">
-	function refreshpage(clientid) {
+	function refreshpage() {
 		let timestamp = Date.now();
-		let thisurl = "[% webroot %]plugins/AlternativePlayCount/playhistory?objecttype=[% objecttype %]&objectid=[% objectid %]&objectname=" + encodeURIComponent('[% objectname | html %]') + "&urlmd5=[% urlmd5 %]&clientid=" + clientid + "&player=[% playerURI %]&v=" + timestamp;
+		let clientid = document.getElementById("clientselect").value;
+		let groupselect = document.getElementById("groupselect");
+		let thisurl = "[% webroot %]plugins/AlternativePlayCount/playhistory?objecttype=[% objecttype %]&objectid=[% objectid %]&objectname=" + encodeURIComponent('[% objectname | html %]') + "&urlmd5=[% urlmd5 %]&clientid=" + clientid + (groupselect ? "&groupby=" + groupselect.value : "") + "[% IF periodcurrent %]&period=[% periodcurrent %][% END %][% IF browsemode %]&browse=1[% END %]&player=[% playerURI %]&v=" + timestamp;
 		document.getElementById("infocircle").classList.add("loader-path");
 		document.getElementById("circularloader").classList.add("circular-loader-rotate");
 		window.location.replace(thisurl);
 	}
+	function apcScrollParent(el) {
+		let p = el ? el.parentElement : null;
+		while (p && p !== document.body && p !== document.documentElement) {
+			let oy = window.getComputedStyle(p).overflowY;
+			if ((oy === 'auto' || oy === 'scroll') && p.scrollHeight > p.clientHeight) return p;
+			p = p.parentElement;
+		}
+		return null;
+	}
+	function apcSaveScroll(el) {
+		let p = apcScrollParent(el);
+		try { sessionStorage.setItem('apcphscroll', JSON.stringify({w: window.pageYOffset, c: p ? p.scrollTop : 0})); } catch (e) {}
+	}
+	window.addEventListener('load', function() {
+		let pos = null;
+		try {
+			pos = JSON.parse(sessionStorage.getItem('apcphscroll'));
+			sessionStorage.removeItem('apcphscroll');
+		} catch (e) {}
+		if (!pos) return;
+		let restore = function() {
+			window.scrollTo(0, pos.w);
+			let p = apcScrollParent(document.querySelector('.aphwrapper'));
+			if (p) p.scrollTop = pos.c;
+		};
+		restore();
+		setTimeout(restore, 150);
+		setTimeout(restore, 500);
+	});
 </script>
 
 <br>
@@ -130,11 +162,18 @@
 	</span><br><br>
 	<div>
 		[% IF NOT unavailablemsg %]
-		<select onChange="refreshpage(this.value);" id="clientselect">
+		<select onChange="refreshpage();" id="clientselect">
 			[% FOREACH entry IN clientlist %]
 				<option value="[% entry.id %]" [% IF entry.id == selectedclient %]selected='selected'[% END %]>[% entry.name | html %]</option>
 			[% END %]
 		</select>
+		[% IF groupselectable %]
+		<select onChange="refreshpage();" id="groupselect">
+			<option value="none" [% IF groupby == 'none' %]selected='selected'[% END %]>[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPMODE_NONE' | string %]</option>
+			<option value="album" [% IF groupby == 'album' %]selected='selected'[% END %]>[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPMODE_ALBUM' | string %]</option>
+			<option value="artist" [% IF groupby == 'artist' %]selected='selected'[% END %]>[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPMODE_ARTIST' | string %]</option>
+		</select>
+		[% END %]
 		[% END %]
 		<span class="libinfo">
 			<svg width="100%" height="100%" id="circularloader" class="circular-loader info-circle" viewBox="0 0 32 32">
@@ -143,14 +182,36 @@
 		</span>
 	</div>
 </div>
+[%- IF periodcrumbs %]
+<br>
+<div class="container">
+	[%- FOREACH crumb IN periodcrumbs %]
+	[% IF !loop.first %]&#x203A; [% END %][% IF crumb.current %][% crumb.label | html %][% ELSE %]<a class="underline-on-hover" href="[% webroot %]plugins/AlternativePlayCount/playhistory?objecttype=all&amp;clientid=[% selectedclient | uri %]&amp;groupby=[% groupby %][% IF crumb.linkparams %]&amp;[% crumb.linkparams %][% END %]&amp;player=[% playerURI %]">[% crumb.label | html %]</a>[% END %]
+	[%- END %]
+</div>
+[%- END %]
+[%- IF truncatedhint %]
+<br>
+<div class="container">
+	[% truncatedhint | html %][% IF truncatedbrowse %] &#x2022; <a class="underline-on-hover" href="[% webroot %]plugins/AlternativePlayCount/playhistory?objecttype=all&amp;clientid=[% selectedclient | uri %]&amp;groupby=[% groupby %]&amp;browse=1[% IF periodcurrent %]&amp;period=[% periodcurrent %][% END %]&amp;player=[% playerURI %]">[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_BROWSEBYDATE' | string %]</a>[% END %]
+</div>
+[%- END %]
 <br><br>
 
-[%- IF historyitems %]
+[%- IF periodentries %]
+<div class="container">
+	[%- FOREACH entry IN periodentries %]
+	<div style="margin-bottom: 14px;">
+		<span class="firstline"><a class="underline-on-hover" href="[% webroot %]plugins/AlternativePlayCount/playhistory?objecttype=all&amp;clientid=[% selectedclient | uri %]&amp;groupby=[% groupby %]&amp;[% entry.linkparams %]&amp;player=[% playerURI %]">[% entry.label | html %]</a>[% IF entry.weekday %] ([% entry.weekday | html %])[% END %] &#x2022; [% entry.plays | html %]</span>
+	</div>
+	[%- END %]
+</div>
+[%- ELSIF historyitems %]
 	[%- WRAPPER contentcontainer %]
 		[% odd = 1 %]
 		[%- FOREACH item IN historyitems %]
 			[% BLOCK controls %]
-				[% IF item.trackid %]
+				[% IF item.trackid && !item.grouphead %]
 				[% WRAPPER addlink noTarget=1 -%]
 					onclick="SqueezeJS.Controller.urlRequest('/anyurl?p0=playlistcontrol&p1=cmd:add&p2=track_id:[% item.trackid %]&player=[% playerURI %]', 1);"
 				[% END %]
@@ -164,37 +225,61 @@
 				[% END %]
 				[% IF systemSkin != 'Classic' %]
 				[% WRAPPER morelink noTarget=1 -%]
-					href="[% webroot %]clixmlbrowser/clicmd=trackinfo+items&track_id=[% item.trackid %]&useContextMenu=1&player=[% playerURI %]"
+					href="[% webroot %]clixmlbrowser/clicmd=trackinfo+items&track_id=[% item.trackid %]&useContextMenu=1&linktitle=[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_INFOTITLE' | string | uri %]%20([% item.trackname | uri %])/index.html?player=[% playerURI %]&index=&sess="
 				[% END %]
+				[% END %]
+				[% END %]
+				[% IF item.grouphead && item.groupmode == 'album' && item.albumid %]
+				[% WRAPPER addlink noTarget=1 -%]
+					onclick="SqueezeJS.Controller.urlRequest('/anyurl?p0=playlistcontrol&p1=cmd:add&p2=album_id:[% item.albumid %]&player=[% playerURI %]', 1);"
+				[% END %]
+				[% IF systemSkin != 'Classic' %]
+				[% WRAPPER insertlink noTarget=1 -%]
+					onclick="SqueezeJS.Controller.urlRequest('/anyurl?p0=playlistcontrol&p1=cmd:insert&p2=album_id:[% item.albumid %]&player=[% playerURI %]', 1);"
+				[% END %]
+				[% END %]
+				[% WRAPPER playlink noTarget=1 -%]
+					onclick="SqueezeJS.Controller.urlRequest('/anyurl?p0=playlistcontrol&p1=cmd:load&p2=album_id:[% item.albumid %]&player=[% playerURI %]', 1);"
+				[% END %]
+				[% IF systemSkin != 'Classic' %]
+				[% WRAPPER morelink noTarget=1 -%]
+					href="[% webroot %]clixmlbrowser/clicmd=albuminfo+items&album_id=[% item.albumid %]&linktitle=[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_INFOTITLE' | string | uri %]%20([% item.albumtitle | uri %])/index.html?player=[% playerURI %]&index=&sess="
+				[% END %]
+				[% END %]
+				[% ELSIF item.grouphead && item.groupmode == 'artist' && item.artistid && systemSkin != 'Classic' %]
+				[% WRAPPER morelink noTarget=1 -%]
+					href="[% webroot %]clixmlbrowser/clicmd=artistinfo+items&artist_id=[% item.artistid %]&linktitle=[% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_INFOTITLE' | string | uri %]%20([% item.artistname | uri %])/index.html?player=[% playerURI %]&index=&sess="
 				[% END %]
 				[% END %]
 			[% END %]
 			[%- WRAPPER contentitem controls='controls' %]
-			<span class="aphwrapper">
+			<span class="aphwrapper[% IF item.groupchild %] aphchild[% END %]">
 				[% IF systemSkin != 'Classic' %]
 				<span class="flexitem cover">
-					[% IF item.trackid %]
+					[% IF item.trackid && !item.grouphead %]
 					<a class="underline-on-hover" href="[% webroot %]songinfo.html?item=[% item.trackid %]&amp;player=[% playerURI %]">
 					[% END %]
 					<img [% IF item.artworkid %]src="/music/[% item.artworkid %]/cover_50x50_o" srcset="/music/[% item.artworkid %]/cover_100x100_o 2x"[% ELSE %]src="[% webroot %]plugins/AlternativePlayCount/html/images/coverplaceholder[% IF !item.trackid %]_invalid[% END %].png"[% END %] onload="resize(this, 50)">
-					[% IF item.trackid %]</a>[% END %]
+					[% IF item.trackid && !item.grouphead %]</a>[% END %]
 				</span>
 				[% END %]
 				<span class="flexitem textwrapper">
-					[% IF item.trackid %]
+					[% IF item.grouphead %]
+					<a class="firstline underline-on-hover" onclick="apcSaveScroll(this);" href="[% webroot %]plugins/AlternativePlayCount/playhistory?objecttype=all&amp;clientid=[% selectedclient | uri %]&amp;groupby=[% groupby %]&amp;expand=[% item.expandtoggle %][% IF periodcurrent %]&amp;period=[% periodcurrent %][% END %]&amp;player=[% playerURI %]">[% IF item.groupopen %]&#x25BE;[% ELSE %]&#x25B8;[% END %] [% item.groupmarker %] [% item.headtitle %]</a>
+					[% ELSIF item.trackid %]
 					<a class="firstline underline-on-hover" href="[% webroot %]songinfo.html?item=[% item.trackid %]&amp;player=[% playerURI %]">[% item.tracktitle %]</a>
 					[% ELSE %]
 					<span class="firstline">[% item.tracktitle %]</span>
 					[% END %]
-					[% IF item.trackid %]
+					[% IF item.trackid && !(item.grouphead && item.groupmode == 'artist') %]
 					<br>
 					<span class="secondline">
 						[% IF item.artistid %]<a class="underline-on-hover" href="[% webroot %]clixmlbrowser/clicmd=browselibrary+items&mode=albums&artist_id=[% item.artistid %]&player=[% playerURI %]&linktitle=[% stringARTIST %]%20([% item.artistname | uri %])/">[% item.artistname %]</a>[% ELSIF item.artistname %][% item.artistname %][% END %]
-						[% IF item.albumid %] &#x2022; <a class="underline-on-hover" href="[% webroot %]clixmlbrowser/clicmd=browselibrary+items&mode=tracks&album_id=[% item.albumid %]&linktitle=[% stringALBUM %]%20([% item.albumtitle | uri %])&player=[% playerURI %]/">[% item.albumtitle %]</a>[% END %]
+						[% IF item.albumid && !item.grouphead %] &#x2022; <a class="underline-on-hover" href="[% webroot %]clixmlbrowser/clicmd=browselibrary+items&mode=tracks&album_id=[% item.albumid %]&linktitle=[% stringALBUM %]%20([% item.albumtitle | uri %])&player=[% playerURI %]/">[% item.albumtitle %]</a>[% END %]
 					</span>
 					[% END %]
 					<span class="thirdline">
-						[% item.played_formatted %] &#x2022; [% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_RATINGATPLAY' | string %]: [% item.rating_at_play %]
+						[% IF item.grouphead %][% item.groupinfo %] &#x2022; [% item.played_formatted %][% ELSE %][% item.played_formatted %] &#x2022; [% 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_RATINGATPLAY' | string %]: [% item.rating_at_play %][% END %]
 						[%- IF !selectedclient %] &#x2022; [% item.playername %][% END %]
 					</span>
 				</span>

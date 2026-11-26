@@ -22,7 +22,7 @@ use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(:ALL);
 use File::stat;
 use List::Util qw(max);
-use POSIX qw(strftime floor ceil);
+use POSIX qw(strftime mktime floor ceil);
 use Scalar::Util qw(blessed);
 use XML::Parser;
 use HTML::Entities;
@@ -126,8 +126,10 @@ sub initPlugin {
 	Slim::Control::Request::addDispatch(['alternativeplaycount','skipwithoutcount','_trackid'], [1, 1, 1, \&_skipWithoutCount]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount', 'jiveplayhistoryclientsel', '_type', '_objectid', '_objectname', '_urlmd5'], [1, 0, 1, \&_jivePlayHistoryClientSel]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount', 'jiveplayhistoryitems', '_type', '_objectid', '_clientid'], [1, 0, 1, \&_jivePlayHistoryItems]);
+	Slim::Control::Request::addDispatch(['alternativeplaycount', 'jiveplayhistorydates', '_clientid'], [1, 0, 1, \&_jivePlayHistoryDates]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount', 'jiveplayhistoryall'], [1, 0, 1, \&_jivePlayHistoryAll]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount', 'jiveplayhistoryactions', '_type', '_trackid'], [1, 0, 1, \&_jivePlayHistoryActions]);
+	Slim::Control::Request::addDispatch(['alternativeplaycount', 'jiveplayhistorygroupmode'], [0, 0, 1, \&_jivePlayHistoryGroupMode]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount', 'reportplayback', '_mac', '_playername', '_trackid', '_percentplayed'], [0, 0, 1, \&_reportExternalPlayback]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount','playhistory'], [0, 1, 1, \&_playHistoryQuery]);
 	Slim::Control::Request::addDispatch(['alternativeplaycount','playhistoryplayers'], [0, 1, 1, \&_playHistoryPlayersQuery]);
@@ -155,7 +157,7 @@ sub postinitPlugin {
 sub initPrefs {
 	$prefs->init({
 		apcparentfolderpath => Slim::Utils::OSDetect::dirsFor('prefs'),
-		playedthreshold_percent => 20,
+		playedthreshold_percent => 30,
 		undoskiptimespan => 5,
 		autoratingdynamicfactor => 8,
 		autoratinglineardelta => 5,
@@ -173,13 +175,16 @@ sub initPrefs {
 		playhistory => 1,
 		playhistory_contextmenu => 1,
 		playhistory_homemenu => 1,
-		playhistory_maxdisplayitems => 200,
+		playhistory_maxdisplayitems => 500,
 		playhistory_maxdbentries => 0,
 		playhistory_jiveextralinelength => 82,
+		playhistory_groupminalbum => 3,
+		playhistory_groupminartist => 3,
 		displayratingchar => 0,
 		playhistory_showrawrating => 0,
 		playhistory_showinvalidtracks => 1,
 		playhistory_jiveshownonameclientid => 0,
+		playhistory_groupby => 'none',
 		backupexternaldata => 0,
 	});
 
@@ -213,8 +218,10 @@ sub initPrefs {
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 1, 'high' => 10}, 'autoincdpsv_value');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 5, 'high' => 600}, 'postscanscheduledelay');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 10, 'high' => 1000}, 'playhistory_maxdisplayitems');
-	$prefs->setValidate({'validator' => 'intlimit', 'low' => 0, 'high' => 50000}, 'playhistory_maxdbentries');
+	$prefs->setValidate({'validator' => 'intlimit', 'low' => 0, 'high' => 1000000}, 'playhistory_maxdbentries');
 	$prefs->setValidate({'validator' => 'intlimit', 'low' => 65, 'high' => 150}, 'playhistory_jiveextralinelength');
+	$prefs->setValidate({'validator' => 'intlimit', 'low' => 2, 'high' => 20}, 'playhistory_groupminalbum');
+	$prefs->setValidate({'validator' => 'intlimit', 'low' => 2, 'high' => 20}, 'playhistory_groupminartist');
 
 	%itemNames = ('playCount' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCPLAYCOUNT'),
 				'lastPlayed' => string('PLUGIN_ALTERNATIVEPLAYCOUNT_LANGSTRINGS_DISPLAY_APCLASTPLAYED'),
@@ -499,7 +506,7 @@ sub objectInfoHandler { # reset values for artists, albums, genres, years, decad
 	main::DEBUGLOG && $log->is_debug && $log->debug('objectType = '.$objectType.' ## infoItem = '.$infoItem.' ## url = '.Data::Dump::dump($url));
 
 	if (Slim::Music::Import->stillScanning) {
-		$log->warn('Warning: not available until library scan is completed');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Not available until library scan is completed');
 		return;
 	}
 
@@ -691,7 +698,7 @@ sub resetValues {
 
 	return if (!$objectType || !$objectID || !$infoItem);
 	if (Slim::Music::Import->stillScanning) {
-		$log->warn('Warning: resetting values is not available until library scan is completed');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Resetting values is not available until library scan is completed');
 		return;
 	}
 
@@ -1588,7 +1595,7 @@ sub backupScheduler {
 
 sub restoreFromBackup {
 	if (Slim::Music::Import->stillScanning) {
-		$log->warn('Warning: access to APC table blocked until library scan is completed');
+		main::DEBUGLOG && $log->is_debug && $log->debug('Access to APC table blocked until library scan is completed');
 		return;
 	}
 
@@ -3092,13 +3099,23 @@ sub _playHistoryUnavailableToken {
 	return;
 }
 
+sub _isMaterialCaller {
+	my $request = shift;
+	return (defined($request->{'_connectionid'}) && $request->{'_connectionid'} =~ 'Slim::Web::HTTP::ClientConn' && defined($request->{'_source'}) && $request->{'_source'} eq 'JSONRPC') ? 1 : 0;
+}
+
 sub _jivePlayHistoryUnavailable {
 	my ($request, $token) = @_;
-	$request->addResultLoop('item_loop', 0, 'type', 'text');
-	$request->addResultLoop('item_loop', 0, 'style', 'itemNoAction');
-	$request->addResultLoop('item_loop', 0, 'text', string($token));
+	if (_isMaterialCaller($request)) {
+		$request->addResultLoop('item_loop', 0, 'type', 'text');
+		$request->addResultLoop('item_loop', 0, 'style', 'itemNoAction');
+		$request->addResultLoop('item_loop', 0, 'text', string($token));
+		$request->addResult('count', 1);
+	} else {
+		$request->addResult('window', {textarea => string($token)});
+		$request->addResult('count', 0);
+	}
 	$request->addResult('offset', 0);
-	$request->addResult('count', 1);
 	$request->setStatusDone();
 }
 
@@ -3117,7 +3134,26 @@ sub playHistoryWeb {
 	my $type = $params->{objecttype};
 	my $objectID = $params->{objectid};
 	my $clientID = $params->{clientid} // '';
-	my $limit = $prefs->get('playhistory_maxdisplayitems') || 200;
+	my $limit = $prefs->get('playhistory_maxdisplayitems');
+
+	# grouping only applies to the list of all plays
+	my $isAll = (!defined $type || $type eq '' || $type eq 'all') ? 1 : 0;
+	my $groupBy = 'none';
+	if ($isAll) {
+		if (defined $params->{groupby} && $params->{groupby} =~ /^(?:none|album|artist)$/) {
+			$groupBy = $params->{groupby};
+			$prefs->set('playhistory_groupby', $groupBy) if $groupBy ne _getPlayHistoryGroupMode();
+		} else {
+			$groupBy = _getPlayHistoryGroupMode();
+		}
+	}
+	$params->{groupby} = $groupBy;
+	$params->{groupselectable} = $isAll;
+	my %expand;
+	if ($groupBy ne 'none' && defined $params->{expand} && $params->{expand} =~ /^\d+(?:,\d+)*$/) {
+		%expand = map { $_ => 1 } split(/,/, $params->{expand});
+	}
+	my @opened = sort { $a <=> $b } keys %expand;
 
 	# build client list for dropdown: id => name
 	my $clientList = _getPlayHistoryClients();
@@ -3128,13 +3164,32 @@ sub playHistoryWeb {
 	# client name lookup for third line (exclude the leading 'All players' entry)
 	my %clientNames = map { $_->{id} => ($_->{displayname} // $_->{name}) } grep { $_->{id} ne '' } @{$clientList};
 
+	# date navigation applies to the list of all plays only
+	my $periodInfo = $isAll ? _parsePlayHistoryPeriod($params->{period}) : undef;
+	$params->{periodcurrent} = $periodInfo ? $periodInfo->{period} : '';
+	$params->{browsemode} = ($isAll && $params->{browse}) ? 1 : 0;
+	if ($params->{browsemode} && _setPlayHistoryBrowseParams($params, $periodInfo, ($clientID ne '' ? $clientID : undef), $limit)) {
+		return Slim::Web::HTTP::filltemplatefile('plugins/AlternativePlayCount/html/playhistorylist.html', $params);
+	}
+
 	require Plugins::AlternativePlayCount::Storage;
+	my $total = 0;
 	my $history = Plugins::AlternativePlayCount::Storage->getPlayHistory({
 		type => $type,
 		id => $objectID,
 		client_id => ($clientID ne '' ? $clientID : undef),
 		limit => $limit,
+		from => ($periodInfo ? $periodInfo->{from} : undef),
+		to => ($periodInfo ? $periodInfo->{to} : undef),
+		total_ref => ($isAll ? \$total : undef),
 	});
+	$history = _applyPlayHistoryGrouping($history, $groupBy, \%expand) if $groupBy ne 'none';
+
+	$params->{periodcrumbs} = _getPlayHistoryPeriodCrumbs($periodInfo ? $periodInfo->{period} : undef, 0);
+	if ($isAll && $total > $limit) {
+		$params->{truncatedhint} = sprintf(string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NEWESTOF'), $limit, $total);
+		$params->{truncatedbrowse} = (!$periodInfo || $periodInfo->{level} ne 'day') ? 1 : 0;
+	}
 
 	# enrich each history entry with track metadata from LMS
 	my $dbh = Slim::Schema->dbh;
@@ -3142,6 +3197,7 @@ sub playHistoryWeb {
 	my $sth = $dbh->prepare_cached('SELECT tracks.title, tracks.id, albums.title, albums.id, albums.artwork FROM tracks JOIN albums ON tracks.album = albums.id WHERE tracks.urlmd5 = ? LIMIT 1');
 	my $sth_rating = $dbh->prepare_cached('SELECT ifnull(tracks_persistent.rating, 0) FROM tracks_persistent WHERE tracks_persistent.urlmd5 = ? LIMIT 1');
 	my $sth_artist = $dbh->prepare_cached('SELECT contributors.name, contributors.id FROM contributor_track JOIN contributors ON contributor_track.contributor = contributors.id WHERE contributor_track.track = ? AND contributor_track.role = ? LIMIT 1');
+	my $sth_albumartist = $dbh->prepare_cached('SELECT contributors.name, contributors.id FROM albums JOIN contributors ON albums.contributor = contributors.id WHERE albums.id = ? LIMIT 1');
 
 	my $showinvalid = $prefs->get('playhistory_showinvalidtracks');
 	my $showRawRatingVal = $prefs->get('playhistory_showrawrating');
@@ -3168,6 +3224,7 @@ sub playHistoryWeb {
 			$currentRating //= 0;
 
 			$entry->{tracktitle} = Slim::Utils::Unicode::utf8decode(trimStringLength($title, 70), 'utf8');
+			$entry->{trackname} = $entry->{tracktitle};
 			$entry->{tracktitle} .= getAppendedRatingText($currentRating) if $currentRating > 0;
 			$entry->{trackid} = $trackid;
 			$entry->{albumtitle} = Slim::Utils::Unicode::utf8decode(trimStringLength($album // '', 80), 'utf8');
@@ -3194,12 +3251,28 @@ sub playHistoryWeb {
 		$entry->{rating_at_play} = $rawRating > 0 ? formatRatingForDisplay($rawRating, $showRawRatingVal) : 0;
 		my $pname = $clientNames{$entry->{client_id}};
 		$entry->{playername} = $pname // (string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER') . ' (' . ($entry->{client_id} // '') . ')');
+		if ($entry->{grouphead}) {
+			$entry->{groupmode} = $groupBy;
+			$entry->{headtitle} = ($groupBy eq 'album') ? $entry->{albumtitle} : $entry->{artistname};
+			$entry->{groupinfo} = sprintf(string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPPLAYS'), $entry->{groupcount});
+			$entry->{played_formatted} = _formatPlayHistoryRange($entry->{played}, $entry->{groupoldest});
+			if ($groupBy eq 'album' && $entry->{albumid} ne '') {
+				# album artist of the group, not the artist of the newest track
+				my ($albumArtist, $albumArtistID) = _getAlbumArtist($sth_albumartist, $entry->{albumid});
+				if (defined $albumArtist && $albumArtist ne '') {
+					$entry->{artistname} = Slim::Utils::Unicode::utf8decode(trimStringLength($albumArtist, 80), 'utf8');
+					$entry->{artistid} = $albumArtistID;
+				}
+			}
+			$entry->{expandtoggle} = join(',', $entry->{groupopen} ? grep { $_ != $entry->{groupid} } @opened : (@opened, $entry->{groupid}));
+		}
 		push @filteredHistory, $entry;
 	}
 
 	$sth->finish();
 	$sth_rating->finish();
 	$sth_artist->finish();
+	$sth_albumartist->finish();
 
 	$params->{historyitems} = scalar(@filteredHistory) > 0 ? \@filteredHistory : undef;
 	$params->{itemcount} = scalar(@filteredHistory);
@@ -3281,17 +3354,33 @@ sub _jivePlayHistoryItems {
 	my $type = _getRequestParamVal($request, 'type');
 	my $clientID = _getRequestParamVal($request, 'clientid', 1);
 	my $objectID = _getRequestParamVal($request, 'objectid', 1);
-	my $limit = $prefs->get('playhistory_maxdisplayitems') || 200;
+	my $limit = $prefs->get('playhistory_maxdisplayitems');
+	my $periodInfo = ($type eq 'all') ? _parsePlayHistoryPeriod($request->getParam('period')) : undef;
 
 	require Plugins::AlternativePlayCount::Storage;
+	my $total = 0;
 	my $history = Plugins::AlternativePlayCount::Storage->getPlayHistory({
 		type => $type,
 		id => $objectID,
 		client_id => ($clientID && $clientID ne '' ? $clientID : undef),
 		limit => $limit,
+		from => ($periodInfo ? $periodInfo->{from} : undef),
+		to => ($periodInfo ? $periodInfo->{to} : undef),
+		total_ref => ($type eq 'all' ? \$total : undef),
 	});
 
+	# grouping only applies to the list of all plays, groupid opens a single group
+	my $groupBy = ($type eq 'all') ? _getPlayHistoryGroupMode() : 'none';
+	my $groupID = $request->getParam('groupid');
+	my $inGroup = ($groupBy ne 'none' && defined $groupID && $groupID =~ /^\d+$/) ? 1 : 0;
+	if ($inGroup) {
+		$history = _getPlayHistoryGroupRows($history, $groupBy, $groupID);
+	} elsif ($groupBy ne 'none') {
+		$history = _applyPlayHistoryGrouping($history, $groupBy, {});
+	}
+
 	my $cnt = 0;
+	my $groupTitle;
 	if (scalar(@{$history}) > 0) {
 		my $dbh = Slim::Schema->dbh;
 		my $sepChar = HTML::Entities::decode_entities('&#x2022;');
@@ -3300,16 +3389,31 @@ sub _jivePlayHistoryItems {
 		my $clientList = _getPlayHistoryClients();
 		my %clientNames = map { $_->{id} => ($_->{displayname} // $_->{name}) } @{$clientList};
 
-		my $sth = $dbh->prepare_cached('SELECT tracks.title, tracks.id, albums.title, albums.artwork, albums.compilation, ifnull(tracks_persistent.rating, 0) FROM tracks JOIN albums ON tracks.album = albums.id LEFT JOIN tracks_persistent ON tracks_persistent.urlmd5 = tracks.urlmd5 WHERE tracks.urlmd5 = ? LIMIT 1');
+		my $sth = $dbh->prepare_cached('SELECT tracks.title, tracks.id, albums.title, albums.artwork, albums.compilation, ifnull(tracks_persistent.rating, 0), albums.id FROM tracks JOIN albums ON tracks.album = albums.id LEFT JOIN tracks_persistent ON tracks_persistent.urlmd5 = tracks.urlmd5 WHERE tracks.urlmd5 = ? LIMIT 1');
 		my $sth_artist = $dbh->prepare_cached('SELECT contributors.name, contributors.id FROM contributor_track JOIN contributors ON contributor_track.contributor = contributors.id WHERE contributor_track.track = ? AND contributor_track.role = ? LIMIT 1');
+		my $sth_albumartist = $dbh->prepare_cached('SELECT contributors.name, contributors.id FROM albums JOIN contributors ON albums.contributor = contributors.id WHERE albums.id = ? LIMIT 1');
+
 		my $showRawRatingVal = $prefs->get('playhistory_showrawrating');
 		my $showUnknownPlayerClientID = $prefs->get('playhistory_jiveshownonameclientid');
 
+		# first row switches the grouping mode and refreshes the list
+		if ($type eq 'all' && !$inGroup) {
+			my $modeToken = ($groupBy eq 'album') ? 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPMODE_ALBUM' : ($groupBy eq 'artist') ? 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPMODE_ARTIST' : 'PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPMODE_NONE';
+			$request->addResultLoop('item_loop', $cnt, 'icon', 'plugins/AlternativePlayCount/html/images/apc_icon_svg.png');
+			$request->addResultLoop('item_loop', $cnt, 'actions', {
+				do => { player => 0, cmd => ['alternativeplaycount', 'jiveplayhistorygroupmode'] },
+			});
+			$request->addResultLoop('item_loop', $cnt, 'nextWindow', 'refresh');
+			$request->addResultLoop('item_loop', $cnt, 'text', sprintf(string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPBYROW'), string($modeToken)));
+			$cnt++;
+			$cnt = _addPlayHistoryBrowseRow($request, $cnt, $clientID, $periodInfo, $limit, $total) if $total > $limit;
+		}
+
 		foreach my $entry (@{$history}) {
-			my ($title, $trackID, $album, $artworkid, $compilation, $currentRating);
+			my ($title, $trackID, $album, $artworkid, $compilation, $currentRating, $albumID);
 			eval {
 				$sth->execute($entry->{urlmd5});
-				($title, $trackID, $album, $artworkid, $compilation, $currentRating) = $sth->fetchrow_array();
+				($title, $trackID, $album, $artworkid, $compilation, $currentRating, $albumID) = $sth->fetchrow_array();
 			};
 			if ($@) { $log->error("SQL error: $@"); }
 
@@ -3317,7 +3421,52 @@ sub _jivePlayHistoryItems {
 			next if !$inLibrary && !$prefs->get('playhistory_showinvalidtracks');
 
 			# artist fallback: role 1 -> role 6 -> role 5
-			my ($artist) = $inLibrary ? _getTrackArtist($sth_artist, $trackID) : ('');
+			my ($artist, $artistID) = $inLibrary ? _getTrackArtist($sth_artist, $trackID) : ('');
+
+			# title of the group window (single line)
+			if ($inGroup && !defined $groupTitle) {
+				my $titleName = ($groupBy eq 'album') ? $album : $artist;
+				$groupTitle = Slim::Utils::Unicode::utf8decode(trimStringLength($titleName, 60), 'utf8') if defined $titleName && $titleName ne '';
+			}
+
+			# group header: one row for the whole run, opens the run on select
+			if ($entry->{grouphead}) {
+				my $headName = $entry->{groupmarker} . ' ' . Slim::Utils::Unicode::utf8decode(trimStringLength(($groupBy eq 'album' ? $album : $artist) // '', 59 - length($entry->{groupmarker})), 'utf8');
+				my $headStats = sprintf(string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPPLAYS'), $entry->{groupcount}) . ' ' . $sepChar . ' ' . _formatPlayHistoryRange($entry->{played}, $entry->{groupoldest});
+				if (!$clientID || $clientID eq '') {
+					my $pname = $clientNames{$entry->{client_id}};
+					my $isUnknown = !defined $pname || $pname =~ /^\Q@{[string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER')]}\E/;
+					$headStats .= ' ' . $sepChar . ' ' . ($isUnknown ? string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_UNKNOWNPLAYER') . ($showUnknownPlayerClientID ? ' (' . ($entry->{client_id} // '') . ')' : '') : $pname);
+				}
+				my $headArtist = $artist;
+				if ($groupBy eq 'album' && $albumID) {
+					my ($albumArtist) = _getAlbumArtist($sth_albumartist, $albumID);
+					$headArtist = $albumArtist if defined $albumArtist && $albumArtist ne '';
+				}
+				my $headLine2 = $headStats;
+				if ($groupBy eq 'album' && $headArtist) {
+					my $headExtraLength = $prefs->get('playhistory_jiveextralinelength') - length($headStats) - 3;
+					my $artistLength = ($headExtraLength > 0) ? $headExtraLength : 0;
+					$headLine2 = trimStringLength(Slim::Utils::Unicode::utf8decode($headArtist, 'utf8'), $artistLength) . ' ' . $sepChar . ' ' . $headStats;
+				}
+				$request->addResultLoop('item_loop', $cnt, 'icon', $artworkid ? '/music/' . $artworkid . '/cover?_=' . $cnt : 'plugins/AlternativePlayCount/html/images/coverplaceholder.png');
+				$request->addResultLoop('item_loop', $cnt, 'type', 'redirect');
+
+				my $headActions = {
+					go => { player => 0, cmd => ['alternativeplaycount', 'jiveplayhistoryitems', 'all', '', ($clientID // ''), 'groupid:' . $entry->{groupid}, ($periodInfo ? 'period:' . $periodInfo->{period} : ())] },
+				};
+				# more: the core album / artist context menu
+				if ($groupBy eq 'album' && $albumID) {
+					$headActions->{more} = {player => 0, cmd => ['albuminfo', 'items'], params => {menu => 1, album_id => $albumID}};
+				} elsif ($groupBy eq 'artist' && $artistID) {
+					$headActions->{more} = {player => 0, cmd => ['artistinfo', 'items'], params => {menu => 1, artist_id => $artistID}};
+				}
+				$request->addResultLoop('item_loop', $cnt, 'actions', $headActions);
+
+				$request->addResultLoop('item_loop', $cnt, 'text', $headName . "\n" . $headLine2);
+				$cnt++;
+				next;
+			}
 
 			# line 1
 			my $ratingStars = ($inLibrary && $currentRating && $currentRating > 0) ? getAppendedRatingText($currentRating) : '';
@@ -3343,6 +3492,11 @@ sub _jivePlayHistoryItems {
 			my $line2;
 			if (!$inLibrary || $type eq 'track') {
 				$line2 = $stats;
+			} elsif ($inGroup) {
+				# group window: the group title is in the header, so line 2 shows the other name
+				my $contextStr = Slim::Utils::Unicode::utf8decode(($groupBy eq 'album' ? $artist : $album) // '', 'utf8');
+				my $contextLength = (($jiveExtraLineLength - length($stats) - 3) > 0) ? ($jiveExtraLineLength - length($stats) - 3) : 0;
+				$line2 = ($contextStr ne '' ? trimStringLength($contextStr, $contextLength) . ' ' . $sepChar . ' ' : '') . $stats;
 			} elsif ($type eq 'album') {
 				if ($compilation) {
 					# compilation: show artist • stats
@@ -3396,22 +3550,226 @@ sub _jivePlayHistoryItems {
 			$request->addResultLoop('item_loop', $cnt, 'text', $line1 . "\n" . $line2);
 			$cnt++;
 		}
-
-		$sth_artist->finish();
 		$sth->finish();
+		$sth_artist->finish();
+		$sth_albumartist->finish();
 
-	} else {
+	} elsif (_isMaterialCaller($request)) {
 		$request->addResultLoop('item_loop', 0, 'type', 'text');
 		$request->addResultLoop('item_loop', 0, 'style', 'itemNoAction');
 		$request->addResultLoop('item_loop', 0, 'text', string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NOENTRIES'));
 		$cnt = 1;
 	}
 
-	$request->addResult('window', {menustyle => 'album', titleStyle => 'mymusic', windowStyle => 'icon_list'});
+	my $window = $inGroup ? {menustyle => 'album', windowStyle => 'icon_list', ($groupTitle ? (text => $groupTitle) : ())} : {menustyle => 'album', titleStyle => 'mymusic', windowStyle => 'icon_list', ($periodInfo ? (text => _formatPlayHistoryTitle(_formatPlayHistoryPeriod($periodInfo), $clientID)) : ())};
+	$window->{textarea} = string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NOENTRIES') if !$cnt && !_isMaterialCaller($request);
+	$request->addResult('window', $window);
 	$request->addResult('offset', 0);
 	$request->addResult('count', $cnt);
 
 	$request->setStatusDone();
+}
+
+sub _addPlayHistoryBrowseRow {
+	# entry row of the date navigation, a single day cannot be split further
+	my ($request, $cnt, $clientID, $periodInfo, $limit, $total) = @_;
+	my $newestText = sprintf(string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NEWESTOF'), $limit, $total);
+	if ($periodInfo && $periodInfo->{level} eq 'day') {
+		$request->addResultLoop('item_loop', $cnt, 'type', 'text');
+		$request->addResultLoop('item_loop', $cnt, 'style', 'itemNoAction');
+		$request->addResultLoop('item_loop', $cnt, 'text', $newestText);
+		return $cnt + 1;
+	}
+	$request->addResultLoop('item_loop', $cnt, 'icon', 'plugins/AlternativePlayCount/html/images/apc_icon_svg.png');
+	$request->addResultLoop('item_loop', $cnt, 'type', 'redirect');
+	$request->addResultLoop('item_loop', $cnt, 'actions', {
+		go => { player => 0, cmd => ['alternativeplaycount', 'jiveplayhistorydates', ($clientID // ''), ($periodInfo ? 'period:' . $periodInfo->{period} : ())] },
+	});
+	$request->addResultLoop('item_loop', $cnt, 'text', string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_BROWSEBYDATE') . "\n" . $newestText);
+	return $cnt + 1;
+}
+
+sub _jivePlayHistoryDates {
+	my $request = shift;
+
+	if ($request->isNotCommand([['alternativeplaycount'], ['jiveplayhistorydates']])) {
+		$request->setStatusBadDispatch();
+		return;
+	}
+	my $client = $request->client();
+	if (!defined $client) { $request->setStatusNeedsClient(); return; }
+
+	if (my $unavailableToken = _playHistoryUnavailableToken()) {
+		_jivePlayHistoryUnavailable($request, $unavailableToken);
+		return;
+	}
+
+	my $clientID = _getRequestParamVal($request, 'clientid', 1);
+	$clientID = undef if defined $clientID && $clientID eq '';
+	my $periodInfo = _parsePlayHistoryPeriod($request->getParam('period'));
+	my $limit = $prefs->get('playhistory_maxdisplayitems');
+	my $result = _getPlayHistoryPeriodEntries($periodInfo ? $periodInfo->{period} : undef, $clientID);
+
+	my $cnt = 0;
+	my $title = string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_BROWSEBYDATE');
+	if ($result && scalar(@{$result->{entries}})) {
+		$title = _formatPlayHistoryPeriod($result->{info}) if $result->{info};
+		foreach my $entry (@{$result->{entries}}) {
+			my $cmd = ($entry->{level} eq 'day' || $entry->{count} <= $limit)
+				? ['alternativeplaycount', 'jiveplayhistoryitems', 'all', '', ($clientID // ''), 'period:' . $entry->{period}]
+				: ['alternativeplaycount', 'jiveplayhistorydates', ($clientID // ''), 'period:' . $entry->{period}];
+			$request->addResultLoop('item_loop', $cnt, 'icon', 'plugins/AlternativePlayCount/html/images/apc_icon_svg.png');
+			$request->addResultLoop('item_loop', $cnt, 'type', 'redirect');
+			$request->addResultLoop('item_loop', $cnt, 'actions', {
+				go => { player => 0, cmd => $cmd },
+			});
+			$request->addResultLoop('item_loop', $cnt, 'text', $entry->{label} . "\n" . _formatPlayHistoryPeriodInfo($entry));
+			$cnt++;
+		}
+	} elsif (_isMaterialCaller($request)) {
+		$request->addResultLoop('item_loop', 0, 'type', 'text');
+		$request->addResultLoop('item_loop', 0, 'style', 'itemNoAction');
+		$request->addResultLoop('item_loop', 0, 'text', string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NOENTRIES'));
+		$cnt = 1;
+	}
+
+	my $window = {menustyle => 'album', windowStyle => 'icon_list', text => _formatPlayHistoryTitle($title, $clientID)};
+	$window->{textarea} = string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_NOENTRIES') if !$cnt && !_isMaterialCaller($request);
+	$request->addResult('window', $window);
+	$request->addResult('offset', 0);
+	$request->addResult('count', $cnt);
+
+	$request->setStatusDone();
+}
+
+sub _setPlayHistoryBrowseParams {
+	# fills the web params with the child periods, false if there is nothing to browse
+	my ($params, $periodInfo, $clientID, $limit) = @_;
+	my $result = _getPlayHistoryPeriodEntries($periodInfo ? $periodInfo->{period} : undef, $clientID);
+	return 0 if !$result || !scalar(@{$result->{entries}});
+	foreach my $entry (@{$result->{entries}}) {
+		my $browseDeeper = ($entry->{level} ne 'day' && $entry->{count} > $limit);
+		$entry->{linkparams} = ($browseDeeper ? 'browse=1&amp;' : '') . 'period=' . $entry->{period};
+		$entry->{plays} = _formatPlayHistoryPlays($entry->{count});
+	}
+	$params->{periodentries} = $result->{entries};
+	$params->{periodcrumbs} = _getPlayHistoryPeriodCrumbs($result->{info} ? $result->{info}->{period} : undef, 1);
+	$params->{historyitems} = undef;
+	$params->{itemcount} = 0;
+	return 1;
+}
+
+sub _parsePlayHistoryPeriod {
+	# 'YYYY', 'YYYY-MM' or 'YYYY-MM-DD' to a hash with level and epoch range (end exclusive), undef if invalid
+	my $period = shift;
+	return unless defined $period && $period =~ /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/;
+	my ($year, $month, $day) = ($1, $2, $3);
+	return if $year < 1971 || $year > 2100;
+	return if defined $month && ($month < 1 || $month > 12);
+	return if defined $day && ($day < 1 || $day > 31);
+
+	my ($level, $format, $from, $to);
+	if (defined $day) {
+		($level, $format) = ('day', '%Y-%m-%d');
+		$from = mktime(0, 0, 0, $day, $month - 1, $year - 1900);
+		$to = mktime(0, 0, 0, $day + 1, $month - 1, $year - 1900);
+	} elsif (defined $month) {
+		($level, $format) = ('month', '%Y-%m');
+		$from = mktime(0, 0, 0, 1, $month - 1, $year - 1900);
+		$to = mktime(0, 0, 0, 1, $month, $year - 1900);
+	} else {
+		($level, $format) = ('year', '%Y');
+		$from = mktime(0, 0, 0, 1, 0, $year - 1900);
+		$to = mktime(0, 0, 0, 1, 0, $year - 1899);
+	}
+	return unless defined $from && defined $to;
+	# rejects dates that do not exist, like 2026-11-31
+	return unless strftime($format, localtime($from)) eq $period;
+	return {period => $period, level => $level, from => $from, to => $to};
+}
+
+sub _formatPlayHistoryPeriod {
+	# label of a period, the month name is localized and every label stands on its own
+	my $info = shift;
+	return Slim::Utils::DateTime::longDateF($info->{from}, '%B %Y') if $info->{level} eq 'month';
+	return $info->{period};
+}
+
+sub _formatPlayHistoryPlays {
+	my $count = shift;
+	return ($count == 1) ? string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_ONEPLAY') : sprintf(string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_GROUPPLAYS'), $count);
+}
+
+sub _formatPlayHistoryTitle {
+	# window title, with the player name if the list is filtered by player
+	my ($title, $clientID) = @_;
+	return $title if !defined $clientID || $clientID eq '';
+	my ($client) = grep { $_->{id} eq $clientID } @{_getPlayHistoryClients()};
+	return $title . ' ' . HTML::Entities::decode_entities('&#x2022;') . ' ' . ($client ? ($client->{displayname} // $client->{name}) : $clientID);
+}
+
+sub _formatPlayHistoryPeriodInfo {
+	# second line of a period entry: weekday (days only) and number of plays
+	my $entry = shift;
+	my $plays = _formatPlayHistoryPlays($entry->{count});
+	return $plays if !$entry->{weekday};
+	return $entry->{weekday} . ' ' . HTML::Entities::decode_entities('&#x2022;') . ' ' . $plays;
+}
+
+sub _getPlayHistoryPeriodEntries {
+	# child periods of $period (the whole history if undef) with their play counts, a level with a single entry is skipped
+	my ($period, $clientID) = @_;
+	my $info = defined $period ? _parsePlayHistoryPeriod($period) : undef;
+	return if defined $period && !$info;
+
+	require Plugins::AlternativePlayCount::Storage;
+	while (1) {
+		return if $info && $info->{level} eq 'day';
+		my $level = !$info ? 'year' : ($info->{level} eq 'year') ? 'month' : 'day';
+		my $rows = Plugins::AlternativePlayCount::Storage->getPlayHistoryPeriods({
+			level => $level,
+			from => ($info ? $info->{from} : undef),
+			to => ($info ? $info->{to} : undef),
+			client_id => $clientID,
+		});
+		return if !scalar(@{$rows});
+		if (scalar(@{$rows}) == 1 && $level ne 'day') {
+			$info = _parsePlayHistoryPeriod($rows->[0]->{period});
+			return if !$info;
+			next;
+		}
+		my @entries;
+		foreach my $row (@{$rows}) {
+			my $child = _parsePlayHistoryPeriod($row->{period}) or next;
+			push @entries, {
+				period => $child->{period},
+				level => $level,
+				label => _formatPlayHistoryPeriod($child),
+				weekday => ($level eq 'day') ? Slim::Utils::DateTime::shortDateF($child->{from}, '%a') : '',
+				count => $row->{count},
+			};
+		}
+		return {info => $info, entries => \@entries};
+	}
+}
+
+sub _getPlayHistoryPeriodCrumbs {
+	# crumbs of the web page, the last one is the current page and not a link
+	my ($period, $browseTop) = @_;
+	my @crumbs;
+	if (defined $period) {
+		foreach my $len (4, 7, 10) {
+			next if length($period) < $len;
+			my $info = _parsePlayHistoryPeriod(substr($period, 0, $len)) or next;
+			push @crumbs, {label => _formatPlayHistoryPeriod($info), linkparams => 'browse=1&amp;period=' . $info->{period}};
+		}
+	} elsif ($browseTop) {
+		push @crumbs, {label => string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_BROWSEBYDATE'), linkparams => ''};
+	}
+	return undef if !@crumbs;
+	$crumbs[-1]->{current} = 1;
+	unshift @crumbs, {label => string('PLUGIN_ALTERNATIVEPLAYCOUNT_PLAYHISTORY_ALLPLAYS'), linkparams => ''};
+	return \@crumbs;
 }
 
 sub registerPlayHistoryAllJiveMenu {
@@ -3557,6 +3915,18 @@ sub _jivePlayHistoryActions {
 	$request->setStatusDone();
 }
 
+sub _getAlbumArtist {
+	my ($sth, $albumID) = @_;
+	my ($name, $id);
+	eval {
+		$sth->execute($albumID);
+		($name, $id) = $sth->fetchrow_array();
+		$sth->finish();
+	};
+	if ($@) { $log->error("SQL error: $@"); }
+	return ($name, $id // '');
+}
+
 sub _getTrackArtist {
 	my ($sth, $trackID) = @_;
 	for my $role (1, 6, 5) {
@@ -3570,6 +3940,133 @@ sub _getTrackArtist {
 		return ($name, $id // '') if $name && $name ne '';
 	}
 	return ('', '');
+}
+
+sub _getPlayHistoryGroupMode {
+	my $mode = $prefs->get('playhistory_groupby') // 'none';
+	return ($mode eq 'album' || $mode eq 'artist') ? $mode : 'none';
+}
+
+sub _getPlayHistoryGroupKeys {
+	# grouping key per history row: album id or artist id, undef if not in library
+	my ($history, $mode) = @_;
+	my $dbh = Slim::Schema->dbh;
+	my $sth = $dbh->prepare_cached('SELECT tracks.id, tracks.album FROM tracks WHERE tracks.urlmd5 = ? LIMIT 1');
+	my $sth_artist = $dbh->prepare_cached('SELECT contributors.name, contributors.id FROM contributor_track JOIN contributors ON contributor_track.contributor = contributors.id WHERE contributor_track.track = ? AND contributor_track.role = ? LIMIT 1');
+	my @keys;
+	foreach my $entry (@{$history}) {
+		my ($trackID, $albumID);
+		eval {
+			$sth->execute($entry->{urlmd5});
+			($trackID, $albumID) = $sth->fetchrow_array();
+			$sth->finish();
+		};
+		if ($@) { $log->error("SQL error: $@"); }
+		my $key;
+		if (defined $trackID) {
+			if ($mode eq 'album') {
+				$key = $albumID;
+			} else {
+				(undef, $key) = _getTrackArtist($sth_artist, $trackID);
+			}
+		}
+		push @keys, (defined $key && $key ne '') ? $key : undef;
+	}
+	$sth->finish();
+	$sth_artist->finish();
+	return \@keys;
+}
+
+sub _findPlayHistoryRuns {
+	# history is ordered newest first, runs are built per player
+	my ($history, $mode) = @_;
+	return [] if $mode ne 'album' && $mode ne 'artist';
+	my $minSize = $prefs->get($mode eq 'album' ? 'playhistory_groupminalbum' : 'playhistory_groupminartist') || 3;
+
+	my $keys = _getPlayHistoryGroupKeys($history, $mode);
+	my (@runs, %open);
+	foreach my $i (0 .. $#{$history}) {
+		my $clientID = $history->[$i]->{client_id} // '';
+		my $key = $keys->[$i];
+		my $run = $open{$clientID};
+		if ($run && defined $key && $run->{key} eq $key) {
+			push @{$run->{idx}}, $i;
+			next;
+		}
+		delete $open{$clientID};
+		next if !defined $key;
+		$run = {key => $key, idx => [$i]};
+		$open{$clientID} = $run;
+		push @runs, $run;
+	}
+	return [grep { scalar(@{$_->{idx}}) >= $minSize } @runs];
+}
+
+sub _applyPlayHistoryGrouping {
+	# a run becomes one header row at the position of its newest play, optionally followed by its plays
+	my ($history, $mode, $expand) = @_;
+	my $runs = _findPlayHistoryRuns($history, $mode);
+	return $history if !@{$runs};
+
+	my (%runAt, %grouped);
+	foreach my $run (@{$runs}) {
+		$runAt{$run->{idx}->[0]} = $run;
+		$grouped{$_} = 1 foreach @{$run->{idx}};
+	}
+
+	my @result;
+	foreach my $i (0 .. $#{$history}) {
+		my $run = $runAt{$i};
+		if (!$run) {
+			push @result, $history->[$i] if !$grouped{$i};
+			next;
+		}
+		my $head = $history->[$i];
+		my $isOpen = $expand->{$head->{id}} ? 1 : 0;
+		push @result, {%{$head}, grouphead => 1, groupid => $head->{id}, groupcount => scalar(@{$run->{idx}}), groupmarker => '[' . scalar(@{$run->{idx}}) . 'x]', groupoldest => $history->[$run->{idx}->[-1]]->{played}, groupopen => $isOpen};
+		next if !$isOpen;
+		foreach my $j (@{$run->{idx}}) {
+			push @result, {%{$history->[$j]}, groupchild => 1};
+		}
+	}
+	return \@result;
+}
+
+sub _getPlayHistoryGroupRows {
+	# the plays of the run whose newest play has the history id $groupID
+	my ($history, $mode, $groupID) = @_;
+	foreach my $run (@{_findPlayHistoryRuns($history, $mode)}) {
+		return [@{$history}[@{$run->{idx}}]] if $history->[$run->{idx}->[0]]->{id} == $groupID;
+	}
+	return [];
+}
+
+sub _formatPlayHistoryRange {
+	# oldest to newest play of a group, same-day dates are shown once
+	my ($newest, $oldest) = @_;
+	my $newestDate = Slim::Utils::DateTime::shortDateF($newest);
+	my $oldestDate = Slim::Utils::DateTime::shortDateF($oldest);
+	my $newestTime = strftime('%H:%M', localtime($newest));
+	my $oldestTime = strftime('%H:%M', localtime($oldest));
+	return $newestDate . ' ' . $newestTime if $newestDate eq $oldestDate && $newestTime eq $oldestTime;
+	return $oldestDate . ' ' . $oldestTime . '-' . $newestTime if $newestDate eq $oldestDate;
+	return $oldestDate . ' ' . $oldestTime . ' - ' . $newestDate . ' ' . $newestTime;
+}
+
+sub _jivePlayHistoryGroupMode {
+	# cycles the grouping mode: none -> album -> artist
+	my $request = shift;
+
+	if ($request->isNotCommand([['alternativeplaycount'], ['jiveplayhistorygroupmode']])) {
+		$request->setStatusBadDispatch();
+		return;
+	}
+	my @modes = ('none', 'album', 'artist');
+	my $current = _getPlayHistoryGroupMode();
+	my ($index) = grep { $modes[$_] eq $current } 0 .. $#modes;
+	$prefs->set('playhistory_groupby', $modes[(($index // 0) + 1) % scalar(@modes)]);
+
+	$request->setStatusDone();
 }
 
 sub _getPlayerNameMap {
@@ -3855,7 +4352,7 @@ sub addTitleFormat {
 sub initDatabase {
 	my $skipRefresh = shift;
 	if (Slim::Music::Import->stillScanning) {
-		$log->warn("Warning: can't initialize table until library scan is completed");
+		main::DEBUGLOG && $log->is_debug && $log->debug("Can't initialize table until library scan is completed");
 		return;
 	}
 	my $started = time();
@@ -4210,7 +4707,7 @@ sub resetColValues {
 
 sub refreshDatabase {
 	if (Slim::Music::Import->stillScanning) {
-		$log->warn("Warning: can't refresh database until library scan is completed.");
+		main::DEBUGLOG && $log->is_debug && $log->debug("Can't refresh database until library scan is completed.");
 		return;
 	}
 

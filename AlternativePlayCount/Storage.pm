@@ -344,7 +344,9 @@ sub trimPlayHistory {
 	return unless $maxdbentries > 0;
 
 	eval {
-		$dbh->do("DELETE FROM play_history WHERE id NOT IN (SELECT id FROM play_history ORDER BY played DESC LIMIT ?)", undef, $maxdbentries);
+		my ($count) = $dbh->selectrow_array('SELECT COUNT(*) FROM play_history');
+		my $excess = ($count // 0) - $maxdbentries;
+		$dbh->do('DELETE FROM play_history WHERE id IN (SELECT id FROM play_history ORDER BY played ASC, id ASC LIMIT ?)', undef, $excess) if $excess > 0;
 	};
 	if ($@) { $log->error("Error trimming play history: $@"); }
 }
@@ -476,6 +478,13 @@ sub getPlayHistory {
 		push @bind, $client_id;
 	}
 
+	# optional period filter, epoch range with exclusive end
+	if (defined $params->{from} && defined $params->{to} && $params->{from} =~ /^\d+$/ && $params->{to} =~ /^\d+$/) {
+		$whereClause .= ($whereClause =~ /WHERE/i ? ' AND' : ' WHERE');
+		$whereClause .= ' ph.played >= ? AND ph.played < ?';
+		push @bind, $params->{from}, $params->{to};
+	}
+
 	if (ref($params->{total_ref}) eq 'SCALAR') {
 		eval {
 			my ($total) = $dbh->selectrow_array("SELECT COUNT(DISTINCT ph.id) FROM play_history ph $whereClause", undef, @bind);
@@ -511,6 +520,42 @@ sub getPlayHistory {
 
 	main::DEBUGLOG && $log->is_debug && $log->debug("getPlayHistory: type=$type, id=".($id//'none').", client=".($client_id//'any').", returned ".scalar(@$history)." rows");
 	return $history;
+}
+
+sub getPlayHistoryPeriods {
+	# play counts per year, month or day (local time), newest period first
+	my ($class, $params) = @_;
+
+	return [] unless $dbh && $initialized;
+
+	my $format = {year => '%Y', month => '%Y-%m', day => '%Y-%m-%d'}->{$params->{level} // ''};
+	return [] unless $format;
+
+	my @bind = ($format);
+	my $whereClause = '';
+	if (defined $params->{from} && defined $params->{to} && $params->{from} =~ /^\d+$/ && $params->{to} =~ /^\d+$/) {
+		$whereClause = ' WHERE ph.played >= ? AND ph.played < ?';
+		push @bind, $params->{from}, $params->{to};
+	}
+	if ($params->{client_id}) {
+		$whereClause .= ($whereClause eq '' ? ' WHERE' : ' AND') . ' ph.client_id = ?';
+		push @bind, $params->{client_id};
+	}
+
+	my $periods = [];
+	eval {
+		my $sth = $dbh->prepare("SELECT strftime(?, ph.played, 'unixepoch', 'localtime'), COUNT(*) FROM play_history ph$whereClause GROUP BY 1 ORDER BY 1 DESC");
+		$sth->execute(@bind);
+		while (my ($period, $count) = $sth->fetchrow_array()) {
+			push @$periods, {period => $period, count => $count} if defined $period;
+		}
+		$sth->finish();
+	};
+	if ($@) {
+		$log->error("getPlayHistoryPeriods failed (level=".($params->{level} // '')."): $@");
+		return [];
+	}
+	return $periods;
 }
 
 sub getDistinctClients {

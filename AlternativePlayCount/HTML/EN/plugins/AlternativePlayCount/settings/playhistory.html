@@ -38,17 +38,27 @@
 <br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDISPLAYITEMS" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDISPLAYITEMS_DESC" %]
-	<input type="text" class="stdedit sliderInput_5_500_5" name="pref_playhistory_maxdisplayitems" id="playhistory_maxdisplayitems" value="[% prefs.playhistory_maxdisplayitems %]" size="2">
+	<input type="text" class="stdedit sliderInput_10_1000_10" name="pref_playhistory_maxdisplayitems" id="playhistory_maxdisplayitems" value="[% prefs.playhistory_maxdisplayitems %]" size="3">
 [% END %]
 <br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDBENTRIES" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_MAXDBENTRIES_DESC" %]
-	<input type="text" class="stdedit sliderInput_0_50000_1000" name="pref_playhistory_maxdbentries" id="playhistory_maxdbentries" value="[% prefs.playhistory_maxdbentries %]" size="5">
+	<input type="text" class="stdedit sliderInput_0_1000000_10000" name="pref_playhistory_maxdbentries" id="playhistory_maxdbentries" value="[% prefs.playhistory_maxdbentries %]" size="7">
 [% END %]
 <br>
 
 [% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_JIVEEXTRALINELENGTH" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_JIVEEXTRALINELENGTH_DESC" %]
 	<input type="text" class="stdedit sliderInput_65_150_1" name="pref_playhistory_jiveextralinelength" id="playhistory_jiveextralinelength" value="[% prefs.playhistory_jiveextralinelength %]" size="2">
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_GROUPMINALBUM" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_GROUPMINALBUM_DESC" %]
+	<input type="text" class="stdedit sliderInput_2_20_1" name="pref_playhistory_groupminalbum" id="playhistory_groupminalbum" value="[% prefs.playhistory_groupminalbum %]" size="2">
+[% END %]
+<br>
+
+[% WRAPPER setting title="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_GROUPMINARTIST" desc="PLUGIN_ALTERNATIVEPLAYCOUNT_SETTINGS_PLAYHISTORY_GROUPMINARTIST_DESC" %]
+	<input type="text" class="stdedit sliderInput_2_20_1" name="pref_playhistory_groupminartist" id="playhistory_groupminartist" value="[% prefs.playhistory_groupminartist %]" size="2">
 [% END %]
 <br>
 
