@@ -578,25 +578,41 @@ sub getDistinctClients {
 	return $clients;
 }
 
-sub getAllPlayHistoryForExport {
+sub getPlayHistoryExportRange {
 	my $class = shift;
-	return [] unless $class->dbh;
+	return (0, 0) unless $class->dbh;
 
-	my $history = [];
+	my ($count, $maxId);
 	eval {
-		my $sth = $dbh->prepare_cached('SELECT url, urlmd5, musicbrainz_id, played, rating, remote, client_id FROM play_history ORDER BY id');
-		$sth->execute();
+		($count, $maxId) = $dbh->selectrow_array('SELECT COUNT(*), IFNULL(MAX(id), 0) FROM play_history');
+	};
+	if ($@) {
+		$log->error("getPlayHistoryExportRange failed: $@");
+		return (0, 0);
+	}
+
+	return ($count // 0, $maxId // 0);
+}
+
+sub getPlayHistoryExportChunk {
+	my ($class, $afterId, $maxId, $limit) = @_;
+	return unless $class->dbh;
+
+	my $rows = [];
+	eval {
+		my $sth = $dbh->prepare_cached('SELECT id, url, urlmd5, musicbrainz_id, played, rating, remote, client_id FROM play_history WHERE id > ? AND id <= ? ORDER BY id LIMIT ?');
+		$sth->execute($afterId, $maxId, $limit);
 		while (my $row = $sth->fetchrow_hashref()) {
-			push @$history, $row;
+			push @$rows, $row;
 		}
 		$sth->finish();
 	};
 	if ($@) {
-		$log->error("getAllPlayHistoryForExport failed: $@");
-		return [];
+		$log->error("getPlayHistoryExportChunk failed: $@");
+		return;
 	}
 
-	return $history;
+	return $rows;
 }
 
 sub getAllPlayersForExport {

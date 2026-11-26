@@ -35,8 +35,8 @@ my $log = logger('plugin.alternativeplaycount');
 my $prefs = preferences('plugin.alternativeplaycount');
 my $serverPrefs = preferences('server');
 
-my ($backupQueue, $backupOutput, $backupStarted, $backupTotalCount, $backupCombinedTotal, $backupCombinedItemsDone, $backupImporterCall);
-my ($extBackupPlayHistoryQueue, $extBackupPlayersQueue, $extBackupOutput, $extBackupTotalCount, $extBackupSection);
+my ($backupQueue, $backupOutput, $backupFile, $backupStarted, $backupTotalCount, $backupCombinedTotal, $backupCombinedItemsDone, $backupImporterCall);
+my ($extBackupPlayersQueue, $extBackupOutput, $extBackupFile, $extBackupTotalCount, $extBackupSection, $extBackupPlayHistoryCount, $extBackupLastId, $extBackupMaxId);
 
 sub createBackup {
 	my $importerCall = shift;
@@ -70,30 +70,30 @@ sub createBackup {
 	};
 	if ($@) {
 		$log->error("Database error during backup: $@");
-		$prefs->set('backuprestoreresult', 2);
-		$prefs->set('status_backuprestore', 0);
+		_abortBackup();
 		return;
 	}
 
 	$backupTotalCount = scalar(@{$backupQueue});
 
-	$extBackupPlayHistoryQueue = [];
 	$extBackupPlayersQueue = [];
+	$extBackupPlayHistoryCount = 0;
+	$extBackupLastId = 0;
+	$extBackupMaxId = 0;
 	if ($prefs->get('backupexternaldata') && $prefs->get('playhistory')) {
 		require Plugins::AlternativePlayCount::Storage;
-		$extBackupPlayHistoryQueue = Plugins::AlternativePlayCount::Storage->getAllPlayHistoryForExport();
+		($extBackupPlayHistoryCount, $extBackupMaxId) = Plugins::AlternativePlayCount::Storage->getPlayHistoryExportRange();
 		$extBackupPlayersQueue = Plugins::AlternativePlayCount::Storage->getAllPlayersForExport();
 	}
-	$extBackupTotalCount = scalar(@{$extBackupPlayHistoryQueue}) + scalar(@{$extBackupPlayersQueue});
+	$extBackupTotalCount = $extBackupPlayHistoryCount + scalar(@{$extBackupPlayersQueue});
 
 	$backupCombinedTotal = $backupTotalCount + $extBackupTotalCount;
 
 	if ($backupTotalCount) {
-		my $filename = catfile($backupDir, 'APC_Backup_'.$filename_timestamp.'.xml');
-		$backupOutput = FileHandle->new($filename, '>:utf8') or do {
-			$log->error('Could not open '.$filename.' for writing. Does the AlternativePlayCount folder exist? Does LMS have read/write permissions (755) for the (parent) folder?');
-			$prefs->set('backuprestoreresult', 2);
-			$prefs->set('status_backuprestore', 0);
+		$backupFile = catfile($backupDir, 'APC_Backup_'.$filename_timestamp.'.xml');
+		$backupOutput = FileHandle->new($backupFile, '>:utf8') or do {
+			$log->error('Could not open '.$backupFile.' for writing. Does the AlternativePlayCount folder exist? Does LMS have read/write permissions (755) for the (parent) folder?');
+			_abortBackup();
 			return;
 		};
 		main::DEBUGLOG && $log->is_debug && $log->debug('Found '.$backupTotalCount.' track(s) with values in the APC database');
@@ -121,6 +121,14 @@ sub createBackup {
 }
 
 sub writeBackupChunk {
+	my $more = eval { _writeBackupChunk() };
+	return $more unless $@;
+	$log->error("Backup aborted: $@");
+	_abortBackup();
+	return 0;
+}
+
+sub _writeBackupChunk {
 	if (my $APCTrack = shift(@{$backupQueue})) {
 		if (!defined($APCTrack->{'remote'})) {
 			_advanceBackupProgress();
@@ -156,7 +164,8 @@ sub writeBackupChunk {
 
 sub _advanceBackupProgress {
 	return unless $backupCombinedTotal;
-	$backupCombinedItemsDone++;
+	my $increment = shift // 1;
+	$backupCombinedItemsDone += $increment;
 	$prefs->set('backuprestoreprogresspercentage', sprintf("%.0f", ($backupCombinedItemsDone / $backupCombinedTotal) * 100));
 }
 
@@ -169,6 +178,7 @@ sub _finishOrStartExternalBackup {
 }
 
 sub _finalizeBackup {
+	my $failed = shift;
 	if ($backupTotalCount || $extBackupTotalCount) {
 		$prefs->set('lastbackup', int(time()));
 		cleanupBackups();
@@ -177,7 +187,24 @@ sub _finalizeBackup {
 	}
 	main::INFOLOG && $log->is_info && $log->info('Backup completed after '.(time() - $backupStarted).' seconds.');
 	$prefs->set('backuprestoreprogresspercentage', 100);
-	$prefs->set('backuprestoreresult', 1);
+	$prefs->set('backuprestoreresult', $failed ? 2 : 1);
+	$prefs->set('status_backuprestore', 0);
+}
+
+sub _abortBackup {
+	if ($backupOutput) {
+		close($backupOutput);
+		unlink($backupFile) if $backupFile;
+	}
+	if ($extBackupOutput) {
+		close($extBackupOutput);
+		unlink($extBackupFile) if $extBackupFile;
+	}
+	$backupOutput = undef;
+	$extBackupOutput = undef;
+	$backupQueue = [];
+	$extBackupPlayersQueue = [];
+	$prefs->set('backuprestoreresult', 2);
 	$prefs->set('status_backuprestore', 0);
 }
 
@@ -185,15 +212,15 @@ sub _startExternalBackup {
 	my $backupDir = $prefs->get('apcfolderpath');
 	my $backuptimestamp = strftime "%Y-%m-%d %H:%M:%S", localtime time;
 	my $filename_timestamp = strftime "%Y%m%d-%H%M", localtime time;
-	my $filename = catfile($backupDir, 'APC_ExternalData_Backup_'.$filename_timestamp.'.xml');
+	$extBackupFile = catfile($backupDir, 'APC_ExternalData_Backup_'.$filename_timestamp.'.xml');
 
-	$extBackupOutput = FileHandle->new($filename, '>:utf8') or do {
-		$log->error('Could not open '.$filename.' for writing external data backup. Does the AlternativePlayCount folder exist? Does LMS have read/write permissions (755) for the (parent) folder?');
-		_finalizeBackup();
+	$extBackupOutput = FileHandle->new($extBackupFile, '>:utf8') or do {
+		$log->error('Could not open '.$extBackupFile.' for writing external data backup. Does the AlternativePlayCount folder exist? Does LMS have read/write permissions (755) for the (parent) folder?');
+		_finalizeBackup(1);
 		return;
 	};
 
-	main::DEBUGLOG && $log->is_debug && $log->debug('Found '.scalar(@{$extBackupPlayHistoryQueue}).' play history entrie(s) and '.scalar(@{$extBackupPlayersQueue}).' player(s) to back up');
+	main::DEBUGLOG && $log->is_debug && $log->debug('Found '.$extBackupPlayHistoryCount.' play history entrie(s) and '.scalar(@{$extBackupPlayersQueue}).' player(s) to back up');
 
 	my $osDetails = Slim::Utils::OSDetect::details();
 	my $backupCodepage = getBackupCodepage();
@@ -205,7 +232,7 @@ sub _startExternalBackup {
 	print $extBackupOutput "<APCExternalData>\n";
 	print $extBackupOutput "\t<backupos>".($osDetails->{'os'} || $^O)."</backupos>\n";
 	print $extBackupOutput "\t<backupcodepage>".($backupCodepage || '')."</backupcodepage>\n";
-	print $extBackupOutput "\t<playhistorycount>".scalar(@{$extBackupPlayHistoryQueue})."</playhistorycount>\n";
+	print $extBackupOutput "\t<playhistorycount>".$extBackupPlayHistoryCount."</playhistorycount>\n";
 	print $extBackupOutput "\t<playercount>".scalar(@{$extBackupPlayersQueue})."</playercount>\n";
 	print $extBackupOutput "\t<playhistory>\n";
 	$extBackupSection = 'playhistory';
@@ -218,17 +245,31 @@ sub _startExternalBackup {
 }
 
 sub writeExternalBackupChunk {
+	my $more = eval { _writeExternalBackupChunk() };
+	return $more unless $@;
+	$log->error("External data backup aborted: $@");
+	_abortBackup();
+	return 0;
+}
+
+sub _writeExternalBackupChunk {
 	if ($extBackupSection eq 'playhistory') {
-		if (my $entry = shift(@{$extBackupPlayHistoryQueue})) {
-			my $entryURL = escape($entry->{'url'});
-			my $entryUrlMD5 = $entry->{'urlmd5'} // '';
-			my $entryMBID = $entry->{'musicbrainz_id'} // '';
-			my $entryPlayed = $entry->{'played'} // '';
-			my $entryRating = $entry->{'rating'} // '';
-			my $entryRemote = $entry->{'remote'} // 0;
-			my $entryClientID = $entry->{'client_id'} ? escape($entry->{'client_id'}) : '';
-			print $extBackupOutput "\t\t<entry>\n\t\t\t<url>".$entryURL."</url>\n\t\t\t<urlmd5>".$entryUrlMD5."</urlmd5>\n\t\t\t<musicbrainzid>".$entryMBID."</musicbrainzid>\n\t\t\t<played>".$entryPlayed."</played>\n\t\t\t<rating>".$entryRating."</rating>\n\t\t\t<remote>".$entryRemote."</remote>\n\t\t\t<clientid>".$entryClientID."</clientid>\n\t\t</entry>\n";
-			_advanceBackupProgress();
+		# Fixed block size keeps each scheduler call short
+		my $chunk = Plugins::AlternativePlayCount::Storage->getPlayHistoryExportChunk($extBackupLastId, $extBackupMaxId, 500);
+		die "Could not read play history after id ".$extBackupLastId."\n" unless defined $chunk;
+		if (@{$chunk}) {
+			foreach my $entry (@{$chunk}) {
+				my $entryURL = escape($entry->{'url'});
+				my $entryUrlMD5 = $entry->{'urlmd5'} // '';
+				my $entryMBID = $entry->{'musicbrainz_id'} // '';
+				my $entryPlayed = $entry->{'played'} // '';
+				my $entryRating = $entry->{'rating'} // '';
+				my $entryRemote = $entry->{'remote'} // 0;
+				my $entryClientID = $entry->{'client_id'} ? escape($entry->{'client_id'}) : '';
+				print $extBackupOutput "\t\t<entry>\n\t\t\t<url>".$entryURL."</url>\n\t\t\t<urlmd5>".$entryUrlMD5."</urlmd5>\n\t\t\t<musicbrainzid>".$entryMBID."</musicbrainzid>\n\t\t\t<played>".$entryPlayed."</played>\n\t\t\t<rating>".$entryRating."</rating>\n\t\t\t<remote>".$entryRemote."</remote>\n\t\t\t<clientid>".$entryClientID."</clientid>\n\t\t</entry>\n";
+			}
+			$extBackupLastId = $chunk->[-1]->{'id'};
+			_advanceBackupProgress(scalar(@{$chunk}));
 			return 1;
 		}
 		print $extBackupOutput "\t</playhistory>\n\t<players>\n";
